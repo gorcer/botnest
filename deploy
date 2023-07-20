@@ -1,0 +1,34 @@
+#!/bin/bash
+
+if [ $# -eq 0 ]
+    then
+        echo "Error. Please make sure you've indicated correct parameters";
+elif [ $1 == "prod" ]
+    then
+       if [ $2 == "go" ]
+            then
+                echo "Running prod deploy"
+                cd office && npm run prod && cd ..
+                #rsync -azv --no-perms --no-owner --no-group --force --delete --progress --exclude-from=rsync_exclude.txt -e "ssh" ./ df:/var/www/hexonomica.com
+        else
+            echo "Error. Please make sure youve indicated correct parameters";
+        fi
+elif [ $1 == "tousb" ]
+    then
+       if [ $2 == "go" ]
+            then
+                echo "Running prod deploy"
+                rsync -azv --no-perms --no-owner --no-group --force --delete --progress --exclude-from=rsync_exclude_usb.txt ./ /media/gorcer/EGOR/www/botnest
+        else
+            echo "Error. Please make sure youve indicated correct parameters";
+        fi
+elif [ $1 == "fromusb" ]
+    then
+       if [ $2 == "go" ]
+            then
+                echo "Running prod deploy"
+                rsync -azv --no-perms --no-owner --no-group --force --delete --progress --exclude-from=rsync_exclude.txt /media/gorcer/EGOR/www/botnest/ ./
+        else
+            echo "Error. Please make sure youve indicated correct parameters";
+        fi
+fi
