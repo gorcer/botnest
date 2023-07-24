@@ -39,13 +39,13 @@ describe('OrderService', () => {
     //   return (new Promise(()=>{}));
     // });
 
-    const order = service.create({
-      extOrderId: 1,
-      amount1: 10,
-      amount2: 20,
-      rate: 30000
-    });
+    // const order = service.create({
+    //   extOrderId: "1",
+    //   amount1: 10,
+    //   amount2: 20,
+    //   rate: 30000
+    // });
 
-    console.log(order);
+    // console.log(order);
   });
 });

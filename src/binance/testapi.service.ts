@@ -10,6 +10,8 @@ export class TestApiService extends BaseApiService{
         
         super();
 
+
+
         this.exchange = new ccxt.binance({
             'apiKey': process.env.BINANCE_TESTNET_API_KEY,
             'secret': process.env.BINANCE_TESTNET_API_SECRET,

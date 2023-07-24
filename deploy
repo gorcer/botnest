@@ -27,7 +27,7 @@ elif [ $1 == "fromusb" ]
        if [ $2 == "go" ]
             then
                 echo "Running prod deploy"
-                rsync -azv --no-perms --no-owner --no-group --force --delete --progress --exclude-from=rsync_exclude.txt /media/gorcer/EGOR/www/botnest/ ./
+                rsync -azv --no-perms --no-owner --no-group --force --delete --progress --exclude-from=rsync_exclude_usb.txt /media/gorcer/EGOR/www/botnest/ ./
         else
             echo "Error. Please make sure youve indicated correct parameters";
         fi

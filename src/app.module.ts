@@ -8,6 +8,8 @@ import { Order } from './order/entities/order.entity';
 import { BinanceModule } from './binance/binance.module';
 import { BotModule } from './bot/bot.module';
 import { ConfigModule } from '@nestjs/config';
+import { Balance } from './balance/entities/balance.entity';
+import { LogService } from './log.service';
 
 @Module({
   imports: [    
@@ -19,16 +21,13 @@ import { ConfigModule } from '@nestjs/config';
       username: process.env.DB_LOGIN,
       password:  process.env.DB_PASS,
       database:  process.env.DB_NAME,
-      entities: [Order],
+      entities: [Order, Balance],
       synchronize: true,
-    }),
-    OrderModule,
-    BinanceModule,
+      logging: true
+    }),        
     BotModule
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, LogService],
 })
-export class AppModule {
-  constructor(private dataSource: DataSource) {}
-}
+export class AppModule {}

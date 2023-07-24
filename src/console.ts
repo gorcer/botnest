@@ -12,20 +12,19 @@ async function bootstrap() {
 
   switch (command) {
     case 'trade':
-        const testApi = app.get(TestApiService);
         const bot = app.get(BotService);
-        await bot.trade(testApi);
-        
+        await bot.trade();
+
         break;
     case 'create-order':
       const orderService = app.get(OrderService);
-      const order = await orderService.create({
-        amount1: 1,
-        amount2: 2,
-        extOrderId: 1001,
-        rate:0.0001
-      });
-      console.log('Order', order);
+      // const order = await orderService.create({
+      //   amount1: 1,
+      //   amount2: 2,
+      //   extOrderId: 1001,
+      //   rate:0.0001
+      // });
+      // console.log('Order', order);
       break;
     default:
       console.log('Command not found');

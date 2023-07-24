@@ -31,13 +31,6 @@ docs
 public/assets
 temp/
 tests/
-office/storage/
-api/.env
-office/.env
-office/resources/js/game/env.js
-office/public/mix-manifest.json
-office/public/js-c
-office/vendor
-office/bootstrap
-api/.nyc_output
+.nyc_output
 .git
+.env
