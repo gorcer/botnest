@@ -42,8 +42,14 @@ export class Order {
     @Column("decimal")
     amount2: number;
 
-    @Column({type: "decimal", default: 0})
-    fill: number;
+    @Column({type: "decimal", default: 0, comment: "How much in close orders put"})
+    prefilled: number;
+
+    @Column({type: "decimal", default: 0, comment:"How much realy closed"})
+    filled: number;
+
+    @Column({type: "boolean", default: true})
+    isActive: boolean;
 
     @Column({type: "decimal", default:0})
     profit: number;
@@ -51,7 +57,7 @@ export class Order {
     @BeforeInsert()
     beforeInsert() {
       if (this.type == OrderType.BUY) {
-        this.fill = this.amount1;
+        this.filled = this.amount1;
       }
       this.createdAtSec = Math.floor(Date.now() / 1000)
     }

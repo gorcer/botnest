@@ -21,16 +21,16 @@ export class OrderService {
      return await this.ordersRepository.save(order);
   }
 
-  findAll() {
-    return `This action returns all order`;
+  findAll(where) {
+    return this.ordersRepository.findBy(where);
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} order`;
+  findOne(where) {
+    return this.ordersRepository.findOneBy(where);
   }
 
   update(id: number, updateOrderDto: UpdateOrderDto) {
-    return `This action updates a #${id} order`;
+    return this.ordersRepository.update({id}, updateOrderDto);
   }
 
   remove(id: number) {
@@ -43,6 +43,7 @@ export class OrderService {
     const profitPerSecYerly = parseFloat(divide(yerlyProfit , 365 * 24 * 60 * 60, 15));
     const secondsInDay = 24 * 60 * 60;
     const now = Math.floor(Date.now() / 1000);
+   
 
     return await this.ordersRepository
     .createQueryBuilder("order")
@@ -57,9 +58,21 @@ export class OrderService {
             ( ${profitPerSecYerly} * (${now} - "order"."createdAtSec") )
         end        
         `) // Calculate annual profitability
-    .andWhere(`order.rate < ${currentRate}`)
+    .andWhere(`"order".rate < ${currentRate}`)
     .andWhere(`(${now} - "order"."createdAtSec")>1`)    
+    .andWhere('"order"."isActive" = true')
+    .andWhere('"order"."prefilled" < "order"."amount1"')    
     .getMany();
 
+  }
+
+  async getSumByParentId(parentId, attribute: string) {
+    const result = await this.ordersRepository
+    .createQueryBuilder("order")
+    .select(`SUM(${attribute}) as sum`)
+    .where({parentId})    
+    .getRawOne();
+
+    return result.sum;
   }
 }

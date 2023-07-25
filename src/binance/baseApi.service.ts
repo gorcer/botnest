@@ -12,7 +12,7 @@ export class BaseApiService {
 
         if (orderBook.bids[0] == undefined || orderBook.asks[0] == undefined)  {
             console.log('Can`t fetch rates ');
-            console.log(orderBook);
+            // console.log(orderBook);
             return false;
         }
 
@@ -24,6 +24,9 @@ export class BaseApiService {
 
 
     public async fetchBalances() {
+
+        // console.log( (await this.exchange.fetchMarkets()) );
+
         const balances = (await this.exchange.fetchBalance ()).info.balances;
         const result = {};
         balances.forEach((item)=>{
@@ -40,6 +43,10 @@ export class BaseApiService {
     public async watchTrades(pair: string) {      
 
         return this.exchange.watchMyTrades(pair);
+    }
+
+    public async fetchOrder(orderId:number, symbol: string) {
+        return this.exchange.fetchOrder(String(orderId), symbol);
     }
 
 }

@@ -1,4 +1,5 @@
-import { Double } from "typeorm";
+import { OrderType } from "../entities/order.entity";
+
 
 export class CreateOrderDto {    
     extOrderId: string;
@@ -7,4 +8,5 @@ export class CreateOrderDto {
     amount1: number;
     amount2: number;
     parentId?: number;
+    type?: OrderType
 }

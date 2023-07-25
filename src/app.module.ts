@@ -23,7 +23,7 @@ import { LogService } from './log.service';
       database:  process.env.DB_NAME,
       entities: [Order, Balance],
       synchronize: true,
-      logging: true
+      // logging: true
     }),        
     BotModule
   ],
