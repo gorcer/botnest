@@ -1,14 +1,14 @@
 import { OrderSide, OrderType } from "ccxt/js/src/base/types";
-import binance from "ccxt/js/src/pro/binance";
+import { BalancesDto } from "../balance/dto/balances.dto";
 
 
 export class BaseApiService {
 
-    exchange: binance;
+    exchange;
     lastTradesFetching;
 
     public async getActualRates(pair:string) {
-        const orderBook = await this.exchange.watchOrderBook(pair, 5);
+        const orderBook = await this.exchange.fetchOrderBook(pair, 5);
 
         if (orderBook.bids[0] == undefined || orderBook.asks[0] == undefined)  {
             console.log('Can`t fetch rates ');
@@ -22,10 +22,19 @@ export class BaseApiService {
         return {bid, ask};
     }
 
+    public async getLimits(pair: string) {
+        const markets = (await this.exchange.fetchMarkets()).filter((item) => item.symbol == pair);
+        const {amount, cost} = markets[0].limits;
 
-    public async fetchBalances() {
+        return {minAmount:amount.min, minCost:cost.min};
 
-        // console.log( (await this.exchange.fetchMarkets()) );
+    }
+
+    public async fetchBalances():Promise<BalancesDto> {
+
+        // const markets = (await this.exchange.fetchMarkets()).filter((item) => item.id == 'ETHUSDT');
+        // console.log(markets[0].limits, markets[0]);
+        
 
         const balances = (await this.exchange.fetchBalance ()).info.balances;
         const result = {};
@@ -36,8 +45,8 @@ export class BaseApiService {
         return result;
     }
 
-    public async createOrder(symbol:string, side:OrderSide, type:OrderType, amount:number, price?:number) {
-        return await this.exchange.createOrder(symbol, side, type, amount, price);
+    public async createOrder(symbol:string, type:OrderType,side:OrderSide, amount:number, price?:number) {
+        return await this.exchange.createOrder(symbol, type, side, amount, price);
     }
 
     public async watchTrades(pair: string) {      

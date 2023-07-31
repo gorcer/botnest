@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { TestApiService } from './binance/testapi.service';
+import { TestApiService } from './exchange/testapi.service';
 import { BotService } from './bot/bot.service';
 import { OrderService } from './order/order.service';
 

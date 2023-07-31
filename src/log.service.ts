@@ -7,4 +7,9 @@ export class LogService {
     console.log(args);
   }
   
+  error(...args: any[]): void {
+    console.log(args);
+  }
+  
+  
 }

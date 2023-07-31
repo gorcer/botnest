@@ -12,4 +12,4 @@ import { BaseApiService } from './baseApi.service';
   providers: [ApiService, TestApiService],
   exports: [ApiService, TestApiService]
 })
-export class BinanceModule {}
+export class ExchangeModule {}

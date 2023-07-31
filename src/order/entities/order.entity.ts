@@ -1,4 +1,4 @@
-import { AfterInsert, BeforeInsert, Column, CreateDateColumn, Double, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { AfterInsert, BeforeInsert, Column, CreateDateColumn, Double, Entity, Index, PrimaryGeneratedColumn } from "typeorm";
 
 export enum OrderType {
     BUY = "buy",
@@ -7,6 +7,7 @@ export enum OrderType {
 
 
 @Entity()
+@Index(['rate','createdAtSec','amount1','prefilled','isActive'])
 export class Order {
     @PrimaryGeneratedColumn()
     id: number;
@@ -16,13 +17,15 @@ export class Order {
 
     @Column("int")
     createdAtSec: number;
-
+    
     @Column("int")
     extOrderId: string;
     
+    @Index()
     @Column({type: "int", nullable: true})
     parentId: number;
 
+    @Index()
     @Column({
         type: "enum",
         enum: OrderType,   
@@ -35,19 +38,19 @@ export class Order {
     
     @Column("decimal")
     expectedRate:number;
-
+    
     @Column("decimal")
     amount1: number;
 
     @Column("decimal")
     amount2: number;
-
+    
     @Column({type: "decimal", default: 0, comment: "How much in close orders put"})
     prefilled: number;
 
     @Column({type: "decimal", default: 0, comment:"How much realy closed"})
     filled: number;
-
+    
     @Column({type: "boolean", default: true})
     isActive: boolean;
 

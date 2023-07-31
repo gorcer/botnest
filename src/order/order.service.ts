@@ -39,16 +39,15 @@ export class OrderService {
 
   async getActiveOrdersAboveProfit(currentRate: number, dailyProfit:number, yerlyProfit:number): Promise<Array<Order>> {
 
-    const profitPerSecDaily = parseFloat(divide(dailyProfit , 365 * 24 * 60 * 60, 15));
-    const profitPerSecYerly = parseFloat(divide(yerlyProfit , 365 * 24 * 60 * 60, 15));
+    const profitPerSecDaily = divide(dailyProfit , 365 * 24 * 60 * 60, 15);
+    const profitPerSecYerly = divide(yerlyProfit , 365 * 24 * 60 * 60, 15);
     const secondsInDay = 24 * 60 * 60;
     const now = Math.floor(Date.now() / 1000);
-   
-
+  
     return await this.ordersRepository
     .createQueryBuilder("order")
     .where("order.type = :type", { type: OrderType.BUY })
-    .andWhere(`(${currentRate} / order.rate)-1 >= 
+    .andWhere(`100*((${currentRate} / order.rate)-1) >= 
         case 
           when 
             (${now} - "order"."createdAtSec") < ${secondsInDay}
@@ -59,7 +58,7 @@ export class OrderService {
         end        
         `) // Calculate annual profitability
     .andWhere(`"order".rate < ${currentRate}`)
-    .andWhere(`(${now} - "order"."createdAtSec")>1`)    
+    .andWhere(`"order"."createdAtSec" < ${(now+1)}`)    
     .andWhere('"order"."isActive" = true')
     .andWhere('"order"."prefilled" < "order"."amount1"')    
     .getMany();

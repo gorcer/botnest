@@ -3,22 +3,20 @@ import { pro as ccxt } from "ccxt";
 import { BaseApiService } from "./baseApi.service";
 
 @Injectable()
-export class TestApiService extends BaseApiService{
+export class ApiService extends BaseApiService {
 
 
     constructor() {
         
         super();
 
-
-
         this.exchange = new ccxt.binance({
-            'apiKey': process.env.BINANCE_TESTNET_API_KEY,
-            'secret': process.env.BINANCE_TESTNET_API_SECRET,
+            'apiKey': process.env.BINANCE_API_KEY,
+            'secret': process.env.BINANCE_API_SECRET,
         });
-        this.exchange.setSandboxMode (true);        
-    }
-    
+
+        
+    }   
 
 
 }

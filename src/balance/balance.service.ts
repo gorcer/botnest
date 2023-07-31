@@ -3,6 +3,7 @@ import { BalancesDto } from "./dto/balances.dto";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Balance } from "./entities/balance.entity";
 import { Repository } from "typeorm";
+import { lock } from "../helpers";
 const { compareTo } = require("js-big-decimal");
 
 const { multiply, add } = require( "js-big-decimal" );
@@ -19,26 +20,28 @@ export class BalanceService {
 
     public async set(balances:BalancesDto) {
 
-        this.balances = balances;
+        return await lock.acquire('Balance', async ()=>{
+            this.balances = balances;
 
-        for (const [currency, amount] of Object.entries(this.balances)) {
-                let balance = await this.balanceRepository.findOneBy({
-                    currency,                    
-                });
-                if (!balance) {
-                    balance = await this.balanceRepository.create({
-                        currency,                   
-                        amount
-                    });                    
-                } else {
+            for (const [currency, amount] of Object.entries(this.balances)) {
+                    let balance = await this.balanceRepository.findOneBy({
+                        currency,                    
+                    });
+                    if (!balance) {
+                        balance = await this.balanceRepository.create({
+                            currency,                   
+                            amount
+                        });                    
+                    } else {
 
-                    if (compareTo(balance.amount, amount) !=0) {
-                        console.log('Balance discrepancy', currency, balance.amount, amount);
+                        if (compareTo(balance.amount, amount) !=0) {
+                            console.log('Balance discrepancy', currency, 'Need:', balance.amount, 'Reel:', amount);
+                        }
+                        balance.amount = amount;                    
                     }
-                    balance.amount = amount;                    
-                }
-                await this.balanceRepository.save(balance);
-        }
+                    await this.balanceRepository.save(balance);
+            }
+        });
 
     }
 

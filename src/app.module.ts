@@ -5,7 +5,7 @@ import { OrderModule } from './order/order.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { Order } from './order/entities/order.entity';
-import { BinanceModule } from './binance/binance.module';
+import { ExchangeModule } from './exchange/exchange.module';
 import { BotModule } from './bot/bot.module';
 import { ConfigModule } from '@nestjs/config';
 import { Balance } from './balance/entities/balance.entity';
