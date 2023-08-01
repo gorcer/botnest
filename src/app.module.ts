@@ -1,11 +1,6 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { OrderModule } from './order/order.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
 import { Order } from './order/entities/order.entity';
-import { ExchangeModule } from './exchange/exchange.module';
 import { BotModule } from './bot/bot.module';
 import { ConfigModule } from '@nestjs/config';
 import { Balance } from './balance/entities/balance.entity';
@@ -27,7 +22,7 @@ import { LogService } from './log.service';
     }),        
     BotModule
   ],
-  controllers: [AppController],
-  providers: [AppService, LogService],
+  controllers: [],
+  providers: [ LogService],
 })
 export class AppModule {}

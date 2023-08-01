@@ -1,8 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { TestApiService } from './exchange/testapi.service';
 import { BotService } from './bot/bot.service';
-import { OrderService } from './order/order.service';
+
 
 
 async function bootstrap() {
@@ -12,25 +11,24 @@ async function bootstrap() {
 
   switch (command) {
     case 'trade':
-        const bot = app.get(BotService);
+        const bot = await app.resolve(BotService);
+        
+        bot.setConfig({          
+          pair: process.env.BOT_CURRENCY1 +'/'+ process.env.BOT_CURRENCY2,
+          orderAmount: Number( process.env.BOT_ORDER_AMOUNT ),
+          currency1: process.env.BOT_CURRENCY1,
+          currency2: process.env.BOT_CURRENCY2,
+          orderProbability: Number( process.env.BOT_ORDER_PROBABILITY ),
+          minDailyProfit: Number(process.env.BOT_MIN_DAILY_PROFIT), // % годовых если сделка закрывается за день
+          minYearlyProfit: Number(process.env.BOT_MIN_YERLY_PROFIT), // % годовых если сделка живет больше дня
+          minRateMarginToProcess: Number(process.env.BOT_MIN_RATE_MARGIN), // минимальное движение курса для проверки х100=%
+          sellFee:  Number(process.env.BOT_SELL_FEE)
+        });
+
         await bot.trade();
 
-        break;
-    case 'create-order':
-      const orderService = app.get(OrderService);
-      // const order = await orderService.create({
-      //   amount1: 1,
-      //   amount2: 2,
-      //   extOrderId: 1001,
-      //   rate:0.0001
-      // });
-      // console.log('Order', order);
-      break;
-    default:
-      console.log('Command not found');
-      process.exit(1);
+        break;   
   }
-
   await app.close();
   process.exit(0);
 }

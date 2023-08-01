@@ -1,24 +1,26 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { TestApiService } from './testapi.service';
 import { ConfigModule } from '@nestjs/config';
 import { equal } from 'assert';
+import { ApiService } from './api.service';
 const { add, subtract, compareTo } = require('js-big-decimal');
 
 describe('OrderService', () => {
-  let service: TestApiService;
+  let service: ApiService;
   
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: [
-        ConfigModule.forRoot(),
+        ConfigModule.forRoot({
+          envFilePath: '.test.env',
+        }),
       ],
       providers: [
-        TestApiService
+        ApiService
       ],
     }).compile();
 
-    service = module.get<TestApiService>(TestApiService);
+    service = module.get<ApiService>(ApiService);
   });
 
   it('should be defined', () => {
@@ -28,11 +30,11 @@ describe('OrderService', () => {
   it('create buy order and check balance', async () => {
 
       const currency1 = 'BTC';
-      const currency2 = 'USDT';
+      const currency2 = 'BUSD';
       const prevBalances = await service.fetchBalances();
       const prevBTCBalance = prevBalances[currency1];
       const prevUSDTBalance = prevBalances[currency2];
-      const amount1 = 0.001;
+      const amount1 = 0.00038;
 
       const order = await service.createOrder(currency1+'/'+currency2,'market', 'buy', amount1);
       const amount2 = order.cost;
@@ -53,7 +55,7 @@ describe('OrderService', () => {
 
       const currency1 = 'LTC';
       const currency2 = 'BTC';
-      const amount1 = 0.1;
+      const amount1 = 0.001;
 
       const prevBalances = await service.fetchBalances();
       const prevBTCBalance = prevBalances[currency1];

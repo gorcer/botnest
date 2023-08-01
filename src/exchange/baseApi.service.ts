@@ -1,11 +1,13 @@
 import { OrderSide, OrderType } from "ccxt/js/src/base/types";
 import { BalancesDto } from "../balance/dto/balances.dto";
+import ccxt from "ccxt";
 
 
 export class BaseApiService {
 
     exchange;
     lastTradesFetching;
+
 
     public async getActualRates(pair:string) {
         const orderBook = await this.exchange.fetchOrderBook(pair, 5);
@@ -36,7 +38,7 @@ export class BaseApiService {
         // console.log(markets[0].limits, markets[0]);
         
 
-        const balances = (await this.exchange.fetchBalance ()).info.balances;
+        const balances = (await this.exchange.fetchBalance()).info.balances;
         const result = {};
         balances.forEach((item)=>{
             result[item.asset] = item.free;
@@ -56,6 +58,10 @@ export class BaseApiService {
 
     public async fetchOrder(orderId:number, symbol: string) {
         return this.exchange.fetchOrder(String(orderId), symbol);
+    }
+
+    public async fetchTickers() {
+        return this.exchange.fetchTickers();
     }
 
 }

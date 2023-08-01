@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { OrderSide } from "ccxt/js/src/base/types";
-import { OrderType } from "../../order/entities/order.entity";
+import { Order, OrderType } from "../../order/entities/order.entity";
 
 @Injectable()
 export class MockedExchange {
@@ -23,6 +23,7 @@ export class MockedExchange {
     
     rownN=0;
     data=[];    
+    
     orders=[];
     orderbook=[];
     lastOrderId=0;
@@ -57,7 +58,7 @@ export class MockedExchange {
                 balances: [
                     {
                         asset: 'BTC',
-                        free: 1
+                        free: 1000
                     },
                     {
                         asset: 'USDT',
@@ -68,13 +69,17 @@ export class MockedExchange {
         }
     };
 
-    setNextCreateOrder(order) {
-        order.id = this.orders.length+1;
-        this.orders.push(order);
+    setNextOrder(order) {
+        order.id = this.lastOrderId++;
+        this.orders.push(order);        
     };
 
     createOrder(symbol:string, type:OrderType, side:OrderSide, amount:number, price?:number) {
 
+        return this.orders.shift();
+    }
+
+    fetchOrder(id, pair):Order {
         return this.orders.shift();
     }
 

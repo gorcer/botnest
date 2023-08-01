@@ -10,3 +10,9 @@ export const lock = asynclock;
 export async function sleep(n) {
     await new Promise(r => setTimeout(r, n * 1000));
 }
+
+export function updateModel(model, params) {
+    for (const [key, value] of Object.entries(params)) {
+        model[key] = value;
+    }
+}

@@ -7,6 +7,7 @@ export class CreateOrderDto {
     expectedRate: number
     amount1: number;
     amount2: number;
+    fee?: number;
     parentId?: number;
     type?: OrderType
 }

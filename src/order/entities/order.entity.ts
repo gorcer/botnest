@@ -33,6 +33,9 @@ export class Order {
     })
     type: OrderType
 
+    @Column("varchar")
+    pair: string;
+
     @Column("decimal")
     rate: number;
     
@@ -45,6 +48,10 @@ export class Order {
     @Column("decimal")
     amount2: number;
     
+
+    @Column({type: "decimal", default:0})
+    fee: number;
+
     @Column({type: "decimal", default: 0, comment: "How much in close orders put"})
     prefilled: number;
 
@@ -59,9 +66,9 @@ export class Order {
 
     @BeforeInsert()
     beforeInsert() {
-      if (this.type == OrderType.BUY) {
-        this.filled = this.amount1;
-      }
+      // if (this.type == OrderType.BUY) {
+      //   this.filled = this.amount1;
+      // }
       this.createdAtSec = Math.floor(Date.now() / 1000)
     }
 
