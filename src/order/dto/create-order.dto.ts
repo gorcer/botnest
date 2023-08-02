@@ -9,5 +9,6 @@ export class CreateOrderDto {
     amount2: number;
     fee?: number;
     parentId?: number;
-    type?: OrderType
+    type?: OrderType;
+    pair: string;
 }

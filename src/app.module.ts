@@ -4,7 +4,7 @@ import { Order } from './order/entities/order.entity';
 import { BotModule } from './bot/bot.module';
 import { ConfigModule } from '@nestjs/config';
 import { Balance } from './balance/entities/balance.entity';
-import { LogService } from './log.service';
+import { FileLogService } from './log/filelog.service';
 
 @Module({
   imports: [    
@@ -23,6 +23,6 @@ import { LogService } from './log.service';
     BotModule
   ],
   controllers: [],
-  providers: [ LogService],
+  providers: [ FileLogService],
 })
 export class AppModule {}

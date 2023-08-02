@@ -37,7 +37,7 @@ export class OrderService {
     return `This action removes a #${id} order`;
   }
 
-  async getActiveOrdersAboveProfit(currentRate: number, dailyProfit:number, yerlyProfit:number): Promise<Array<Order>> {
+  async getActiveOrdersAboveProfit(pair:string, currentRate: number, dailyProfit:number, yerlyProfit:number): Promise<Array<Order>> {
 
     const profitPerSecDaily = divide(dailyProfit , 365 * 24 * 60 * 60, 15);
     const profitPerSecYerly = divide(yerlyProfit , 365 * 24 * 60 * 60, 15);
@@ -60,7 +60,8 @@ export class OrderService {
     .andWhere(`"order".rate < ${currentRate}`)
     .andWhere(`"order"."createdAtSec" < ${(now+1)}`)    
     .andWhere('"order"."isActive" = true')
-    .andWhere('"order"."prefilled" < "order"."amount1"')    
+    .andWhere('"order"."prefilled" < "order"."amount1"')   
+    .andWhere('"order"."pair" = :pair', {pair}) 
     .getMany();
 
   }

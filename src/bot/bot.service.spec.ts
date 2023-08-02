@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BotService } from './bot.service';
-import { LogService } from '../log.service';
+import { LogService } from '../log/log.service';
 import { equal, notEqual } from 'assert';
 import { OrderService } from '../order/order.service';
 import { BalanceService } from '../balance/balance.service';
@@ -10,7 +10,8 @@ import { TestBalanceService } from '../balance/mock/testbalance.service';
 import { MockedApiService } from '../exchange/mock/mockedapi.service';
 import { MockedExchange } from '../exchange/mock/mocked.exchange';
 import { Order } from '../order/entities/order.entity';
-import { SilentLogService } from '../silentlog.service';
+import { SilentLogService } from '../log/silentlog.service';
+import { ApiService } from '../exchange/api.service';
 
 const { divide, subtract, multiply, compareTo, add } = require("js-big-decimal");
 
@@ -47,13 +48,28 @@ describe('BotService', () => {
           useClass: TestOrderService,
         },
         {
-          provide: 'API',
+          provide: ApiService,
           useClass: MockedApiService
         },        
       ],
     }).compile();
 
-    bot = module.get<BotService>(BotService);
+    bot = await module.resolve<BotService>(BotService);
+    bot.setConfig({          
+      pair: process.env.BOT_CURRENCY1 +'/'+ process.env.BOT_CURRENCY2,
+      orderAmount: Number( process.env.BOT_ORDER_AMOUNT ),
+      currency1: process.env.BOT_CURRENCY1,
+      currency2: process.env.BOT_CURRENCY2,
+      orderProbability: Number( process.env.BOT_ORDER_PROBABILITY ),
+      minDailyProfit: Number(process.env.BOT_MIN_DAILY_PROFIT), // % годовых если сделка закрывается за день
+      minYearlyProfit: Number(process.env.BOT_MIN_YERLY_PROFIT), // % годовых если сделка живет больше дня
+      minBuyRateMarginToProcess: Number(process.env.BOT_MIN_BUY_RATE_MARGIN), // минимальное движение курса для проверки х100=%
+      minSellRateMarginToProcess: Number(process.env.BOT_MIN_SELL_RATE_MARGIN), // минимальное движение курса для проверки х100=%
+      sellFee:  Number(process.env.BOT_SELL_FEE),
+      balanceSync: process.env.BOT_BALANCE_SYNC == 'true'
+    });
+
+
     const exchangeService = module.get<MockedApiService>(MockedApiService);
     exchange = exchangeService.getExchange();
   });
@@ -62,6 +78,12 @@ describe('BotService', () => {
   const simpleBuyAndSell = async function (buyPrice, amount, sellPrice) {
     const buyCost = buyPrice * amount;
     const sellCost = sellPrice * amount;
+
+    exchange.setTickers({
+      'BNB/USDT': {
+        last: 20
+      }
+    });
 
     await bot.syncData(); 
 
@@ -75,11 +97,8 @@ describe('BotService', () => {
       }
     });
 
-
     // Покупаем        
     const {order} = await bot.createBuyOrder(buyPrice, amount);      
-   
-
         
     exchange.setNextOrder({      
       price: sellPrice,
@@ -172,12 +191,20 @@ describe('BotService', () => {
     const sellCost = sellPrice * amount;
     const buyFeeCost=0.01;
     const sellFeeCost=0.001;
-    const expectedProfit=((sellPrice - buyPrice) * amount) - buyFeeCost - sellFeeCost;
+    const BNBUSDTRate=20;
+    const expectedProfit=((sellPrice - buyPrice) * amount) - buyFeeCost - (sellFeeCost * BNBUSDTRate);
+
+    exchange.setTickers({
+      'BNB/USDT': {
+        last: BNBUSDTRate
+      }
+    });
 
     await bot.syncData(); 
 
     let balanceBTC:number = await bot.balance.getBalanceAmount('BTC');
     let balanceUSDT:number = await bot.balance.getBalanceAmount('USDT');
+    let balanceBNB:number = await bot.balance.getBalanceAmount('BNB');
 
     // Подготавливаем данные для покупки    
     exchange.setNextOrder({      
@@ -185,7 +212,8 @@ describe('BotService', () => {
       amount: amount,
       cost: buyCost,
       fee: {
-          cost:buyFeeCost
+          cost:buyFeeCost,
+          currency:'USDT',
       }
     });
 
@@ -218,7 +246,8 @@ describe('BotService', () => {
       amount: amount,
       cost: sellCost,
       fee: {
-          cost: sellFeeCost
+          cost: sellFeeCost,
+          currency:'BNB',
       }
     });
 
@@ -238,7 +267,8 @@ describe('BotService', () => {
       amount: amount,
       cost: sellCost,
       fee: {
-          cost: sellFeeCost
+          cost: sellFeeCost,
+          currency:'BNB',
       },
       filled: amount,
     });
@@ -248,8 +278,11 @@ describe('BotService', () => {
     equal(closeOrder.filled, amount);
     equal(order.profit, expectedProfit);
 
-    balanceUSDT = subtract(add(balanceUSDT, sellCost), sellFeeCost);
+    balanceUSDT = add(balanceUSDT, sellCost);
     equal(balanceUSDT, await bot.balance.getBalanceAmount('USDT'));
+
+    balanceBNB = subtract(balanceBNB, sellFeeCost);
+    equal(balanceBNB, await bot.balance.getBalanceAmount('BNB'));
 
   });
 });

@@ -1,10 +1,10 @@
-import { AfterInsert, BeforeInsert, Column, CreateDateColumn, Double, Entity, Index, PrimaryGeneratedColumn } from "typeorm";
+import {  BeforeInsert, Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from "typeorm";
+
 
 export enum OrderType {
     BUY = "buy",
     SELL = "sell"
 }
-
 
 @Entity()
 @Index(['rate','createdAtSec','amount1','prefilled','isActive'])
@@ -18,7 +18,7 @@ export class Order {
     @Column("int")
     createdAtSec: number;
     
-    @Column("int")
+    @Column("varchar")
     extOrderId: string;
     
     @Index()
@@ -33,7 +33,8 @@ export class Order {
     })
     type: OrderType
 
-    @Column("varchar")
+    @Index()
+    @Column({type:"varchar",default:'BTC/USDT'})
     pair: string;
 
     @Column("decimal")

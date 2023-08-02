@@ -27,7 +27,15 @@ export class MockedExchange {
     orders=[];
     orderbook=[];
     lastOrderId=0;
+    tickers={};
 
+    setTickers(tickers) {
+        this.tickers = tickers;
+    }
+
+    fetchTickers() {
+        return this.tickers;
+    }
    
     setNextOrderBook(bid:number, ask:number) {
         this.orderbook.push({

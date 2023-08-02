@@ -64,4 +64,8 @@ export class BaseApiService {
         return this.exchange.fetchTickers();
     }
 
+    public async fetchTrades(pair, since) {
+        return this.exchange.fetchTrades(pair, since);
+    }
+
 }

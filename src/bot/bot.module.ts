@@ -4,7 +4,7 @@ import { OrderModule } from '../order/order.module';
 import { BalanceService } from '../balance/balance.service';
 import { ApiService } from '../exchange/api.service';
 import { BalanceModule } from '../balance/balance.module';
-import { LogService } from '../log.service';
+import { FileLogService } from '../log/filelog.service';
 
 
 @Module({
@@ -14,7 +14,7 @@ import { LogService } from '../log.service';
   ],
   controllers: [],
   providers: [
-    LogService,
+    FileLogService,
     BotService, 
     BalanceService,    
     ApiService,    

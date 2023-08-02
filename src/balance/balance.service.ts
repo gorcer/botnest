@@ -4,6 +4,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Balance } from "./entities/balance.entity";
 import { Repository } from "typeorm";
 import { lock } from "../helpers";
+import { FileLogService } from "../log/filelog.service";
 const { compareTo } = require("js-big-decimal");
 
 const { multiply, add } = require( "js-big-decimal" );
@@ -11,11 +12,13 @@ const { multiply, add } = require( "js-big-decimal" );
 @Injectable()
 export class BalanceService {
     
-    balances: BalancesDto;
+    balances: BalancesDto = {};
 
     constructor(
         @InjectRepository(Balance)
-        private balanceRepository: Repository<Balance>
+        private balanceRepository: Repository<Balance>,
+        private log: FileLogService,    
+
       ) {}
 
     public async set(balances:BalancesDto) {
@@ -28,29 +31,45 @@ export class BalanceService {
                         currency,                    
                     });
                     if (!balance) {
-                        balance = await this.balanceRepository.create({
-                            currency,                   
-                            amount
-                        });                    
+                        if (compareTo(amount, 0)>0) {
+                            balance = await this.balanceRepository.create({
+                                currency,                   
+                                amount
+                            });       
+                        }             
                     } else {
 
                         if (compareTo(balance.amount, amount) !=0) {
-                            console.log('Balance discrepancy', currency, 'Need:', balance.amount, 'Reel:', amount);
+                            this.log.info('Balance discrepancy', currency, 'Need:', balance.amount, 'Reel:', amount);
                         }
                         balance.amount = amount;                    
                     }
-                    await this.balanceRepository.save(balance);
+
+                    if (balance)
+                        await this.balanceRepository.save(balance);
             }
         });
 
     }
 
+    public async loadBalancesAmount() {
+        const balances = await this.balanceRepository.find();
+        for (const balance of balances) {
+            this.balances[balance.currency] = balance.amount;
+        }
+    }
 
     public async getBalanceAmount(currency: string) {
+
+        if (this.balances[currency] != undefined) {
+            return this.balances[currency];
+        }
+
         let balance = await this.balanceRepository.findOneBy({
             currency,                    
         });
         if (balance) {
+            this.balances[currency] = balance.amount;
             return balance.amount;
         } else {
             return 0;
@@ -58,6 +77,11 @@ export class BalanceService {
     }
 
     public async income(currency:string, amount:number) {
+        
+        if (this.balances[currency] != undefined) {
+            this.balances[currency] = add(this.balances[currency], amount);
+        }
+
         let balance = await this.balanceRepository.findOneBy({
             currency,                    
         });
@@ -65,6 +89,11 @@ export class BalanceService {
             balance.amount = add(balance.amount, amount);
         }
         await this.balanceRepository.save(balance);
+
+
+        
+
+
         return balance;
     }
 

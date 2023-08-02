@@ -34,6 +34,7 @@
     "async-lock": "^1.4.0",
     "ccxt": "^4.0.32",
     "class-validator": "^0.14.0",
+    "fs": "^0.0.1-security",
     "graphql": "^16.7.1",
     "js-big-decimal": "^1.4.1",
     "nest-commander": "^3.11.0",
@@ -41,7 +42,8 @@
     "postgresql": "^0.0.1",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.1",
-    "typeorm": "^0.3.17"
+    "typeorm": "^0.3.17",
+    "typeorm-transactional-cls-hooked": "^0.1.21"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.1.10",
