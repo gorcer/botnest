@@ -10,11 +10,12 @@
 
 
 ```
-git clone ...
+git clone git@github.com:gorcer/botnest.git
+cd botnest
 ```
 
 ```
-copy .env.example to .env
+cp .env.example .env
 ```
 
 
