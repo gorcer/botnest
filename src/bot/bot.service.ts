@@ -4,7 +4,7 @@ import { OrderService } from "../order/order.service";
 import { LogService } from "../log/log.service";
 import { Order, OrderType } from "../order/entities/order.entity";
 import { UpdateOrderDto } from "../order/dto/update-order.dto";
-import { lock, sleep } from "../helpers";
+import { HOUR, elapsedSecondsFrom, lock, sleep } from "../helpers";
 import { ApiService } from "../exchange/api.service";
 import { Ticker } from "ccxt";
 import { FileLogService } from "../log/filelog.service";
@@ -26,18 +26,15 @@ interface Config {
 	balanceSync: boolean
 }
 
-//https://stackoverflow.com/questions/71306315/how-to-pass-constructor-arguments-to-a-nestjs-provider
-// https://docs.nestjs.com/fundamentals/custom-providers
-
 @Injectable({ scope: Scope.TRANSIENT })
 export class BotService {
 
 	config: Config;
-
-	private touchedOrders = {};
+	
 	private minAmount: number;
 	private minCost: number;
 	private tickers = {};
+	private user_id = 0;
 
 
 	constructor(
@@ -60,12 +57,15 @@ export class BotService {
 			lastAsk: number = 1,
 			lastBid: number = 1,
 			lastStatUpdate = 0,
-			lastTradesUpdate = Date.now() - 7*24*60*60*1000,
+			lastTradesUpdate = Date.now(),
 			syncStatus = false;
 
 		while (!syncStatus) {
 			try {
 				await this.syncData();
+
+				// проверить состояние открытых ордеров
+				await this.checkCloseOrders();
 				syncStatus=true;
 			} catch (e) {
 				
@@ -79,43 +79,38 @@ export class BotService {
 
 			try {
 
-				if ((Date.now() - lastStatUpdate) > 60 * 60 * 1000) {
+				if (elapsedSecondsFrom(HOUR, lastStatUpdate)) {
 					await this.saveStat();
 					lastStatUpdate = Date.now();
 				}
 
-				if ((Date.now() - lastTradesUpdate) > 5 * 60 * 1000) {
-					await this.checkLastTrades(lastTradesUpdate);					
-				}
+				if (elapsedSecondsFrom(HOUR, lastTradesUpdate)) {
+					await this.checkCloseOrders();		
+					lastTradesUpdate = Date.now();			
+				}				
+
+				const { bid: rateBid, ask: rateAsk } = await this.api.getActualRates(this.config.pair);
 				
 
-				const ratesInfo = await this.api.getActualRates(this.config.pair);
-				if (!ratesInfo) {
-					continue;
-				}
-				const { bid: rateBid, ask: rateAsk } = ratesInfo;
-
-
-
 				if (this.isSuitableRate(rateAsk, lastAsk, this.config.minBuyRateMarginToProcess)) {
-					this.log.info('Rate ask: ', rateAsk);
-					await this.tryToBuy(rateAsk);
+					
+					await this.tryToBuy(rateAsk, this.user_id);
 					lastAsk = rateAsk;
+					this.log.info('Rate ask: ', rateAsk);
 				}
 
 				if (this.isSuitableRate(rateBid, lastBid, this.config.minSellRateMarginToProcess)) {
-					this.log.info('Rate bid: ', rateBid);
-					await this.tryToSell(rateBid);
+					
+					const closedOrders = await this.tryToSell(rateBid);
+					if (closedOrders.length) { // если что-то закрылось, то можно снова купить
+						lastAsk=0;
+					}
+
 					lastBid = rateBid;
+					this.log.info('Rate bid: ', rateBid);
 				}
 
-				if (
-					!this.isSuitableRate(rateBid, lastBid, this.config.minBuyRateMarginToProcess) &&
-					!this.isSuitableRate(rateAsk, lastAsk, this.config.minSellRateMarginToProcess)) {
-					await sleep(1);
-				}
-
-				await this.checkTouchedOrders();
+				// await sleep(1);
 				
 			} catch (e) {
 				
@@ -127,7 +122,6 @@ export class BotService {
 	}
 
 	private async saveStat() {
-
 
 		const balance1 = await this.balance.getBalanceAmount(this.config.currency1);
 		const balance2 = await this.balance.getBalanceAmount(this.config.currency2);
@@ -150,62 +144,19 @@ export class BotService {
 		return compareTo(margin, needMargin) > 0;
 	}
 
-	private async checkLastTrades(since) {
-		
-		const trades = await this.api.fetchTrades(this.config.pair, since);
 
-		if (trades.length) {
-			for (const trade of trades) {
-				if (trade.side == 'buy')
-						continue;
-	
-				this.touchedOrders[trade.order] = true;
-			}
-			since = trades[trades.length - 1]['timestamp'] + 1
-		}
+	public async checkCloseOrder(order: Order, extOrder?): Promise<Order>  {
 
-		return since;
-	}
-
-	private async checkTouchedOrders() {
-	
-
-		// actualize orders
-		// this.api.watchTrades(this.config.pair).then(async trades => {
-
-		// 	for (const trade of trades) {
-
-		// 		// this.log.info('New Trade', trade.order, trade.side, trade.amount);
-
-		// 		if (trade.side == 'buy')
-		// 			continue;
-
-		// 		this.touchedOrders[trade.order] = true;
-		// 	}
-
-		// }).catch(e => {
-		// 	this.log.error('watchTrades', e.message, e.stack);
-		// });
-		if (Object.values(this.touchedOrders).length > 0) {
-			for (const extOrderId of Object.keys(this.touchedOrders)) {
-				const order = await this.order.findOne({ extOrderId });
-				await this.checkCloseOrder(order);
-				delete this.touchedOrders[extOrderId];
-			}
-		}
-	}
-
-
-	public async checkCloseOrder(order: Order) {
-
-		await lock.acquire('Balance', async () => {
+		return await lock.acquire('Balance', async () => {
 
 			this.log.info('Check order', order.extOrderId);
 
 			if (!order.isActive || order.type != OrderType.SELL)
 				return;
 
-			const extOrder = await this.api.fetchOrder(Number(order.extOrderId), this.config.pair);
+			if(!extOrder)
+				extOrder = await this.api.fetchOrder(Number(order.extOrderId), this.config.pair);
+
 			if (compareTo(extOrder.filled, extOrder.amount) == 0) {
 
 				const fee = extOrder.fees[0];
@@ -228,23 +179,29 @@ export class BotService {
 					const totalAmount2 = await this.order.getSumByParentId(parentOrder.id, 'amount2');
 					updateOrderDto.isActive = false;
 					updateOrderDto.profit = subtract(
-						subtract(
-							subtract(
-								totalAmount2,
-								parentOrder.amount2
-							),
-							feeInCurrency2Cost
-						),
-						parentOrder.fee
-					);
+												subtract(
+													subtract(
+														totalAmount2,
+														parentOrder.amount2
+													),
+													feeInCurrency2Cost
+												),
+												parentOrder.fee
+											);
 
 				}
 
 				await this.order.update(parentOrder.id, updateOrderDto);
-				this.log.info('Close order ', parentOrder.extOrderId, 'Profit: ', updateOrderDto.profit);
+				this.log.info('Close order ', 
+					parentOrder.extOrderId, 'Profit: ', 
+					updateOrderDto.profit,
+					extOrder
+				);
 
+				return order;
 			}
 
+			return false;
 
 		});
 
@@ -256,7 +213,7 @@ export class BotService {
 			await this.balance.set(await this.api.fetchBalances());
 	}
 
-	private async tryToBuy(rate: number) {
+	private async tryToBuy(rate: number, user_id: number) {
 
 		const amount1: number = this.checkLimits(rate, this.config.orderAmount);
 		const amount2: number = multiply(rate, amount1);
@@ -264,7 +221,7 @@ export class BotService {
 
 		if (compareTo(balance2, amount2) > 0) {
 
-			await this.createBuyOrder(rate, amount1);
+			await this.createBuyOrder(user_id, rate, amount1);
 			await this.checkBalance();
 			return true;
 		} else {
@@ -312,15 +269,13 @@ export class BotService {
 
 		for (const order of orders) {
 			await this.createCloseOrder(rate, order);
-		}
+		}		
 
-		if (orders.length > 0) {
-			await this.checkBalance();
-		}
+		return orders;
 	}
 
 
-	public async createBuyOrder(price: number, amount1: number) {
+	public async createBuyOrder(user_id:number, price: number, amount1: number) {
 
 		return await lock.acquire('Balance', async () => {
 			this.log.info('Try to buy', price, amount1, multiply(amount1, price));
@@ -341,7 +296,8 @@ export class BotService {
 					rate: extOrder.price,
 					amount1: extOrder.amount,
 					amount2: extOrder.cost,
-					fee: feeInCurrency2Cost
+					fee: feeInCurrency2Cost,
+					userId: user_id
 				});
 
 				await this.balance.income(this.config.currency1, extOrder.amount);
@@ -356,10 +312,10 @@ export class BotService {
 					order.rate,
 					order.amount1,
 					order.amount2,
+					extOrder, 
 					// 'Balance 1: ' + await this.balance.getBalanceAmount(this.config.currency1),
 					// 'Balance 2: ' + await this.balance.getBalanceAmount(this.config.currency2),
 					// 'Active orders: '+OrderService.getActiveOrdersCount()
-					// extOrder, 
 					// order
 				);
 
@@ -411,28 +367,45 @@ export class BotService {
 					amount1: extOrder.amount,
 					amount2: multiply(extOrder.amount, extOrder.price),
 					parentId: order.id,
-					type: OrderType.SELL
+					type: OrderType.SELL,
+					userId: order.userId
 				});
 
 				await this.balance.outcome(this.config.currency1, closeOrder.amount1);
 
 				await this.order.update(order.id, { prefilled: add(order.prefilled, extOrder.amount) })
 
+				await this.checkCloseOrder(closeOrder, extOrder);
+
 				this.log.info("New close order",
 					closeOrder.extOrderId,
-					order.rate,
-					order.amount1,
-					order.amount2,
+					closeOrder.rate,
+					closeOrder.amount1,
+					closeOrder.amount2,
+					extOrder
 				);
 			}
 		});
-
-		// Сразу проверяем
-		if (closeOrder) {
-			this.touchedOrders[closeOrder.extOrderId] = true;
-		}
+		
 
 		return closeOrder;
+	}
+
+
+	async checkCloseOrders(): Promise<Array<Order>> {
+		const closedOrders:Array<Order>  = [];
+		const orders = await this.order.findAll({ isActive: true, type: OrderType.SELL });
+		for (const order of orders) {
+			const closedOrder = await this.checkCloseOrder(order);
+			if (closedOrder)
+				closedOrders.push(closedOrder);
+		}
+		if (closedOrders.length > 0) {
+			await this.checkBalance();
+		}
+
+		return closedOrders;
+
 	}
 
 	async syncData() {
@@ -449,13 +422,7 @@ export class BotService {
 
 		// тут нужно загрузить в базу текущий баланс и в текущую переменную
 		await this.balance.loadBalancesAmount();
-		await this.checkBalance();
-
-		// проверить состояние открытых ордеров
-		const orders = await this.order.findAll({ isActive: true, type: OrderType.SELL });
-		for (const order of orders) {
-			await this.checkCloseOrder(order);
-		}
+		await this.checkBalance();		
 
 		this.log.info('Ok');
 	}

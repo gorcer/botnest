@@ -34,3 +34,4 @@ tests/
 .nyc_output
 .git
 .env
+_log

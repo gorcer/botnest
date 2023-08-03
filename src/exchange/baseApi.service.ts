@@ -12,10 +12,8 @@ export class BaseApiService {
     public async getActualRates(pair:string) {
         const orderBook = await this.exchange.fetchOrderBook(pair, 5);
 
-        if (orderBook.bids[0] == undefined || orderBook.asks[0] == undefined)  {
-            console.log('Can`t fetch rates ');
-            // console.log(orderBook);
-            return false;
+        if (orderBook.bids[0] == undefined || orderBook.asks[0] == undefined)  {            
+            throw new Error('Can`t fetch rates');
         }
 
         const bid = orderBook.bids[0][0];

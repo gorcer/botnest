@@ -11,4 +11,5 @@ export class CreateOrderDto {
     parentId?: number;
     type?: OrderType;
     pair: string;
+    userId: number;
 }

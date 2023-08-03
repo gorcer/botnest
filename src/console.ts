@@ -14,7 +14,7 @@ async function bootstrap() {
     case 'trade':
         const bot = await app.resolve(BotService);
         
-        bot.setConfig({          
+        bot.setConfig({                    
           pair: process.env.BOT_CURRENCY1 +'/'+ process.env.BOT_CURRENCY2,
           orderAmount: Number( process.env.BOT_ORDER_AMOUNT ),
           currency1: process.env.BOT_CURRENCY1,

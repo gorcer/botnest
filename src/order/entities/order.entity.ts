@@ -18,6 +18,10 @@ export class Order {
     @Column("int")
     createdAtSec: number;
     
+    @Index()
+    @Column({type: "int", default: 1})    
+    userId: number;
+
     @Column("varchar")
     extOrderId: string;
     
@@ -48,7 +52,6 @@ export class Order {
 
     @Column("decimal")
     amount2: number;
-    
 
     @Column({type: "decimal", default:0})
     fee: number;

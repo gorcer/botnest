@@ -16,3 +16,9 @@ export function updateModel(model, params) {
         model[key] = value;
     }
 }
+
+export function elapsedSecondsFrom(sec, from) {
+   return (Date.now() - from) > sec;
+}
+
+export const HOUR = 60 * 60 * 1000;
