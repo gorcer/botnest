@@ -1,10 +1,10 @@
 # Nest.JS + CCXT Trading Bot
 
-This bot uses simple strategy:
+This bot uses a simple strategy:
 1) Random buying a Bitcoin on Binance
-2) Try to sell it in the current day with 300% anual profit
-3) If it didn't happend try to sell with 30% anual profit on the next day and the ones after that
-4) Buying will be close when the bot can sell it with 30% anual profit, it may takes one day, one week or ten years....
+2) Try to sell it on the current day with 300% anual profit
+3) If it didn't happend try to sell it with 30% anual profit on the next day and the ones after that
+4) The Buying will be close when the bot can sell it with 30% anual profit, it may takes one day, one week or ten years....
 5) Anyway you guaranteed take your 30% anual profit, just be patient)
 
 ## Requirements:
