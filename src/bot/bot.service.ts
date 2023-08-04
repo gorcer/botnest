@@ -77,7 +77,7 @@ export class BotService {
 
 		while (true) {
 
-			try {
+			// try {
 
 				if (elapsedSecondsFrom(HOUR, lastStatUpdate)) {
 					await this.saveStat();
@@ -112,11 +112,11 @@ export class BotService {
 
 				// await sleep(1);
 				
-			} catch (e) {
+			// } catch (e) {
 				
-				this.log.error('Trade error...wait 60 sec', e.message, e.stack);
-				await sleep(60);
-			}
+			// 	this.log.error('Trade error...wait 60 sec', e.message, e.stack);
+			// 	await sleep(60);
+			// }
 
 		}
 	}
