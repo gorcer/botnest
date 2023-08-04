@@ -32,6 +32,7 @@ async function bootstrap() {
 
         break;   
   }
+  console.log('EXIT');
   await app.close();
   process.exit(0);
 }
