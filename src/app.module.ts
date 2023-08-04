@@ -17,7 +17,7 @@ import { FileLogService } from './log/filelog.service';
       password:  process.env.DB_PASS,
       database:  process.env.DB_NAME,
       entities: [Order, Balance],
-      synchronize: true,
+      synchronize: false,
       // logging: true
     }),        
     BotModule

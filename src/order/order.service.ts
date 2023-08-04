@@ -37,7 +37,7 @@ export class OrderService {
     return `This action removes a #${id} order`;
   }
 
-  async getActiveOrdersAboveProfit(currentRate: number, dailyProfit:number, yerlyProfit:number): Promise<Array<Order>> {
+  async getActiveOrdersAboveProfit(currency1:string, currency2:string, currentRate: number, dailyProfit:number, yerlyProfit:number): Promise<Array<Order>> {
 
     const profitPerSecDaily = divide(dailyProfit , 365 * 24 * 60 * 60, 15);
     const profitPerSecYerly = divide(yerlyProfit , 365 * 24 * 60 * 60, 15);
@@ -56,6 +56,8 @@ export class OrderService {
             ( ${profitPerSecYerly} * (${now} - "order"."createdAtSec") )
         end        
         `) // Calculate annual profitability
+    .andWhere(`"order".currency1 = :currency1`, { currency1 })
+    .andWhere(`"order".currency2 = :currency1`, { currency2 })
     .andWhere(`"order".side = :side`, { side: OrderSideEnum.BUY })
     .andWhere(`"order".rate < ${currentRate}`)
     .andWhere(`"order"."createdAtSec" < ${(now+1)}`)    

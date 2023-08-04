@@ -24,7 +24,7 @@ export class ApiService {
 
     }
 
-    public async getActualRates(pair:string) {
+    public async getActualRates(pair:string):Promise<{bid:number, ask:number}> {
         const orderBook = await this.exchange.fetchOrderBook(pair, 5);
 
         if (orderBook.bids[0] == undefined || orderBook.asks[0] == undefined)  {            
@@ -37,7 +37,7 @@ export class ApiService {
         return {bid, ask};
     }
 
-    public async getLimits(pair: string) {
+    public async getLimits(pair: string):Promise<{minAmount:number, minCost:number}> {
         const markets = (await this.exchange.fetchMarkets()).filter((item) => item.symbol == pair);
         const {amount, cost} = markets[0].limits;
 
@@ -81,6 +81,10 @@ export class ApiService {
         return this.exchange.fetchTrades(pair, since);
     }
 
+    async getLastPrice(pair) {
+        const tickers = await this.fetchTickers();
+        return tickers[pair].last;
+    }
 
 }
 

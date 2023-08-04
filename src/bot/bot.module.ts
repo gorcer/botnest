@@ -5,7 +5,6 @@ import { BalanceService } from '../balance/balance.service';
 import { BalanceModule } from '../balance/balance.module';
 import { FileLogService } from '../log/filelog.service';
 import { PublicApiService } from '../exchange/publicApi.service';
-import { OrderBookService } from './orderBook.service';
 import { ExchangeModule } from '../exchange/exchange.module';
 import { AccountService } from '../exchange/account.service';
 import { LonelyTraderService } from './lonelyTrader.service';
