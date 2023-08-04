@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Order, OrderType } from './entities/order.entity';
+import { Order, OrderSideEnum } from './entities/order.entity';
 import { Repository } from 'typeorm';
 const { divide } = require('js-big-decimal');
 
@@ -37,7 +37,7 @@ export class OrderService {
     return `This action removes a #${id} order`;
   }
 
-  async getActiveOrdersAboveProfit(pair:string, currentRate: number, dailyProfit:number, yerlyProfit:number): Promise<Array<Order>> {
+  async getActiveOrdersAboveProfit(currentRate: number, dailyProfit:number, yerlyProfit:number): Promise<Array<Order>> {
 
     const profitPerSecDaily = divide(dailyProfit , 365 * 24 * 60 * 60, 15);
     const profitPerSecYerly = divide(yerlyProfit , 365 * 24 * 60 * 60, 15);
@@ -45,9 +45,8 @@ export class OrderService {
     const now = Math.floor(Date.now() / 1000);
   
     return await this.ordersRepository
-    .createQueryBuilder("order")
-    .where("order.type = :type", { type: OrderType.BUY })
-    .andWhere(`100*((${currentRate} / order.rate)-1) >= 
+    .createQueryBuilder("order")    
+    .where(`100*((${currentRate} / order.rate)-1) >= 
         case 
           when 
             (${now} - "order"."createdAtSec") < ${secondsInDay}
@@ -57,11 +56,11 @@ export class OrderService {
             ( ${profitPerSecYerly} * (${now} - "order"."createdAtSec") )
         end        
         `) // Calculate annual profitability
+    .andWhere(`"order".side = :side`, { side: OrderSideEnum.BUY })
     .andWhere(`"order".rate < ${currentRate}`)
     .andWhere(`"order"."createdAtSec" < ${(now+1)}`)    
     .andWhere('"order"."isActive" = true')
     .andWhere('"order"."prefilled" < "order"."amount1"')   
-    .andWhere('"order"."pair" = :pair', {pair}) 
     .getMany();
 
   }

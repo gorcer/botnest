@@ -12,24 +12,28 @@ export class TestBalanceService {
     constructor(        
       ) {}
 
-    public async set(balances:BalancesDto) {
+    public async set(accountId, balances:BalancesDto) {
 
         this.balances = balances;
 
     }
 
 
-    public async getBalanceAmount(currency: string) {
+    public async getBalanceAmount(accountId, currency: string) {
         return this.balances[currency];
     }
 
-    public async income(currency:string, amount:number) {
+    public async income(accountId, currency:string, amount:number) {
         this.balances[currency] = add(this.balances[currency], amount);
         return this.balances[currency];
     }
 
-    public async outcome(currency:string, amount:number) {
-        return this.income(currency, multiply(-1, amount));
+    public async outcome(accountId, currency:string, amount:number) {
+        return this.income(accountId, currency, multiply(-1, amount));
+    }
+
+    public async loadBalancesAmount(accountId)  {
+
     }
 
 

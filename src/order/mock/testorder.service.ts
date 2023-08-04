@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { CreateOrderDto } from '../dto/create-order.dto';
 import { UpdateOrderDto } from '../dto/update-order.dto';
-import { Order, OrderType } from '../entities/order.entity';
+import { Order, OrderSideEnum } from '../entities/order.entity';
 import { updateModel } from '../../helpers';
 const { add,divide } = require('js-big-decimal');
 
@@ -25,7 +25,7 @@ export class TestOrderService {
       order.profit=0;
 
       if (!order.type)
-        order.type = OrderType.BUY;
+        order.type = OrderSideEnum.BUY;
 
       
       this.orders[order.id] = order;

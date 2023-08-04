@@ -1,13 +1,15 @@
-import { Column, Double, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Double, Entity, Index, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity()
 export class Balance {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column({type: "int", nullable: true})
-    user_id: number;    
+    @Index()
+    @Column({type: "int", default: 1})
+    accountId: number;    
     
+    @Index()
     @Column("varchar")
     currency: string;    
 

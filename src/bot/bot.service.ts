@@ -2,12 +2,15 @@ import { Inject, Injectable, Scope } from "@nestjs/common";
 import { BalanceService } from "../balance/balance.service";
 import { OrderService } from "../order/order.service";
 import { LogService } from "../log/log.service";
-import { Order, OrderType } from "../order/entities/order.entity";
+import { Order, OrderSideEnum } from "../order/entities/order.entity";
 import { UpdateOrderDto } from "../order/dto/update-order.dto";
 import { HOUR, elapsedSecondsFrom, lock, sleep } from "../helpers";
 import { ApiService } from "../exchange/api.service";
-import { Ticker } from "ccxt";
+import {Ticker, pro as ccxt} from 'ccxt';
 import { FileLogService } from "../log/filelog.service";
+import { OrderBookService } from "./orderBook.service";
+import { AccountService } from "../exchange/account.service";
+import { PublicApiService } from "../exchange/publicApi.service";
 
 
 const { divide, subtract, multiply, compareTo, add } = require("js-big-decimal");
@@ -26,30 +29,38 @@ interface Config {
 	balanceSync: boolean
 }
 
-@Injectable({ scope: Scope.TRANSIENT })
+@Injectable()
 export class BotService {
 
-	config: Config;
-	
+
 	private minAmount: number;
 	private minCost: number;
 	private tickers = {};
-	private user_id = 0;
-
+	private accountId = 1;
+	private config:any={};
 
 	constructor(
 
 		public balance: BalanceService,
 		private order: OrderService,
 		private log: FileLogService,
-		private api: ApiService,
+		private publicApi: PublicApiService,
+		private accounts: AccountService,		
 
-	) { }
+	) {
+
+	
+	 }
 
 
-	setConfig(config: Config) {
+	 setConfig(config) {
 		this.config = config;
+	 }
+
+	setAccount(accountId) {
+		this.accountId = accountId;
 	}
+
 
 	async trade() {
 
@@ -62,7 +73,7 @@ export class BotService {
 
 		while (!syncStatus) {
 			try {
-				await this.syncData();
+				await this.syncData(this.accountId);
 
 				// проверить состояние открытых ордеров
 				await this.checkCloseOrders();
@@ -77,10 +88,10 @@ export class BotService {
 
 		while (true) {
 
-			// try {
+			try {
 
 				if (elapsedSecondsFrom(HOUR, lastStatUpdate)) {
-					await this.saveStat();
+					await this.saveStat(this.accountId);
 					lastStatUpdate = Date.now();
 				}
 
@@ -89,18 +100,16 @@ export class BotService {
 					lastTradesUpdate = Date.now();			
 				}				
 
-				const { bid: rateBid, ask: rateAsk } = await this.api.getActualRates(this.config.pair);
+				const { bid: rateBid, ask: rateAsk } = await this.publicApi.getActualRates(this.accountConfig(this.accountId).pair);
 				
 
-				if (this.isSuitableRate(rateAsk, lastAsk, this.config.minBuyRateMarginToProcess)) {
-					
-					await this.tryToBuy(rateAsk, this.user_id);
+				if (this.isSuitableRate(rateAsk, lastAsk, this.accountConfig(this.accountId).minBuyRateMarginToProcess)) {
+					await this.tryToBuy(this.accountId, rateAsk);
 					lastAsk = rateAsk;
 					this.log.info('Rate ask: ', rateAsk);
 				}
 
-				if (this.isSuitableRate(rateBid, lastBid, this.config.minSellRateMarginToProcess)) {
-					
+				if (this.isSuitableRate(rateBid, lastBid, this.accountConfig(this.accountId).minSellRateMarginToProcess)) {
 					const closedOrders = await this.tryToSell(rateBid);
 					if (closedOrders.length) { // если что-то закрылось, то можно снова купить
 						lastAsk=0;
@@ -109,37 +118,44 @@ export class BotService {
 					lastBid = rateBid;
 					this.log.info('Rate bid: ', rateBid);
 				}
-
-				// await sleep(1);
 				
-			// } catch (e) {
 				
-			// 	this.log.error('Trade error...wait 60 sec', e.message, e.stack);
-			// 	await sleep(60);
-			// }
+			} catch (e) {
+				
+				this.log.error('Trade error...wait 60 sec', e.message, e.stack);
+				await sleep(60);
+			}
 
 		}
 	}
 
-	private async saveStat() {
+	private accountConfig(accountId):Config {
+		return this.accounts.getConfig(accountId);
+	}
 
-		const balance1 = await this.balance.getBalanceAmount(this.config.currency1);
-		const balance2 = await this.balance.getBalanceAmount(this.config.currency2);
-		const rate = this.tickers[this.config.pair];
+	private api(accountId):ApiService {
+		return this.accounts.getApiForAccount(accountId);
+	}
+
+	private async saveStat(accountId) {
+
+		const balance1 = await this.balance.getBalanceAmount(accountId, this.accountConfig(accountId).currency1);
+		const balance2 = await this.balance.getBalanceAmount(accountId, this.accountConfig(accountId).currency2);
+		const rate = this.tickers[this.accountConfig(accountId).pair];
 
 		this.log.stat(
-			this.config.currency1,
+			this.accountConfig(accountId).currency1,
 			balance1,
-			this.config.currency2,
+			this.accountConfig(accountId).currency2,
 			balance2,
-			this.config.currency1 + ' in ' + this.config.currency2,
+			this.accountConfig(accountId).currency1 + ' in ' + this.accountConfig(accountId).currency2,
 			multiply(rate, balance1)
 		);
 
 
 	}
 
-	private isSuitableRate(rate: number, lastRate: number, needMargin:number) {
+	public isSuitableRate(rate: number, lastRate: number, needMargin:number) {
 		const margin = divide(Math.abs(lastRate - rate), lastRate, 15);
 		return compareTo(margin, needMargin) > 0;
 	}
@@ -147,27 +163,30 @@ export class BotService {
 
 	public async checkCloseOrder(order: Order, extOrder?): Promise<Order>  {
 
-		return await lock.acquire('Balance', async () => {
+		const accountId  = order.accountId;
+		
+		
+		return await lock.acquire('Balance'+order.accountId, async () => {
 
 			this.log.info('Check order', order.extOrderId);
 
-			if (!order.isActive || order.type != OrderType.SELL)
+			if (!order.isActive || order.side != OrderSideEnum.SELL)
 				return;
 
 			if(!extOrder)
-				extOrder = await this.api.fetchOrder(Number(order.extOrderId), this.config.pair);
+				extOrder = await this.api(order.accountId).fetchOrder(Number(order.extOrderId), order.pair);
 
 			if (compareTo(extOrder.filled, extOrder.amount) == 0) {
 
 				const fee = extOrder.fees[0];
 				let feeCost = fee?.cost ?? 0;
-				let feeInCurrency2Cost = this.calculateFee(fee);
+				let feeInCurrency2Cost = this.calculateFee(fee, order.currency2);
 
 				await this.order.update(order.id, { isActive: false, filled: extOrder.filled, fee: feeInCurrency2Cost });
 
-				await this.balance.income(this.config.currency2, order.amount2);
+				await this.balance.income(order.accountId, this.accountConfig(accountId).currency2, order.amount2);
 				if (feeCost && fee?.currency) {
-					await this.balance.outcome(fee?.currency, feeCost);
+					await this.balance.outcome(order.accountId, fee?.currency, feeCost);
 				}
 
 				const parentOrder = await this.order.findOne({ id: order.parentId });
@@ -208,21 +227,27 @@ export class BotService {
 
 	}
 
-	private async checkBalance() {
+	private async checkBalance(accountId:number) {
 		if (this.config.balanceSync)
-			await this.balance.set(await this.api.fetchBalances());
+			await this.balance.set(accountId, await this.api(accountId).fetchBalances());
 	}
 
-	private async tryToBuy(rate: number, user_id: number) {
+	public async tryToBuy(accountId: number, rate: number) {
 
-		const amount1: number = this.checkLimits(rate, this.config.orderAmount);
+		const amount1: number = this.checkLimits(rate, this.accountConfig(accountId).orderAmount);
 		const amount2: number = multiply(rate, amount1);
-		const balance2: number = await this.balance.getBalanceAmount(this.config.currency2);
+		const balance2: number = await this.balance.getBalanceAmount(accountId, this.accountConfig(accountId).currency2);
 
 		if (compareTo(balance2, amount2) > 0) {
 
-			await this.createBuyOrder(user_id, rate, amount1);
-			await this.checkBalance();
+			await this.createBuyOrder(
+				accountId, 
+				this.accountConfig(accountId).currency1, 
+				this.accountConfig(accountId).currency2, 
+				rate, 
+				amount1
+				);
+			await this.checkBalance(accountId);
 			return true;
 		} else {
 			this.log.info('Cant buy, needs ' + amount2 + ' but have only ' + balance2);
@@ -250,19 +275,19 @@ export class BotService {
 		return amount1;
 	}
 
-	private canBuy() {
+	private canBuy(accountId) {
 		// Пока это просто рандом
-		return (Math.floor(Math.random() * 100) + 1) <= this.config.orderProbability;
+		return (Math.floor(Math.random() * 100) + 1) <= this.accountConfig(accountId).orderProbability;
 	}
 
 
-	private async tryToSell(rate: number) {
+	public async tryToSell(rate: number) {
 
 		const rateWithSellFee = multiply(rate, (1 - this.config.sellFee));
 
 		this.log.info('Get active orders....');
 		const tm = Date.now();
-		const orders: Array<Order> = await this.order.getActiveOrdersAboveProfit(this.config.pair, rateWithSellFee, this.config.minDailyProfit, this.config.minYearlyProfit);
+		const orders: Array<Order> = await this.order.getActiveOrdersAboveProfit(rateWithSellFee, this.config.minDailyProfit, this.config.minYearlyProfit);
 
 		this.log.info('Ok...' + orders.length + ' orders ..' + ((Date.now() - tm) / 1000) + ' sec');
 
@@ -275,35 +300,36 @@ export class BotService {
 	}
 
 
-	public async createBuyOrder(user_id:number, price: number, amount1: number) {
+	public async createBuyOrder(accountId:number, currency1, currency2, price: number, amount1: number) {
 
-		return await lock.acquire('Balance', async () => {
+		return await lock.acquire('Balance'+accountId, async () => {
 			this.log.info('Try to buy', price, amount1, multiply(amount1, price));
 
-			const extOrder = await this.api.createOrder(this.config.pair, 'market', 'buy', amount1);
+			const extOrder = await this.api(accountId).createOrder(this.accountConfig(accountId).pair, 'market', 'buy', amount1);
 
 			if (extOrder.id != undefined) {
 
 				const fee = extOrder.fees[0];
 				let feeCost = extOrder.fees[0]?.cost ?? 0;
-				let feeInCurrency2Cost = this.calculateFee(extOrder.fees[0]);
+				let feeInCurrency2Cost = this.calculateFee(extOrder.fees[0], currency2);
 
 				// store in db
 				const order = await this.order.create({
-					pair: this.config.pair,
+					currency1,
+					currency2,
 					extOrderId: extOrder.id,
 					expectedRate: price,
 					rate: extOrder.price,
 					amount1: extOrder.amount,
 					amount2: extOrder.cost,
 					fee: feeInCurrency2Cost,
-					userId: user_id
+					accountId
 				});
 
-				await this.balance.income(this.config.currency1, extOrder.amount);
-				await this.balance.outcome(this.config.currency2, extOrder.cost);
+				await this.balance.income(accountId, order.currency1, extOrder.amount);
+				await this.balance.outcome(accountId, order.currency2, extOrder.cost);
 				if (feeCost && fee?.currency) {
-					await this.balance.outcome(fee?.currency, feeCost);
+					await this.balance.outcome(accountId, fee?.currency, feeCost);
 				}
 
 				this.log.info(
@@ -326,7 +352,7 @@ export class BotService {
 	}
 
 
-	private calculateFee(fee) {
+	private calculateFee(fee, currency2) {
 
 		if (!fee || !fee.cost || fee.cost == 0)
 			return 0;
@@ -334,8 +360,8 @@ export class BotService {
 		if (!fee.currency)
 			return fee.cost;
 
-		if (fee.currency != this.config.currency2) {
-			const pair = fee.currency + '/' + this.config.currency2;
+		if (fee.currency != currency2) {
+			const pair = fee.currency + '/' + currency2;
 			const rate = this.tickers[pair];
 			if (!rate) {
 				throw new Error("Unknown fee pair" + pair);
@@ -352,26 +378,28 @@ export class BotService {
 	public async createCloseOrder(price: number, order: Order): Promise<Order> {
 
 		let closeOrder: Order;
+		const accountId = order.accountId;
 
-		await lock.acquire('Balance', async () => {
+		await lock.acquire('Balance'+order.accountId, async () => {
 
-			const extOrder = await this.api.createOrder(this.config.pair, 'limit', 'sell', subtract(order.amount1, order.prefilled), price);
+			const extOrder = await this.api(order.accountId).createOrder(this.accountConfig(accountId).pair, 'limit', 'sell', subtract(order.amount1, order.prefilled), price);
 
 			if (extOrder.id != undefined) {
 				// store in db
 				closeOrder = await this.order.create({
-					pair: this.config.pair,
+					currency1: order.currency1,					
+					currency2: order.currency2,
 					extOrderId: extOrder.id,
 					expectedRate: price,
 					rate: extOrder.price,
 					amount1: extOrder.amount,
 					amount2: multiply(extOrder.amount, extOrder.price),
 					parentId: order.id,
-					type: OrderType.SELL,
-					userId: order.userId
+					side: OrderSideEnum.SELL,
+					accountId: order.accountId
 				});
 
-				await this.balance.outcome(this.config.currency1, closeOrder.amount1);
+				await this.balance.outcome(order.accountId, order.currency1, closeOrder.amount1);
 
 				await this.order.update(order.id, { prefilled: add(order.prefilled, extOrder.amount) })
 
@@ -394,35 +422,40 @@ export class BotService {
 
 	async checkCloseOrders(): Promise<Array<Order>> {
 		const closedOrders:Array<Order>  = [];
-		const orders = await this.order.findAll({ isActive: true, type: OrderType.SELL });
+		const orders = await this.order.findAll({ isActive: true, side: OrderSideEnum.SELL });
 		for (const order of orders) {
 			const closedOrder = await this.checkCloseOrder(order);
 			if (closedOrder)
 				closedOrders.push(closedOrder);
 		}
 		if (closedOrders.length > 0) {
-			await this.checkBalance();
+
+			const accountIds = closedOrders.map(item => item.accountId);
+			for(const accountId of accountIds) {
+				await this.checkBalance(accountId); // @todo подумать про throttling
+			}
+			
 		}
 
 		return closedOrders;
 
 	}
 
-	async syncData() {
+	async syncData(accountId:number) {
 
 		this.log.info('Sync data ....');
 
-		// Загружаем курсы
-		for (const [key, value] of Object.entries((await this.api.fetchTickers()))) {
+		// Загружаем курсы @todo вынеси в publicApi
+		for (const [key, value] of Object.entries((await this.publicApi.fetchTickers()))) {
 			this.tickers[key] = (value as Ticker).last;
 		}
 
-		// Загружаем лимиты
-		({ minAmount: this.minAmount, minCost: this.minCost } = await this.api.getLimits(this.config.pair));
+		// Загружаем лимиты @todo вынеси в publicApi
+		({ minAmount: this.minAmount, minCost: this.minCost } = await this.publicApi.getLimits(this.accountConfig(accountId).pair));
 
 		// тут нужно загрузить в базу текущий баланс и в текущую переменную
-		await this.balance.loadBalancesAmount();
-		await this.checkBalance();		
+		await this.balance.loadBalancesAmount(accountId);
+		await this.checkBalance(accountId);		
 
 		this.log.info('Ok');
 	}

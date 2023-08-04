@@ -1,5 +1,4 @@
-import { OrderType } from "../entities/order.entity";
-
+import { OrderSideEnum } from "../entities/order.entity";
 
 export class CreateOrderDto {    
     extOrderId: string;
@@ -9,7 +8,8 @@ export class CreateOrderDto {
     amount2: number;
     fee?: number;
     parentId?: number;
-    type?: OrderType;
-    pair: string;
-    userId: number;
+    side?: OrderSideEnum;
+    currency1: string;
+    currency2: string;
+    accountId: number;
 }
