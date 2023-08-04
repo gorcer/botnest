@@ -103,7 +103,7 @@ export class BotService {
 					
 					const closedOrders = await this.tryToSell(rateBid);
 					if (closedOrders.length) { // если что-то закрылось, то можно снова купить
-						lastAsk=0;
+						lastAsk=1;
 					}
 
 					lastBid = rateBid;
