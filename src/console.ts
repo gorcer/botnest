@@ -15,7 +15,7 @@ async function bootstrap() {
     case 'trade':
       const bot = await app.resolve(LonelyTraderService);
       await bot.trade();
-
+    console.log('EXIT');
       break;
   }
   await app.close();
