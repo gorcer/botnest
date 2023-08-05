@@ -6,6 +6,7 @@ import { PublicApiService } from "../exchange/publicApi.service";
 import { AccountService } from "../exchange/account.service";
 import { BalanceService } from "../balance/balance.service";
 import { BalancesDto } from "../balance/dto/balances.dto";
+import { OrderService } from "../order/order.service";
 
 const { divide, subtract, multiply, compareTo, add } = require("js-big-decimal");
 
@@ -33,6 +34,7 @@ export class LonelyTraderService {
 		private log: FileLogService,		
 		private accounts: AccountService,
 		private balance: BalanceService,
+		private orders: OrderService,
 
 	) { 
 
@@ -90,12 +92,18 @@ export class LonelyTraderService {
 
 	async trade() {
 
+
+		const lastOrder = await this.orders.getLastOrder(this.accountId);
+
 		let
 			lastAsk: number = 1,
 			lastBid: number = 1,
 			lastStatUpdate = 0,
 			lastTradesUpdate = Date.now(),
 			syncStatus = false;
+
+
+
 
 		while (!syncStatus) {
 			try {

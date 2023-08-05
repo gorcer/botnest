@@ -36,12 +36,6 @@ export class PublicApiService extends ApiService{
           this.FETCH_TIMEOUT = Number(process.env.EXCHANGE_RATES_FETCH_TIMEOUT) * 1000;
     }
 
-    async getLastPrice(pair) {
-      await this.getActualRates(pair);
-      return await this.lastPrice[pair];
-    }
-    
-
     async getActualRates(pair: string) {
 
         if (!this.rates[pair] ||
@@ -58,7 +52,7 @@ export class PublicApiService extends ApiService{
 
                 this.lastFetchTime[pair] = Date.now();
                 this.rates[pair] = await super.getActualRates(pair);
-                this.lastPrice[pair] = this.rates[pair].ask;
+                this.lastPrice[pair] = this.rates[pair].bid;
 
             });
 

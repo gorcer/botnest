@@ -6,7 +6,7 @@ export class Balance {
     id: number;
 
     @Index()
-    @Column({type: "int", default: 1})
+    @Column({type: "int", default: 1, nullable: true})
     accountId: number;    
     
     @Index()

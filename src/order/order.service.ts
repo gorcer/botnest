@@ -3,7 +3,7 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Order, OrderSideEnum } from './entities/order.entity';
-import { Repository } from 'typeorm';
+import { FindOptionsWhere, FindOptionsWhere, Repository } from 'typeorm';
 const { divide } = require('js-big-decimal');
 
 @Injectable()
@@ -12,41 +12,52 @@ export class OrderService {
   constructor(
     @InjectRepository(Order)
     private ordersRepository: Repository<Order>
-  ) {}
+  ) { }
 
   async create(
     createOrderDto: CreateOrderDto
-    ):Promise<Order> {
-     const order = this.ordersRepository.create(createOrderDto);
-     return await this.ordersRepository.save(order);
+  ): Promise<Order> {
+    const order = this.ordersRepository.create(createOrderDto);
+    return await this.ordersRepository.save(order);
   }
 
-  findAll(where) {
+  findAll(where: FindOptionsWhere<Order> | FindOptionsWhere<Order>[]) {
     return this.ordersRepository.findBy(where);
   }
 
-  findOne(where) {
+  getLastOrder(accountId: number) {
+    return this.ordersRepository.findOne({
+      where: {
+        accountId
+      },
+      order: {
+        id: 'DESC'
+      }
+    });
+  }
+
+  findOne(where: FindOptionsWhere<Order> | FindOptionsWhere<Order>[]) {
     return this.ordersRepository.findOneBy(where);
   }
 
   update(id: number, updateOrderDto: UpdateOrderDto) {
-    return this.ordersRepository.update({id}, updateOrderDto);
+    return this.ordersRepository.update({ id }, updateOrderDto);
   }
 
   remove(id: number) {
     return `This action removes a #${id} order`;
   }
 
-  async getActiveOrdersAboveProfit(currency1:string, currency2:string, currentRate: number, dailyProfit:number, yerlyProfit:number): Promise<Array<Order>> {
+  async getActiveOrdersAboveProfit(currency1: string, currency2: string, currentRate: number, dailyProfit: number, yerlyProfit: number): Promise<Array<Order>> {
 
-    const profitPerSecDaily = divide(dailyProfit , 365 * 24 * 60 * 60, 15);
-    const profitPerSecYerly = divide(yerlyProfit , 365 * 24 * 60 * 60, 15);
+    const profitPerSecDaily = divide(dailyProfit, 365 * 24 * 60 * 60, 15);
+    const profitPerSecYerly = divide(yerlyProfit, 365 * 24 * 60 * 60, 15);
     const secondsInDay = 24 * 60 * 60;
     const now = Math.floor(Date.now() / 1000);
-  
+
     return await this.ordersRepository
-    .createQueryBuilder("order")    
-    .where(`100*((${currentRate} / order.rate)-1) >= 
+      .createQueryBuilder("order")
+      .where(`100*((${currentRate} / order.rate)-1) >= 
         case 
           when 
             (${now} - "order"."createdAtSec") < ${secondsInDay}
@@ -56,23 +67,23 @@ export class OrderService {
             ( ${profitPerSecYerly} * (${now} - "order"."createdAtSec") )
         end        
         `) // Calculate annual profitability
-    .andWhere(`"order".currency1 = :currency1`, { currency1 })
-    .andWhere(`"order".currency2 = :currency1`, { currency2 })
-    .andWhere(`"order".side = :side`, { side: OrderSideEnum.BUY })
-    .andWhere(`"order".rate < ${currentRate}`)
-    .andWhere(`"order"."createdAtSec" < ${(now+1)}`)    
-    .andWhere('"order"."isActive" = true')
-    .andWhere('"order"."prefilled" < "order"."amount1"')   
-    .getMany();
+      .andWhere(`"order".currency1 = :currency1`, { currency1 })
+      .andWhere(`"order".currency2 = :currency1`, { currency2 })
+      .andWhere(`"order".side = :side`, { side: OrderSideEnum.BUY })
+      .andWhere(`"order".rate < ${currentRate}`)
+      .andWhere(`"order"."createdAtSec" < ${(now + 1)}`)
+      .andWhere('"order"."isActive" = true')
+      .andWhere('"order"."prefilled" < "order"."amount1"')
+      .getMany();
 
   }
 
-  async getSumByParentId(parentId, attribute: string) {
+  async getSumByParentId(parentId: number, attribute: string) {
     const result = await this.ordersRepository
-    .createQueryBuilder("order")
-    .select(`SUM(${attribute}) as sum`)
-    .where({parentId})    
-    .getRawOne();
+      .createQueryBuilder("order")
+      .select(`SUM(${attribute}) as sum`)
+      .where({ parentId })
+      .getRawOne();
 
     return result.sum;
   }
