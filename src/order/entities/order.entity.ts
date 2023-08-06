@@ -70,8 +70,10 @@ export class Order {
 
     @Column({type: "decimal", default:0})
     profit: number;
+    
+    @Column({type: "decimal", default:0})
+    profitPc: number;
 
-    @Column()
     get pair(): string {        
         return this.currency1 + '/' + this.currency2;
     }

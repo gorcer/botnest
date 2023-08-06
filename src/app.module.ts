@@ -15,7 +15,7 @@ import { FileLogService } from './log/filelog.service';
       port: parseInt(process.env.DB_PORT),
       username: process.env.DB_LOGIN,
       password:  process.env.DB_PASS,
-      database:  process.env.DB_NAME,
+      database:  process.env.BOT_TEST == 'true' ? process.env.DB_TEST_NAME : process.env.DB_NAME,
       entities: [Order, Balance],
       synchronize: true,
       // logging: true

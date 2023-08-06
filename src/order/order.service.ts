@@ -3,7 +3,8 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Order, OrderSideEnum } from './entities/order.entity';
-import { FindOptionsWhere, FindOptionsWhere, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
+import { SEC_IN_YEAR } from '../helpers';
 const { divide } = require('js-big-decimal');
 
 @Injectable()
@@ -21,7 +22,7 @@ export class OrderService {
     return await this.ordersRepository.save(order);
   }
 
-  findAll(where: FindOptionsWhere<Order> | FindOptionsWhere<Order>[]) {
+  findAll(where) {
     return this.ordersRepository.findBy(where);
   }
 
@@ -36,7 +37,7 @@ export class OrderService {
     });
   }
 
-  findOne(where: FindOptionsWhere<Order> | FindOptionsWhere<Order>[]) {
+  findOne(where) {
     return this.ordersRepository.findOneBy(where);
   }
 
@@ -50,8 +51,8 @@ export class OrderService {
 
   async getActiveOrdersAboveProfit(currency1: string, currency2: string, currentRate: number, dailyProfit: number, yerlyProfit: number): Promise<Array<Order>> {
 
-    const profitPerSecDaily = divide(dailyProfit, 365 * 24 * 60 * 60, 15);
-    const profitPerSecYerly = divide(yerlyProfit, 365 * 24 * 60 * 60, 15);
+    const profitPerSecDaily = divide(dailyProfit, SEC_IN_YEAR, 15);
+    const profitPerSecYerly = divide(yerlyProfit, SEC_IN_YEAR, 15);
     const secondsInDay = 24 * 60 * 60;
     const now = Math.floor(Date.now() / 1000);
 
