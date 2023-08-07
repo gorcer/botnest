@@ -7,83 +7,105 @@ import { lock } from "../helpers";
 import { FileLogService } from "../log/filelog.service";
 const { compareTo } = require("js-big-decimal");
 
-const { multiply, add } = require( "js-big-decimal" );
+const { multiply, add } = require("js-big-decimal");
 
 @Injectable()
 export class BalanceService {
-    
-    balances: BalancesDto = {};
+
+    balances: {
+        (account_id: number): BalancesDto
+    } | {} = {};
 
     constructor(
         @InjectRepository(Balance)
         private balanceRepository: Repository<Balance>,
-        private log: FileLogService,    
+        private log: FileLogService,
 
-      ) {}
+    ) { }
 
-    public async set(balances:BalancesDto) {
+    public async set(accountId: number, balances: BalancesDto) {
 
-        return await lock.acquire('Balance', async ()=>{
-            this.balances = balances;
+        return await lock.acquire('Balance', async () => {
+            this.balances[accountId] = balances;
 
-            for (const [currency, amount] of Object.entries(this.balances)) {
-                    let balance = await this.balanceRepository.findOneBy({
-                        currency,                    
-                    });
-                    if (!balance) {
-                        if (compareTo(amount, 0)>0) {
-                            balance = await this.balanceRepository.create({
-                                currency,                   
-                                amount
-                            });       
-                        }             
-                    } else {
-
-                        if (compareTo(balance.amount, amount) !=0) {
-                            this.log.info('Balance discrepancy', currency, 'Need:', balance.amount, 'Reel:', amount);
-                        }
-                        balance.amount = amount;                    
+            for (const [currency, amount] of Object.entries(balances)) {
+                let balance: Balance = await this.balanceRepository.findOneBy({
+                    accountId,
+                    currency,
+                });
+                if (!balance) {
+                    if (compareTo(amount, 0) > 0) {
+                        balance = await this.balanceRepository.create({
+                            accountId,
+                            currency,
+                            amount: amount
+                        });
                     }
+                } else {
 
-                    if (balance)
-                        await this.balanceRepository.save(balance);
+                    if (compareTo(balance.amount, amount) != 0) {
+                        this.log.info('Balance discrepancy', currency, 'Need:', balance.amount, 'Reel:', amount);
+                    }
+                    balance.amount = amount;
+                }
+
+                if (balance)
+                    await this.balanceRepository.save(balance);
             }
         });
 
     }
 
-    public async loadBalancesAmount() {
+    public async loadBalancesAmount(accountId: number) {
         const balances = await this.balanceRepository.find();
         for (const balance of balances) {
-            this.balances[balance.currency] = balance.amount;
+            if (!this.balances[accountId])
+                this.balances[accountId] = {};
+
+            this.balances[accountId][balance.currency] = balance.amount;
         }
     }
 
-    public async getBalanceAmount(currency: string) {
+    public async getBalanceAmount(accountId: number, currency: string) {
 
-        if (this.balances[currency] != undefined) {
-            return this.balances[currency];
+        if (this.balances[accountId]?.[currency] != undefined) {
+            return this.balances[accountId][currency];
         }
 
         let balance = await this.balanceRepository.findOneBy({
-            currency,                    
+            currency,
         });
         if (balance) {
-            this.balances[currency] = balance.amount;
+
+            if (!this.balances[accountId])
+                this.balances[accountId] = {};
+
+            this.balances[accountId][currency] = balance.amount;
             return balance.amount;
         } else {
             return 0;
         }
     }
 
-    public async income(currency:string, amount:number) {
-        
-        if (this.balances[currency] != undefined) {
-            this.balances[currency] = add(this.balances[currency], amount);
+    private async checkBalances(accountId) {
+        if (!this.balances[accountId])  {
+            this.loadBalancesAmount(accountId);
+        }
+
+    }
+
+
+    public async income(accountId: number, currency: string, amount: number) {
+
+        this.checkBalances(accountId);
+
+        if (this.balances[accountId]?.[currency] != undefined) {
+            this.balances[accountId][currency] = add(this.balances[accountId][currency], amount);
         }
 
         let balance = await this.balanceRepository.findOneBy({
-            currency,                    
+            accountId,
+            currency,
         });
         if (balance) {
             balance.amount = add(balance.amount, amount);
@@ -91,14 +113,14 @@ export class BalanceService {
         await this.balanceRepository.save(balance);
 
 
-        
+
 
 
         return balance;
     }
 
-    public async outcome(currency:string, amount:number) {
-        return this.income(currency, multiply(-1, amount));
+    public async outcome(accountId: number, currency: string, amount: number) {
+        return this.income(accountId, currency, multiply(-1, amount));
     }
 
 

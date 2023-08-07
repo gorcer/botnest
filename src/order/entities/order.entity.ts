@@ -1,10 +1,9 @@
 import {  BeforeInsert, Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from "typeorm";
 
-
-export enum OrderType {
-    BUY = "buy",
-    SELL = "sell"
-}
+export enum OrderSideEnum {
+    BUY = 'buy',
+    SELL = 'sell',
+  }
 
 @Entity()
 @Index(['rate','createdAtSec','amount1','prefilled','isActive'])
@@ -16,11 +15,11 @@ export class Order {
     createdAt: Date;
 
     @Column("int")
-    createdAtSec: number;
-    
+    createdAtSec: number;   
+
     @Index()
     @Column({type: "int", default: 1})    
-    userId: number;
+    accountId: number;
 
     @Column("varchar")
     extOrderId: string;
@@ -32,14 +31,18 @@ export class Order {
     @Index()
     @Column({
         type: "enum",
-        enum: OrderType,   
-        default: OrderType.BUY     
+        enum: OrderSideEnum,   
+        default: OrderSideEnum.BUY     
     })
-    type: OrderType
+    side: OrderSideEnum
 
     @Index()
-    @Column({type:"varchar",default:'BTC/USDT'})
-    pair: string;
+    @Column({type:"varchar",default:'BTC'})
+    currency1: string;
+
+    @Index()
+    @Column({type:"varchar",default:'USDT'})
+    currency2: string;
 
     @Column("decimal")
     rate: number;
@@ -67,7 +70,14 @@ export class Order {
 
     @Column({type: "decimal", default:0})
     profit: number;
+    
+    @Column({type: "decimal", default:0})
+    profitPc: number;
 
+    get pair(): string {        
+        return this.currency1 + '/' + this.currency2;
+    }
+    
     @BeforeInsert()
     beforeInsert() {
       // if (this.type == OrderType.BUY) {

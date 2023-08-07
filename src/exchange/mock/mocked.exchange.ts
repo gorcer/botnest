@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
-import { OrderSide } from "ccxt/js/src/base/types";
-import { Order, OrderType } from "../../order/entities/order.entity";
+import { OrderSide, OrderType } from "ccxt/js/src/base/types";
+import { Order, OrderSideEnum } from "../../order/entities/order.entity";
 
 @Injectable()
 export class MockedExchange {
@@ -82,13 +82,17 @@ export class MockedExchange {
         this.orders.push(order);        
     };
 
-    createOrder(symbol:string, type:OrderType, side:OrderSide, amount:number, price?:number) {
+    createOrder(symbol:string, side:OrderSideEnum, type:OrderType, amount:number, price?:number) {
 
         return this.orders.shift();
     }
 
     fetchOrder(id, pair):Order {
         return this.orders.shift();
+    }
+
+    setSandboxMode(mode) {
+
     }
 
 }
