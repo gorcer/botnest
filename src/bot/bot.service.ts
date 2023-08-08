@@ -23,6 +23,7 @@ interface Config {
 	minYearlyProfit: number,
 	minBuyRateMarginToProcess: number,
 	minSellRateMarginToProcess: number,
+	buyFee: number,
 	sellFee: number,
 
 }
@@ -32,7 +33,7 @@ export class BotService {
 
 
 	private minAmount: number;
-	private minCost: number;	
+	private minCost: number;
 	private config: any = {};
 
 	constructor(
@@ -69,7 +70,7 @@ export class BotService {
 
 		return await lock.acquire('Balance' + order.accountId, async () => {
 
-			this.log.info('Check order', order.extOrderId);
+			this.log.info('Check close order', order.extOrderId);
 
 			if (!order.isActive || order.side != OrderSideEnum.SELL)
 				return;
@@ -107,13 +108,13 @@ export class BotService {
 						),
 						parentOrder.fee
 					);
-					updateOrderDto.profitPc = divide(multiply(SEC_IN_YEAR, updateOrderDto.profit) , (order.createdAtSec - parentOrder.createdAtSec), 15)
+					updateOrderDto.profitPc = divide(multiply(SEC_IN_YEAR, updateOrderDto.profit), (order.createdAtSec - parentOrder.createdAtSec), 15)
 
 				}
 				await this.orders.update(parentOrder.id, updateOrderDto);
 
-				this.log.info('Close order ',
-					parentOrder.extOrderId,
+				this.log.info('Order closed',
+					parentOrder.id, '=>', order.id,
 					'Profit: ',
 					updateOrderDto.profit,
 					extOrder
@@ -126,7 +127,7 @@ export class BotService {
 
 		});
 	}
-	public async tryToBuy(accountId: number, rate: number): Promise<boolean> {
+	public async tryToBuy(accountId: number, rate: number): Promise<any> {
 
 		const config = this.accountConfig(accountId);
 		const amount1: number = this.checkLimits(rate, config.orderAmount);
@@ -135,7 +136,7 @@ export class BotService {
 
 		if (compareTo(balance2, amount2) > 0) {
 
-			await this.createBuyOrder(
+			return await this.createBuyOrder(
 				accountId,
 				config.currency1,
 				config.currency2,
@@ -143,7 +144,6 @@ export class BotService {
 				amount1
 			);
 
-			return true;
 		} else {
 			this.log.info('Cant buy, needs ' + amount2 + ' but have only ' + balance2);
 			await sleep(60);
@@ -178,6 +178,7 @@ export class BotService {
 		this.log.info('Get active orders....');
 		const tm = Date.now();
 		const orders = await this.orders.getActiveOrdersAboveProfit(
+			this.config.buyFee,
 			this.config.sellFee,
 			this.config.minDailyProfit,
 			this.config.minYearlyProfit
@@ -205,8 +206,8 @@ export class BotService {
 
 	public async createBuyOrder(accountId: number, currency1: string, currency2: string, price: number, amount1: number) {
 
-		const api = this.api(accountId);		
-		const pair = currency1 +'/'+currency2;
+		const api = this.api(accountId);
+		const pair = currency1 + '/' + currency2;
 
 		return await lock.acquire('Balance' + accountId, async () => {
 			this.log.info('Try to buy', price, amount1, multiply(amount1, price));
@@ -262,7 +263,7 @@ export class BotService {
 
 		if (fee.currency != currency2) {
 			const pair = fee.currency + '/' + currency2;
-			const {lastPrice} = await this.pairs.getOrRefreshPair(fee.currency, currency2);
+			const { lastPrice } = await this.pairs.getOrRefreshPair(fee.currency, currency2);
 			if (!lastPrice) {
 				throw new Error("Unknown fee pair" + lastPrice);
 			}
@@ -302,6 +303,7 @@ export class BotService {
 					accountId: order.accountId
 				});
 				this.log.info("New close order",
+					order.id, ' => ', closeOrder.id,
 					closeOrder.extOrderId,
 					closeOrder.rate,
 					closeOrder.amount1,

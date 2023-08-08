@@ -86,6 +86,7 @@ export class LonelyTraderService {
 
 			minDailyProfit: Number(process.env.BOT_MIN_DAILY_PROFIT), // % годовых если сделка закрывается за день
 			minYearlyProfit: Number(process.env.BOT_MIN_YERLY_PROFIT), // % годовых если сделка живет больше дня			
+			buyFee: Number(process.env.BOT_BUY_FEE), //@todo вытаскивать как-то из биржи
 			sellFee: Number(process.env.BOT_SELL_FEE),
 		});
 
@@ -114,7 +115,7 @@ export class LonelyTraderService {
 					lastStatUpdate = Date.now() / 1000;
 				}
 
-				if (elapsedSecondsFrom(SEC_IN_HOUR, lastTradesUpdate)) {
+				if (elapsedSecondsFrom(SEC_IN_HOUR / 4, lastTradesUpdate)) {
 					await this.checkCloseOrders();
 					lastTradesUpdate = Date.now() / 1000;
 				}
@@ -122,18 +123,23 @@ export class LonelyTraderService {
 				const { buyRate: rateBid, sellRate: rateAsk } = await this.pairs.getOrRefreshPair(this.config.currency1, this.config.currency2);
 
 				if (!this.isRateOccupied(rateAsk, this.activeOrders, this.config.minBuyRateMarginToProcess)) {
-					if (await this.bot.tryToBuy(this.accountId, rateAsk)) {
-						this.checkBalance();
-					}
 					this.log.info('Rate ask: ', rateAsk);
+					const result = await this.bot.tryToBuy(this.accountId, rateAsk)
+					if (result) {
+						const {order} = result;
+						this.activeOrders.push(order);
+						await this.checkBalance();
+					}					
 				}
 
 				if (isSuitableRate(rateBid, lastBid, this.config.minSellRateMarginToProcess)) {
-					await this.bot.tryToSellAllSuitableOrders();
-					lastBid = rateBid;
 					this.log.info('Rate bid: ', rateBid);
+					const orders = await this.bot.tryToSellAllSuitableOrders();
+					if (orders.length>0) {
+						this.loadActiveOrders();
+					}
+					lastBid = rateBid;					
 				}
-
 
 			} catch (e) {
 
@@ -190,7 +196,7 @@ export class LonelyTraderService {
 	}
 
 	public async loadActiveOrders() {
-		this.activeOrders = await this.orders.findAll({ isActive: true, side: OrderSideEnum.BUY });
+		this.activeOrders = await this.orders.getActiveOrders();
 		return this.activeOrders;
 	}
 
