@@ -10,7 +10,6 @@ export class TestOrderService {
 
   orders={};
   
-
   constructor(    
   ) {}
 
@@ -23,9 +22,10 @@ export class TestOrderService {
       order.prefilled=0;
       order.filled=0;
       order.profit=0;
+      order.createdAtSec = Date.now() / 1000;
 
-      if (!order.type)
-        order.type = OrderSideEnum.BUY;
+      if (!order.side)
+        order.side = OrderSideEnum.BUY;
 
       
       this.orders[order.id] = order;
@@ -33,8 +33,12 @@ export class TestOrderService {
   }
 
   findAll(where) {
+
+    if (!where)
+      return Object.values(this.orders);
+
     return Object.values(this.orders).filter((item) => {
-        
+
         for (const [key, value] of Object.entries(where)) {
           if (item[key] != value) {
             return false;
@@ -56,7 +60,6 @@ export class TestOrderService {
   update(id: number, updateOrderDto: UpdateOrderDto) {
     updateModel(this.orders[id], updateOrderDto);
   }
-
 
   async getActiveOrdersAboveProfit(currentRate: number, dailyProfit:number, yerlyProfit:number): Promise<Array<Order>> {
       return Object.values(this.orders);

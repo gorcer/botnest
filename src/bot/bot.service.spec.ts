@@ -11,7 +11,6 @@ import { MockedExchange } from '../exchange/mock/mocked.exchange';
 import { Order } from '../order/entities/order.entity';
 import { SilentLogService } from '../log/silentlog.service';
 import { FileLogService } from '../log/filelog.service';
-import { OrderBookService } from './orderBook.service';
 import { ApiService } from '../exchange/api.service';
 import ccxt from 'ccxt';
 import { AccountService } from '../exchange/account.service';
@@ -24,23 +23,24 @@ const { divide, subtract, multiply, compareTo, add } = require("js-big-decimal")
 describe('BotService', () => {
   let account: AccountService;
   let bot: BotService;
-  let exchange;
-  const accountId=1;
-  const currency1 = process.env.BOT_CURRENCY1,
-        currency2 = process.env.BOT_CURRENCY2;
+  let balance: BalanceService;
+  let userExchange;
+  let publicExchange;
+  let api;
+  const accountId = 1;
+  let currency1, currency2;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      imports: [        
+      imports: [
         ConfigModule.forRoot({
           envFilePath: '.test.env',
-        }),    
+        }),
       ],
-      providers: [        
+      providers: [
         BotService,
-        LogService,         
-        MockedExchange,        
-        AccountService,        
+        MockedExchange,
+        AccountService,
         {
           provide: PublicApiService,
           useValue: new ApiService(MockedExchange),
@@ -52,86 +52,50 @@ describe('BotService', () => {
         {
           provide: BalanceService,
           useClass: TestBalanceService,
-        },       
+        },
         {
           provide: OrderService,
           useClass: TestOrderService,
-        },             
+        },
       ],
     }).compile();
 
     bot = await module.resolve<BotService>(BotService);
     account = module.get<AccountService>(AccountService);
+    balance = module.get<BalanceService>(BalanceService);
 
+    currency1 = process.env.BOT_CURRENCY1;
+    currency2 = process.env.BOT_CURRENCY2;
 
     bot.setConfig({
-			
-			minDailyProfit: Number(process.env.BOT_MIN_DAILY_PROFIT), // % годовых если сделка закрывается за день
-			minYearlyProfit: Number(process.env.BOT_MIN_YERLY_PROFIT), // % годовых если сделка живет больше дня			
-			sellFee: Number(process.env.BOT_SELL_FEE),
-			balanceSync: true
-			
-		});
 
-    account.setAccount(1, {     
-      
+      minDailyProfit: Number(process.env.BOT_MIN_DAILY_PROFIT), // % годовых если сделка закрывается за день
+      minYearlyProfit: Number(process.env.BOT_MIN_YERLY_PROFIT), // % годовых если сделка живет больше дня			
+      sellFee: Number(process.env.BOT_SELL_FEE),
+      balanceSync: true
+
+    });
+
+    account.setAccount(1, {
+
       exchangeClass: MockedExchange,
-      pair: process.env.BOT_CURRENCY1 +'/'+ process.env.BOT_CURRENCY2,
-      orderAmount: Number( process.env.BOT_ORDER_AMOUNT ),
+      pair: process.env.BOT_CURRENCY1 + '/' + process.env.BOT_CURRENCY2,
+      orderAmount: Number(process.env.BOT_ORDER_AMOUNT),
       currency1: process.env.BOT_CURRENCY1,
       currency2: process.env.BOT_CURRENCY2,
-      orderProbability: Number( process.env.BOT_ORDER_PROBABILITY ),
+      orderProbability: Number(process.env.BOT_ORDER_PROBABILITY),
       minDailyProfit: Number(process.env.BOT_MIN_DAILY_PROFIT), // % годовых если сделка закрывается за день
       minYearlyProfit: Number(process.env.BOT_MIN_YERLY_PROFIT), // % годовых если сделка живет больше дня
       minBuyRateMarginToProcess: Number(process.env.BOT_MIN_BUY_RATE_MARGIN), // минимальное движение курса для проверки х100=%
       minSellRateMarginToProcess: Number(process.env.BOT_MIN_SELL_RATE_MARGIN), // минимальное движение курса для проверки х100=%
-      sellFee:  Number(process.env.BOT_SELL_FEE),
+      sellFee: Number(process.env.BOT_SELL_FEE),
       balanceSync: process.env.BOT_BALANCE_SYNC == 'true'
     });
+    api = account.getApiForAccount(accountId);
+    userExchange = api.exchange;
+    publicExchange = bot.publicApi.exchange;
 
-    exchange = account.getApiForAccount(1).exchange;
-    
   });
-
-
-  const simpleBuyAndSell = async function (buyPrice, amount, sellPrice) {
-    const buyCost = buyPrice * amount;
-    const sellCost = sellPrice * amount;
-
-    exchange.setTickers({
-      'BNB/USDT': {
-        last: 20
-      }
-    });
-
-    await bot.syncData(accountId); 
-
-    // Подготавливаем данные для покупки    
-    exchange.setNextOrder({      
-      price: buyPrice,
-      amount: amount,
-      cost: buyCost,
-      fees: [{
-          cost: 0
-      }]
-    });
-
-    // Покупаем        
-    const {order} = await bot.createBuyOrder(accountId, currency1, currency2, buyPrice, amount);      
-        
-    exchange.setNextOrder({      
-      price: sellPrice,
-      amount: amount,
-      cost: sellCost,
-      fees: [{
-          cost: 0
-      }]
-    });    
-    // Создаем заявку на продажу
-    const closeOrder = await bot.createCloseOrder(sellPrice, order);      
-      
-    return {order, closeOrder};    
-  };
 
 
   it('should be defined', () => {
@@ -145,28 +109,28 @@ describe('BotService', () => {
     const amount = 0.001;
     const sellPrice = 1100;
     const sellCost = sellPrice * amount;
-    let balanceUSDT=1000;
-    const expectedProfit=(sellPrice - buyPrice) * amount;
+    let balanceUSDT = 1000;
+    const expectedProfit = (sellPrice - buyPrice) * amount;
 
-    const {order, closeOrder} = await simpleBuyAndSell(buyPrice, amount, sellPrice);
+    const { order, closeOrder } = await simpleBuyAndSell(buyPrice, amount, sellPrice);
 
     // Зафиксируем баланс
     await bot.balance.set(
       accountId,
       {
-      'USDT': balanceUSDT
-    });
+        'USDT': balanceUSDT
+      });
 
     // Теперь проверим что будет если заявка закроется не полностью а наполовину
     {
-      exchange.setNextOrder({      
+      userExchange.setNextOrder({
         price: sellPrice,
         amount: amount,
         cost: sellCost,
         fees: [{
-            cost: 0
+          cost: 0
         }],
-        filled: amount/2,
+        filled: amount / 2,
       });
 
       // Проверяем закрытие заявки
@@ -181,12 +145,12 @@ describe('BotService', () => {
     }
 
     // Теперь докинем оставшуюся сумму
-    exchange.setNextOrder({      
+    userExchange.setNextOrder({
       price: sellPrice,
       amount: amount,
       cost: sellCost,
       fees: [{
-          cost: 0
+        cost: 0
       }],
       filled: amount,
     });
@@ -204,73 +168,72 @@ describe('BotService', () => {
 
   it('2. simple buy / close order', async () => {
 
-    
+
     // Параметры теста
     const buyPrice = 1000;
     const amount = 0.001;
     const buyCost = buyPrice * amount;
     const sellPrice = 1100;
     const sellCost = sellPrice * amount;
-    const buyFeeCost=0.01;
-    const sellFeeCost=0.001;
-    const BNBUSDTRate=20;
-    const expectedProfit=((sellPrice - buyPrice) * amount) - buyFeeCost - (sellFeeCost * BNBUSDTRate);
-    
-    exchange.setTickers({
+    const buyFeeCost = 0.01;
+    const sellFeeCost = 0.001;
+    const BNBUSDTRate = 20;
+    const expectedProfit = ((sellPrice - buyPrice) * amount) - buyFeeCost - (sellFeeCost * BNBUSDTRate);
+
+    publicExchange.setTickers({
       'BNB/USDT': {
         last: BNBUSDTRate
       }
     });
-    
-    await bot.syncData(accountId, ); 
-    
-    
-    let balanceBTC:number = await bot.balance.getBalanceAmount(accountId, 'BTC');
-    let balanceUSDT:number = await bot.balance.getBalanceAmount(accountId, 'USDT');
-    let balanceBNB:number = await bot.balance.getBalanceAmount(accountId, 'BNB');
+
+    await balance.set(accountId, await api.fetchBalances());
+    await bot.syncData(accountId,);
+
+
+    let balanceBTC: number = await bot.balance.getBalanceAmount(accountId, 'BTC');
+    let balanceUSDT: number = await bot.balance.getBalanceAmount(accountId, 'USDT');
+    let balanceBNB: number = await bot.balance.getBalanceAmount(accountId, 'BNB');
 
     // Подготавливаем данные для покупки    
-    exchange.setNextOrder({      
+    userExchange.setNextOrder({
       price: buyPrice,
       amount: amount,
       cost: buyCost,
       fees: [{
-          cost:buyFeeCost,
-          currency:'USDT',
+        cost: buyFeeCost,
+        currency: 'USDT',
       }]
     });
 
-
     // Покупаем
-    let extOrder,order:Order;
+    let extOrder, order: Order;
     {
-        
       const result = await bot.createBuyOrder(accountId, currency1, currency2, buyPrice, amount);
       notEqual(result, false);
       if (result != false) {
-        ({extOrder, order} = result);
+        ({ extOrder, order } = result);
         expect(extOrder.id).toBeDefined();
         expect(order.id).toBeDefined();
 
         balanceBTC = add(balanceBTC, amount);
-        balanceUSDT = subtract( subtract(balanceUSDT, buyCost), buyFeeCost);
+        balanceUSDT = subtract(subtract(balanceUSDT, buyCost), buyFeeCost);
         equal(balanceBTC, await bot.balance.getBalanceAmount(accountId, 'BTC'));
         equal(balanceUSDT, await bot.balance.getBalanceAmount(accountId, 'USDT'));
-        
+
         // console.log(extOrder, order);
       }
     }
 
-    
+
     // Создаем заявку на продажу
-    let closeOrder:Order;
-    exchange.setNextOrder({      
+    let closeOrder: Order;
+    userExchange.setNextOrder({
       price: sellPrice,
       amount: amount,
       cost: sellCost,
       fees: [{
-          cost: sellFeeCost,
-          currency:'BNB',
+        cost: sellFeeCost,
+        currency: 'BNB',
       }]
     });
 
@@ -278,27 +241,27 @@ describe('BotService', () => {
       closeOrder = await bot.createCloseOrder(sellPrice, order);
       equal(order.prefilled, amount);
       equal(closeOrder.parentId, 1);
-      equal(closeOrder.accountId, 1);      
+      equal(closeOrder.accountId, 1);
 
-      balanceBTC = subtract(balanceBTC, amount);      
+      balanceBTC = subtract(balanceBTC, amount);
       equal(balanceBTC, await bot.balance.getBalanceAmount(accountId, 'BTC'));
-      
+
     }
 
-    
-    exchange.setNextOrder({      
+
+    userExchange.setNextOrder({
       price: sellPrice,
       amount: amount,
       cost: sellCost,
       fees: [{
-          cost: sellFeeCost,
-          currency:'BNB',
+        cost: sellFeeCost,
+        currency: 'BNB',
       }],
       filled: amount,
     });
-    
+
     // Проверяем закрытие заявки
-    await bot.checkCloseOrder(closeOrder);   
+    await bot.checkCloseOrder(closeOrder);
 
     equal(closeOrder.filled, amount);
     equal(order.profit, expectedProfit);
@@ -310,4 +273,47 @@ describe('BotService', () => {
     equal(balanceBNB, await bot.balance.getBalanceAmount(accountId, 'BNB'));
 
   });
+
+  
+
+  const simpleBuyAndSell = async function (buyPrice: number, amount: number, sellPrice: number) {
+    const buyCost = buyPrice * amount;
+    const sellCost = sellPrice * amount;
+
+    publicExchange.setTickers({
+      'BNB/USDT': {
+        last: 20
+      }
+    });
+
+    await balance.set(accountId, await api.fetchBalances());
+    await bot.syncData(accountId);
+
+    // Подготавливаем данные для покупки    
+    userExchange.setNextOrder({
+      price: buyPrice,
+      amount: amount,
+      cost: buyCost,
+      fees: [{
+        cost: 0
+      }]
+    });
+
+    // Покупаем        
+    const { order } = await bot.createBuyOrder(accountId, currency1, currency2, buyPrice, amount);
+
+    userExchange.setNextOrder({
+      price: sellPrice,
+      amount: amount,
+      cost: sellCost,
+      fees: [{
+        cost: 0
+      }]
+    });
+    // Создаем заявку на продажу
+    const closeOrder = await bot.createCloseOrder(sellPrice, order);
+
+    return { order, closeOrder };
+  };
+
 });

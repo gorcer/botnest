@@ -5,6 +5,7 @@ import { BotModule } from './bot/bot.module';
 import { ConfigModule } from '@nestjs/config';
 import { Balance } from './balance/entities/balance.entity';
 import { FileLogService } from './log/filelog.service';
+import { Pair } from './exchange/entities/pair.entity';
 
 @Module({
   imports: [    
@@ -15,8 +16,8 @@ import { FileLogService } from './log/filelog.service';
       port: parseInt(process.env.DB_PORT),
       username: process.env.DB_LOGIN,
       password:  process.env.DB_PASS,
-      database:  process.env.BOT_TEST == 'true' ? process.env.DB_TEST_NAME : process.env.DB_NAME,
-      entities: [Order, Balance],
+      database:  process.env.DB_NAME,
+      entities: [Pair, Order, Balance],
       synchronize: true,
       // logging: true
     }),        

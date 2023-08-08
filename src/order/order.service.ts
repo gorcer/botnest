@@ -5,6 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Order, OrderSideEnum } from './entities/order.entity';
 import { Repository } from 'typeorm';
 import { SEC_IN_YEAR } from '../helpers';
+import { Pair } from '../exchange/entities/pair.entity';
 const { divide } = require('js-big-decimal');
 
 @Injectable()
@@ -22,7 +23,7 @@ export class OrderService {
     return await this.ordersRepository.save(order);
   }
 
-  findAll(where) {
+  findAll(where?) {
     return this.ordersRepository.findBy(where);
   }
 
@@ -49,16 +50,17 @@ export class OrderService {
     return `This action removes a #${id} order`;
   }
 
-  async getActiveOrdersAboveProfit(currency1: string, currency2: string, currentRate: number, dailyProfit: number, yerlyProfit: number): Promise<Array<Order>> {
+  async getActiveOrdersAboveProfit(sellFee: number, dailyProfit: number, yerlyProfit: number): Promise<any> {
 
     const profitPerSecDaily = divide(dailyProfit, SEC_IN_YEAR, 15);
     const profitPerSecYerly = divide(yerlyProfit, SEC_IN_YEAR, 15);
     const secondsInDay = 24 * 60 * 60;
     const now = Math.floor(Date.now() / 1000);
 
-    return await this.ordersRepository
-      .createQueryBuilder("order")
-      .where(`100*((${currentRate} / order.rate)-1) >= 
+    return await this.ordersRepository    
+      .createQueryBuilder("order")      
+      .innerJoinAndSelect(Pair, 'pair', 'pair.currency1 = "order".currency1 AND pair.currency2 = "order".currency2')            
+      .andWhere(`100*(( ("pair"."buyRate" * ( 1 - ${sellFee})) / order.rate)-1) >= 
         case 
           when 
             (${now} - "order"."createdAtSec") < ${secondsInDay}
@@ -68,14 +70,16 @@ export class OrderService {
             ( ${profitPerSecYerly} * (${now} - "order"."createdAtSec") )
         end        
         `) // Calculate annual profitability
-      .andWhere(`"order".currency1 = :currency1`, { currency1 })
-      .andWhere(`"order".currency2 = :currency1`, { currency2 })
       .andWhere(`"order".side = :side`, { side: OrderSideEnum.BUY })
-      .andWhere(`"order".rate < ${currentRate}`)
+      .andWhere(`"order".rate < "pair"."buyRate"`)
       .andWhere(`"order"."createdAtSec" < ${(now + 1)}`)
       .andWhere('"order"."isActive" = true')
       .andWhere('"order"."prefilled" < "order"."amount1"')
-      .getMany();
+      .select(`
+          "order".*,
+          "pair"."buyRate" as "buyRate"
+      `)
+      .getRawMany();
 
   }
 

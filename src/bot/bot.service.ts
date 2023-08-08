@@ -8,6 +8,7 @@ import { ApiService } from "../exchange/api.service";
 import { FileLogService } from "../log/filelog.service";
 import { AccountService } from "../exchange/account.service";
 import { PublicApiService } from "../exchange/publicApi.service";
+import { PairService } from "../exchange/pair.service";
 
 
 const { divide, subtract, multiply, compareTo, add } = require("js-big-decimal");
@@ -37,10 +38,11 @@ export class BotService {
 	constructor(
 
 		public balance: BalanceService,
-		private order: OrderService,
+		private orders: OrderService,
 		private log: FileLogService,
-		private publicApi: PublicApiService,
+		public publicApi: PublicApiService,
 		private accounts: AccountService,
+		private pairs: PairService
 
 	) { }
 
@@ -73,13 +75,13 @@ export class BotService {
 				return;
 
 			if (!extOrder)
-				extOrder = await api.fetchOrder(Number(order.extOrderId), order.pair);
+				extOrder = await api.fetchOrder(Number(order.extOrderId), order.pairTitle);
 
 			if (compareTo(extOrder.filled, extOrder.amount) == 0) {
 
 				const { feeCost, feeInCurrency2Cost, feeCurrency } = await this.extractFee(extOrder.fees, order.currency2);
 
-				await this.order.update(order.id, { isActive: false, filled: extOrder.filled, fee: feeInCurrency2Cost });
+				await this.orders.update(order.id, { isActive: false, filled: extOrder.filled, fee: feeInCurrency2Cost });
 
 				await this.balance.income(order.accountId, order.currency2, order.amount2);
 				if (feeCost && feeCurrency) {
@@ -87,13 +89,13 @@ export class BotService {
 				}
 
 				// Fill parent buy-order
-				const parentOrder = await this.order.findOne({ id: order.parentId });
+				const parentOrder = await this.orders.findOne({ id: order.parentId });
 				const updateOrderDto: UpdateOrderDto = {
 					filled: add(parentOrder.filled, extOrder.filled)
 				};
 				if (compareTo(parentOrder.amount1, updateOrderDto.filled) == 0) {
 
-					const totalAmount2 = await this.order.getSumByParentId(parentOrder.id, 'amount2');
+					const totalAmount2 = await this.orders.getSumByParentId(parentOrder.id, 'amount2');
 					updateOrderDto.isActive = false;
 					updateOrderDto.profit = subtract(
 						subtract(
@@ -108,7 +110,7 @@ export class BotService {
 					updateOrderDto.profitPc = divide(multiply(SEC_IN_YEAR, updateOrderDto.profit) , (order.createdAtSec - parentOrder.createdAtSec), 15)
 
 				}
-				await this.order.update(parentOrder.id, updateOrderDto);
+				await this.orders.update(parentOrder.id, updateOrderDto);
 
 				this.log.info('Close order ',
 					parentOrder.extOrderId,
@@ -170,16 +172,13 @@ export class BotService {
 
 
 
-	public async tryToSell(currency1: string, currency2: string, rate: number): Promise<Array<Order>> {
+	public async tryToSellAllSuitableOrders(): Promise<Array<Order>> {
 
-		const rateWithSellFee = multiply(rate, (1 - this.config.sellFee));
 
 		this.log.info('Get active orders....');
 		const tm = Date.now();
-		const orders: Array<Order> = await this.order.getActiveOrdersAboveProfit(
-			currency1,
-			currency2,
-			rateWithSellFee,
+		const orders = await this.orders.getActiveOrdersAboveProfit(
+			this.config.sellFee,
 			this.config.minDailyProfit,
 			this.config.minYearlyProfit
 		);
@@ -188,13 +187,13 @@ export class BotService {
 
 
 		for (const order of orders) {
-			await this.createCloseOrder(rate, order);
+			await this.createCloseOrder(order.buyRate, order);
 		}
 
 		return orders;
 	}
 
-	async extractFee(feeObj, currency2) {
+	async extractFee(feeObj: { cost: number; currency: string; }[], currency2: string) {
 		const fee = feeObj[0];
 		const feeCost = feeObj[0]?.cost ?? 0;
 		const feeInCurrency2Cost = await this.calculateFee(feeObj[0], currency2);
@@ -219,7 +218,7 @@ export class BotService {
 				const { feeCost, feeInCurrency2Cost, feeCurrency } = await this.extractFee(extOrder.fees, currency2);
 
 				// store in db
-				const order = await this.order.create({
+				const order = await this.orders.create({
 					currency1,
 					currency2,
 					extOrderId: extOrder.id,
@@ -263,12 +262,12 @@ export class BotService {
 
 		if (fee.currency != currency2) {
 			const pair = fee.currency + '/' + currency2;
-			const rate = await this.publicApi.getLastPrice(pair);
-			if (!rate) {
-				throw new Error("Unknown fee pair" + pair);
+			const {lastPrice} = await this.pairs.getOrRefreshPair(fee.currency, currency2);
+			if (!lastPrice) {
+				throw new Error("Unknown fee pair" + lastPrice);
 			}
 
-			return multiply(fee.cost, rate);
+			return multiply(fee.cost, lastPrice);
 
 		} else {
 			return fee.cost;
@@ -290,7 +289,7 @@ export class BotService {
 
 			if (extOrder.id != undefined) {
 				// store in db
-				closeOrder = await this.order.create({
+				closeOrder = await this.orders.create({
 					currency1: order.currency1,
 					currency2: order.currency2,
 					extOrderId: extOrder.id,
@@ -312,7 +311,7 @@ export class BotService {
 
 				await this.balance.outcome(order.accountId, order.currency1, closeOrder.amount1);
 
-				await this.order.update(order.id, { prefilled: add(order.prefilled, extOrder.amount) })
+				await this.orders.update(order.id, { prefilled: add(order.prefilled, extOrder.amount) })
 
 			}
 		});
@@ -328,7 +327,7 @@ export class BotService {
 
 	async checkCloseOrders(): Promise<Array<Order>> {
 		const closedOrders: Array<Order> = [];
-		const orders = await this.order.findAll({ isActive: true, side: OrderSideEnum.SELL });
+		const orders = await this.orders.findAll({ isActive: true, side: OrderSideEnum.SELL });
 		for (const order of orders) {
 			const closedOrder = await this.checkCloseOrder(order);
 			if (closedOrder)

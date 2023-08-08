@@ -7,8 +7,9 @@ import { AccountService } from "../exchange/account.service";
 import { BalanceService } from "../balance/balance.service";
 import { BalancesDto } from "../balance/dto/balances.dto";
 import { OrderService } from "../order/order.service";
-import { OrderSideEnum } from "../order/entities/order.entity";
+import { Order, OrderSideEnum } from "../order/entities/order.entity";
 import { ApiService } from "../exchange/api.service";
+import { PairService } from "../exchange/pair.service";
 
 const { divide, subtract, multiply, compareTo, add } = require("js-big-decimal");
 
@@ -29,6 +30,7 @@ export class LonelyTraderService {
 	config: Config;
 	api:ApiService;
 	accountConfig: { orderProbability: number; };
+	activeOrders:Array<Order>=[];
 
 	constructor(
 
@@ -37,6 +39,7 @@ export class LonelyTraderService {
 		private accounts: AccountService,
 		private balance: BalanceService,
 		private orders: OrderService,
+		private pairs: PairService
 
 	) {
 
@@ -93,39 +96,14 @@ export class LonelyTraderService {
 
 
 	async trade() {
-
-		const lastOrder = await this.orders.getLastOrder(this.accountId);
-		let startRate = 1;
-		if (lastOrder && lastOrder.side == OrderSideEnum.BUY) {
-			startRate = lastOrder.rate;
-		}
-		let
-			lastAsk: number = startRate,
-			lastBid: number = startRate,
+	
+		
+		let			
+			lastBid: number = 1,
 			lastStatUpdate = 0,
-			lastTradesUpdate = Date.now() / 1000,
-			syncStatus = false;
-
-
-		while (!syncStatus) {
-			try {
-
-				// тут нужно загрузить в базу текущий баланс и в текущую переменную
-				await this.balance.loadBalancesAmount(this.accountId);
-				await this.checkBalance();
-
-				await this.bot.syncData(this.accountId);
-
-				// проверить состояние открытых ордеров
-				await this.checkCloseOrders();
-				syncStatus = true;
-			} catch (e) {
-
-				this.log.error('Sync error...wait 5 min', e.message, e.stack);
-				await sleep(5 * 60);
-			}
-		}
-
+			lastTradesUpdate = Date.now() / 1000;
+			
+			await this.prepare();
 
 		while (true) {
 
@@ -141,22 +119,17 @@ export class LonelyTraderService {
 					lastTradesUpdate = Date.now() / 1000;
 				}
 
-				const { bid: rateBid, ask: rateAsk } = await this.api.getActualRates(this.config.pair);
+				const { buyRate: rateBid, sellRate: rateAsk } = await this.pairs.getOrRefreshPair(this.config.currency1, this.config.currency2);
 
-				if (isSuitableRate(rateAsk, lastAsk, this.config.minBuyRateMarginToProcess)) {
+				if (!this.isRateOccupied(rateAsk, this.activeOrders, this.config.minBuyRateMarginToProcess)) {
 					if (await this.bot.tryToBuy(this.accountId, rateAsk)) {
 						this.checkBalance();
 					}
-					lastAsk = rateAsk;
 					this.log.info('Rate ask: ', rateAsk);
 				}
 
 				if (isSuitableRate(rateBid, lastBid, this.config.minSellRateMarginToProcess)) {
-					const closedOrders = await this.bot.tryToSell(this.config.currency1, this.config.currency2, rateBid);
-					if (closedOrders.length) { // если что-то закрылось, то можно снова купить
-						lastAsk = 1;
-					}
-
+					await this.bot.tryToSellAllSuitableOrders();
 					lastBid = rateBid;
 					this.log.info('Rate bid: ', rateBid);
 				}
@@ -168,6 +141,57 @@ export class LonelyTraderService {
 				await sleep(60);
 			}
 		}
+	}
+
+	private async prepare() {
+		let syncStatus = false;
+
+
+		while (!syncStatus) {
+			try {
+
+				// тут нужно загрузить в базу текущий баланс и в текущую переменную
+				await this.balance.loadBalancesAmount(this.accountId);
+				await this.checkBalance();
+
+				await this.bot.syncData(this.accountId);
+
+				// проверить состояние открытых ордеров
+				await this.checkCloseOrders();
+
+				// Загрузить открытые ордера
+				await this.loadActiveOrders();
+				
+
+				syncStatus = true;
+			} catch (e) {
+
+				this.log.error('Sync error...wait 5 min', e.message, e.stack);
+				await sleep(5 * 60);
+			}
+		}
+	}
+
+	public isRateOccupied(rate: number, activeOrders: Array<Order>, minMargin: number) {
+
+		const rateFrom = multiply(rate, (1-minMargin));
+		const rateTo = multiply(rate, (1+minMargin));
+
+		for (const order of activeOrders) {
+			if (
+				compareTo(order.rate, rateFrom) > 0 && 
+				compareTo(order.rate, rateTo) < 0
+			) {
+				return true;
+			}
+		}
+		return false;
+		
+	}
+
+	public async loadActiveOrders() {
+		this.activeOrders = await this.orders.findAll({ isActive: true, side: OrderSideEnum.BUY });
+		return this.activeOrders;
 	}
 
 	private canBuy(accountId: any) {

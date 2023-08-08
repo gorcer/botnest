@@ -1,4 +1,5 @@
-import {  BeforeInsert, Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from "typeorm";
+import {  BeforeInsert, Column, CreateDateColumn, Entity, Index, JoinTable, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Pair } from "../../exchange/entities/pair.entity";
 
 export enum OrderSideEnum {
     BUY = 'buy',
@@ -6,7 +7,7 @@ export enum OrderSideEnum {
   }
 
 @Entity()
-@Index(['rate','createdAtSec','amount1','prefilled','isActive'])
+@Index(['rate','createdAtSec','amount1','prefilled','isActive','currency1', 'currency2'])
 export class Order {
     @PrimaryGeneratedColumn()
     id: number;
@@ -36,11 +37,11 @@ export class Order {
     })
     side: OrderSideEnum
 
-    @Index()
+    
     @Column({type:"varchar",default:'BTC'})
     currency1: string;
 
-    @Index()
+    
     @Column({type:"varchar",default:'USDT'})
     currency2: string;
 
@@ -74,7 +75,7 @@ export class Order {
     @Column({type: "decimal", default:0})
     profitPc: number;
 
-    get pair(): string {        
+    get pairTitle(): string {        
         return this.currency1 + '/' + this.currency2;
     }
     
@@ -85,5 +86,12 @@ export class Order {
       // }
       this.createdAtSec = Math.floor(Date.now() / 1000)
     }
+
+    @ManyToOne(type => Pair)
+    @JoinTable()
+    pair: Pair;
+
+    // @ManyToOne(() => Pair, pair => pair.orders)
+    // pair: Pair;
 
 }

@@ -8,13 +8,14 @@ import { PublicApiService } from '../exchange/publicApi.service';
 import { ExchangeModule } from '../exchange/exchange.module';
 import { AccountService } from '../exchange/account.service';
 import { LonelyTraderService } from './lonelyTrader.service';
+import { PairService } from '../exchange/pair.service';
 
 
 @Module({
   imports: [
+    ExchangeModule,
     OrderModule,
-    BalanceModule,
-    ExchangeModule
+    BalanceModule,    
   ],
   controllers: [],
   providers: [
@@ -23,7 +24,7 @@ import { LonelyTraderService } from './lonelyTrader.service';
     BalanceService,  
     PublicApiService,    
     AccountService,
-    LonelyTraderService
+    LonelyTraderService,    
   ],
   exports: [BotService, LonelyTraderService],
 })
