@@ -1,0 +1,22 @@
+{
+    "sourceFile": "src/balance/balance.module.ts",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 1,
+            "patches": [
+                {
+                    "date": 1691542333595,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1691542479355,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -6,9 +6,9 @@\n import { BalanceLog } from './entities/balanceLog.entity';\n \n \n @Module({\n-  imports: [TypeOrmModule.forFeature([Balance, BalanceLog])],  \n+  imports: [TypeOrmModule.forFeature([BalanceLog, Balance])],  \n   providers: [BalanceService,FileLogService],\n   exports: [BalanceService, TypeOrmModule]\n })\n export class BalanceModule {}\n"
+                }
+            ],
+            "date": 1691542333595,
+            "name": "Commit-0",
+            "content": "import { Module } from '@nestjs/common';\nimport { TypeOrmModule } from '@nestjs/typeorm';\nimport { Balance } from './entities/balance.entity';\nimport { BalanceService } from './balance.service';\nimport { FileLogService } from '../log/filelog.service';\nimport { BalanceLog } from './entities/balanceLog.entity';\n\n\n@Module({\n  imports: [TypeOrmModule.forFeature([Balance, BalanceLog])],  \n  providers: [BalanceService,FileLogService],\n  exports: [BalanceService, TypeOrmModule]\n})\nexport class BalanceModule {}\n"
+        }
+    ]
+}

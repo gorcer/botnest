@@ -1,0 +1,22 @@
+{
+    "sourceFile": "src/test-utils/TypeORMMySqlTestingModule.ts",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 1,
+            "patches": [
+                {
+                    "date": 1691634770142,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1691634819732,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -0,0 +1,17 @@\n+import { TypeOrmModule } from '@nestjs/typeorm';\r\n+import { BalanceLog } from '../balance/entities/balanceLog.entity';\r\n+import { Balance } from '../balance/entities/balance.entity';\r\n+import { Order } from '../order/entities/order.entity';\r\n+import { Pair } from '../exchange/entities/pair.entity';\r\n+\r\n+export const TypeORMMySqlTestingModule = (entities: any[]) =>\r\n+  TypeOrmModule.forRoot({\r\n+    type: 'postgres',\r\n+    host: 'localhost',\r\n+    port: parseInt(process.env.DB_PORT),\r\n+    username: process.env.DB_LOGIN,\r\n+    password:  process.env.DB_PASS,\r\n+    database:  process.env.DB_NAME,\r\n+    entities: [Pair, Order, Balance, BalanceLog],\r\n+    synchronize: true,\r\n+  });\n\\ No newline at end of file\n"
+                }
+            ],
+            "date": 1691634770142,
+            "name": "Commit-0",
+            "content": "import { TypeOrmModule } from '@nestjs/typeorm';\r\n\r\nexport const TypeORMMySqlTestingModule = (entities: any[]) =>\r\n  TypeOrmModule.forRoot({\r\n    type: 'mysql',\r\n    host: process.env.MYSQL_HOST || 'localhost',\r\n    port: 3306,\r\n    username: process.env.MYSQL_USERNAME || 'nest',\r\n    password: process.env.MYSQL_PASSWORD || 'nest',\r\n    database: process.env.MYSQL_DATABASE || 'test',\r\n    entities: [...entities],\r\n    synchronize: true,\r\n  });"
+        }
+    ]
+}

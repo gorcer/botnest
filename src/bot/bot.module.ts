@@ -9,13 +9,21 @@ import { ExchangeModule } from '../exchange/exchange.module';
 import { AccountService } from '../exchange/account.service';
 import { LonelyTraderService } from './lonelyTrader.service';
 import { PairService } from '../exchange/pair.service';
+import { ActiveOrdersAboveProfit } from '../analitics/activeOrdersAboveProfit.service';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Order } from '../order/entities/order.entity';
+import { Balance } from '../balance/entities/balance.entity';
+import { AccountsReadyToBuy } from '../analitics/accountsReadyToBuy.service';
+import { AnaliticsModule } from '../analitics/analitics.module';
 
 
 @Module({
   imports: [
+    AnaliticsModule,
     ExchangeModule,
     OrderModule,
     BalanceModule,    
+    TypeOrmModule.forFeature([Order, Balance])
   ],
   controllers: [],
   providers: [
@@ -24,8 +32,8 @@ import { PairService } from '../exchange/pair.service';
     BalanceService,  
     PublicApiService,    
     AccountService,
-    LonelyTraderService,    
+    LonelyTraderService,       
   ],
-  exports: [BotService, LonelyTraderService],
+  exports: [LonelyTraderService],
 })
 export class BotModule {}

@@ -8,6 +8,7 @@ export class ApiService {
 
     exchange;
     lastTradesFetching;
+    markets={};
 
 
     constructor(exchangeClass, apiKey: string='', secret: string='', sandBoxMode: boolean=true) {        
@@ -37,11 +38,22 @@ export class ApiService {
         return {bid, ask};
     }
 
-    public async getLimits(pair: string):Promise<{minAmount:number, minCost:number}> {
+    public async getMarketInfo(pair: string):Promise<{minAmount:number, minCost:number, fee: number}> {
+
+        if (this.markets[pair]) {
+            return this.markets[pair];
+        }
+
         const markets = (await this.exchange.fetchMarkets()).filter((item) => item.symbol == pair);
         const {amount, cost} = markets[0].limits;
+        const {taker, maker} = markets[0];       
 
-        return {minAmount:amount.min, minCost:cost.min};
+        this.markets[pair] = {
+            minAmount:amount.min, 
+            minCost:cost.min,
+            fee: Math.max(taker, maker)
+        };
+        return this.markets[pair];
 
     }
 

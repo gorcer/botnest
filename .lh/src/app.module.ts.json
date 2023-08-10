@@ -1,0 +1,26 @@
+{
+    "sourceFile": "src/app.module.ts",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 2,
+            "patches": [
+                {
+                    "date": 1691542321267,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1691556075591,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -5,8 +5,9 @@\n import { ConfigModule } from '@nestjs/config';\n import { Balance } from './balance/entities/balance.entity';\n import { FileLogService } from './log/filelog.service';\n import { Pair } from './exchange/entities/pair.entity';\n+import { BalanceLog } from './balance/entities/balanceLog.entity';\n \n @Module({\n   imports: [    \n     ConfigModule.forRoot(),\n@@ -18,9 +19,9 @@\n       password:  process.env.DB_PASS,\n       database:  process.env.DB_NAME,\n       entities: [Pair, Order, Balance, BalanceLog],\n       synchronize: true,\n-      // logging: true\n+      logging: process.env.DB_LOGGING == 'true'\n     }),        \n     BotModule\n   ],\n   controllers: [],\n"
+                },
+                {
+                    "date": 1691634804161,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -0,0 +1,30 @@\n+import { Module } from '@nestjs/common';\n+import { TypeOrmModule } from '@nestjs/typeorm';\n+import { Order } from './order/entities/order.entity';\n+import { BotModule } from './bot/bot.module';\n+import { ConfigModule } from '@nestjs/config';\n+import { Balance } from './balance/entities/balance.entity';\n+import { FileLogService } from './log/filelog.service';\n+import { Pair } from './exchange/entities/pair.entity';\n+import { BalanceLog } from './balance/entities/balanceLog.entity';\n+\n+@Module({\n+  imports: [    \n+    ConfigModule.forRoot(),\n+    TypeOrmModule.forRoot({\n+      type: 'postgres',\n+      host: 'localhost',\n+      port: parseInt(process.env.DB_PORT),\n+      username: process.env.DB_LOGIN,\n+      password:  process.env.DB_PASS,\n+      database:  process.env.DB_NAME,\n+      entities: [Pair, Order, Balance, BalanceLog],\n+      synchronize: true,\n+      logging: process.env.DB_LOGGING == 'true'\n+    }),        \n+    BotModule\n+  ],\n+  controllers: [],\n+  providers: [ FileLogService],\n+})\n+export class AppModule {}\n"
+                }
+            ],
+            "date": 1691542321267,
+            "name": "Commit-0",
+            "content": "import { Module } from '@nestjs/common';\nimport { TypeOrmModule } from '@nestjs/typeorm';\nimport { Order } from './order/entities/order.entity';\nimport { BotModule } from './bot/bot.module';\nimport { ConfigModule } from '@nestjs/config';\nimport { Balance } from './balance/entities/balance.entity';\nimport { FileLogService } from './log/filelog.service';\nimport { Pair } from './exchange/entities/pair.entity';\n\n@Module({\n  imports: [    \n    ConfigModule.forRoot(),\n    TypeOrmModule.forRoot({\n      type: 'postgres',\n      host: 'localhost',\n      port: parseInt(process.env.DB_PORT),\n      username: process.env.DB_LOGIN,\n      password:  process.env.DB_PASS,\n      database:  process.env.DB_NAME,\n      entities: [Pair, Order, Balance, BalanceLog],\n      synchronize: true,\n      // logging: true\n    }),        \n    BotModule\n  ],\n  controllers: [],\n  providers: [ FileLogService],\n})\nexport class AppModule {}\n"
+        }
+    ]
+}

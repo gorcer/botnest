@@ -1,4 +1,4 @@
-import {  BeforeInsert, Column, CreateDateColumn, Entity, Index, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import {  BeforeInsert, Column, CreateDateColumn, Entity, Index, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { Order } from "../../order/entities/order.entity";
 
 
@@ -9,6 +9,9 @@ export class Pair {
     
     @CreateDateColumn()
     createdAt: Date;
+
+    @UpdateDateColumn({ type: "timestamp", default: () => "CURRENT_TIMESTAMP(6)", onUpdate: "CURRENT_TIMESTAMP(6)" })
+    updatedAt: Date;
 
     @Index()
     @Column({type:"varchar",default:'BTC'})
@@ -27,8 +30,17 @@ export class Pair {
     @Column({type: "decimal", nullable: true})
     lastPrice: number;
     
+    @Column({type: "decimal", nullable: true})
+    minAmount1: number;
+
+    @Column({type: "decimal", nullable: true})
+    minAmount2: number;
+    
     @Column({type: "boolean", default: true})
     isActive: boolean;
+
+    @Column({type: "decimal", nullable: true})
+    fee: number;
 
     // @OneToMany(() => Order, orders => orders.pair)
     // orders: Order[];

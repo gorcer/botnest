@@ -5,9 +5,8 @@ import { Balance } from "./entities/balance.entity";
 import { Repository } from "typeorm";
 import { lock } from "../helpers";
 import { FileLogService } from "../log/filelog.service";
-const { compareTo } = require("js-big-decimal");
-
-const { multiply, add } = require("js-big-decimal");
+import { BalanceLog, OperationType } from "./entities/balanceLog.entity";
+const { compareTo, multiply, add, subtract } = require("js-big-decimal");
 
 @Injectable()
 export class BalanceService {
@@ -17,8 +16,13 @@ export class BalanceService {
     } | {} = {};
 
     constructor(
+        
         @InjectRepository(Balance)
         private balanceRepository: Repository<Balance>,
+
+        @InjectRepository(BalanceLog)
+        private balanceLogRepository: Repository<BalanceLog>,
+        
         private log: FileLogService,
 
     ) { }
@@ -27,6 +31,8 @@ export class BalanceService {
 
         return await lock.acquire('Balance', async () => {
             this.balances[accountId] = balances;
+            let operationType: OperationType;
+            let operationAmount;
 
             for (const [currency, amount] of Object.entries(balances)) {
                 let balance: Balance = await this.balanceRepository.findOneBy({
@@ -35,22 +41,39 @@ export class BalanceService {
                 });
                 if (!balance) {
                     if (compareTo(amount, 0) > 0) {
-                        balance = await this.balanceRepository.create({
+                        balance = this.balanceRepository.create({
                             accountId,
                             currency,
                             amount: amount
                         });
+                        operationType = OperationType.INIT;
+                        operationAmount = amount;
                     }
                 } else {
 
                     if (compareTo(balance.amount, amount) != 0) {
                         this.log.info('Balance discrepancy', currency, 'Need:', balance.amount, 'Reel:', amount);
-                    }
-                    balance.amount = amount;
+                        operationType = OperationType.ACTUALIZE;
+                        operationAmount = subtract(amount, balance.amount);
+                        balance.amount = amount;
+                    }                    
                 }
 
-                if (balance)
+                if (balance) {
                     await this.balanceRepository.save(balance);
+
+                    if (operationType) {
+                        this.balanceLogRepository.save(
+                            this.balanceLogRepository.create({
+                                accountId: balance.accountId,
+                                balanceId: balance.id,
+                                operationType,
+                                amount: operationAmount,
+                                total: balance.amount,                                
+                            })
+                        );
+                    }
+                }
             }
         });
 
@@ -88,14 +111,14 @@ export class BalanceService {
     }
 
     private async checkBalances(accountId) {
-        if (!this.balances[accountId])  {
+        if (!this.balances[accountId]) {
             this.loadBalancesAmount(accountId);
         }
 
     }
 
 
-    public async income(accountId: number, currency: string, amount: number) {
+    public async income(accountId: number, currency: string, sourceId:number, operationType: OperationType, amount: number) {
 
         this.checkBalances(accountId);
 
@@ -112,15 +135,23 @@ export class BalanceService {
         }
         await this.balanceRepository.save(balance);
 
-
-
+        this.balanceLogRepository.save(
+            this.balanceLogRepository.create({
+                accountId: balance.accountId,
+                balanceId: balance.id,
+                operationType,
+                amount: amount,
+                total: balance.amount,
+                sourceId
+            })
+        );
 
 
         return balance;
     }
 
-    public async outcome(accountId: number, currency: string, amount: number) {
-        return this.income(accountId, currency, multiply(-1, amount));
+    public async outcome(accountId: number, currency: string, sourceId:number, operationType: OperationType, amount: number) {
+        return this.income(accountId, currency, sourceId, operationType, multiply(-1, amount));
     }
 
 

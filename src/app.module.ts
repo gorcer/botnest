@@ -6,6 +6,7 @@ import { ConfigModule } from '@nestjs/config';
 import { Balance } from './balance/entities/balance.entity';
 import { FileLogService } from './log/filelog.service';
 import { Pair } from './exchange/entities/pair.entity';
+import { BalanceLog } from './balance/entities/balanceLog.entity';
 
 @Module({
   imports: [    
@@ -17,9 +18,9 @@ import { Pair } from './exchange/entities/pair.entity';
       username: process.env.DB_LOGIN,
       password:  process.env.DB_PASS,
       database:  process.env.DB_NAME,
-      entities: [Pair, Order, Balance],
+      entities: [Pair, Order, Balance, BalanceLog],
       synchronize: true,
-      // logging: true
+      logging: process.env.DB_LOGGING == 'true'
     }),        
     BotModule
   ],

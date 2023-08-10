@@ -31,3 +31,22 @@ export function isSuitableRate(rate: number, lastRate: number, needMargin:number
     const margin = divide(Math.abs(lastRate - rate), lastRate, 15);
     return compareTo(margin, needMargin) > 0;
 }
+
+/**
+* 
+* @param price Fix amount to limits
+* @param amount1 
+* @returns 
+*/
+export function checkLimits(minAmount: number, minCost: number, price: number, amount1: number=0) {
+
+   if (compareTo(amount1, minAmount) < 0)
+       amount1 = minAmount;
+
+   const amount2 = multiply(price, amount1);
+   if (compareTo(amount2, minCost) < 0) {
+       amount1 = divide(minCost * 1.1, price, 6);
+   }
+
+   return amount1;
+}

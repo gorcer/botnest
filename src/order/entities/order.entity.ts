@@ -15,6 +15,9 @@ export class Order {
     @CreateDateColumn()
     createdAt: Date;
 
+    @Column({type: "date", nullable: true})
+    closedAt: Date;
+
     @Column("int")
     createdAtSec: number;   
 

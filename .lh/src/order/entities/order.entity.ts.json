@@ -1,0 +1,22 @@
+{
+    "sourceFile": "src/order/entities/order.entity.ts",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 1,
+            "patches": [
+                {
+                    "date": 1691543267153,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1691543389953,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -14,9 +14,9 @@\n     \n     @CreateDateColumn()\n     createdAt: Date;\n \n-    @Column(\"date\")\n+    @Column({type: \"date\", nullable: true})\n     closedAt: Date;\n \n     @Column(\"int\")\n     createdAtSec: number;   \n"
+                }
+            ],
+            "date": 1691543267153,
+            "name": "Commit-0",
+            "content": "import {  BeforeInsert, Column, CreateDateColumn, Entity, Index, JoinTable, ManyToOne, PrimaryGeneratedColumn } from \"typeorm\";\nimport { Pair } from \"../../exchange/entities/pair.entity\";\n\nexport enum OrderSideEnum {\n    BUY = 'buy',\n    SELL = 'sell',\n  }\n\n@Entity()\n@Index(['rate','createdAtSec','amount1','prefilled','isActive','currency1', 'currency2'])\nexport class Order {\n    @PrimaryGeneratedColumn()\n    id: number;\n    \n    @CreateDateColumn()\n    createdAt: Date;\n\n    @Column(\"date\")\n    closedAt: Date;\n\n    @Column(\"int\")\n    createdAtSec: number;   \n\n    @Index()\n    @Column({type: \"int\", default: 1})    \n    accountId: number;\n\n    @Column(\"varchar\")\n    extOrderId: string;\n    \n    @Index()\n    @Column({type: \"int\", nullable: true})\n    parentId: number;\n\n    @Index()\n    @Column({\n        type: \"enum\",\n        enum: OrderSideEnum,   \n        default: OrderSideEnum.BUY     \n    })\n    side: OrderSideEnum\n\n    \n    @Column({type:\"varchar\",default:'BTC'})\n    currency1: string;\n\n    \n    @Column({type:\"varchar\",default:'USDT'})\n    currency2: string;\n\n    @Column(\"decimal\")\n    rate: number;\n    \n    @Column(\"decimal\")\n    expectedRate:number;\n    \n    @Column(\"decimal\")\n    amount1: number;\n\n    @Column(\"decimal\")\n    amount2: number;\n\n    @Column({type: \"decimal\", default:0})\n    fee: number;\n\n    @Column({type: \"decimal\", default: 0, comment: \"How much in close orders put\"})\n    prefilled: number;\n\n    @Column({type: \"decimal\", default: 0, comment:\"How much realy closed\"})\n    filled: number;\n    \n    @Column({type: \"boolean\", default: true})\n    isActive: boolean;\n\n    @Column({type: \"decimal\", default:0})\n    profit: number;\n    \n    @Column({type: \"decimal\", default:0})\n    profitPc: number;\n\n    get pairTitle(): string {        \n        return this.currency1 + '/' + this.currency2;\n    }\n    \n    @BeforeInsert()\n    beforeInsert() {\n      // if (this.type == OrderType.BUY) {\n      //   this.filled = this.amount1;\n      // }\n      this.createdAtSec = Math.floor(Date.now() / 1000)\n    }\n\n    @ManyToOne(type => Pair)\n    @JoinTable()\n    pair: Pair;\n\n    // @ManyToOne(() => Pair, pair => pair.orders)\n    // pair: Pair;\n\n}\n"
+        }
+    ]
+}

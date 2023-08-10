@@ -1,0 +1,18 @@
+{
+    "sourceFile": "src/analitics/accountsReadyToBuy.service.ts",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1691632796853,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1691632796853,
+            "name": "Commit-0",
+            "content": "import { Injectable } from \"@nestjs/common\";\r\nimport { InjectRepository } from \"@nestjs/typeorm\";\r\nimport { Order, OrderSideEnum } from \"../order/entities/order.entity\";\r\nimport { Repository } from \"typeorm\";\r\nimport { SEC_IN_YEAR } from \"../helpers\";\r\nimport { Pair } from \"../exchange/entities/pair.entity\";\r\nimport { Balance } from \"../balance/entities/balance.entity\";\r\n\r\nconst { add, divide } = require('js-big-decimal');\r\n\r\n\r\n@Injectable()\r\nexport class AccountsReadyToBuy {\r\n\r\n    constructor(\r\n        @InjectRepository(Balance)\r\n        private balanceRepository: Repository<Balance>\r\n    ) { }\r\n\r\n    async get(amount1: number, rateMargin: number): Promise<any> {\r\n        return await this.balanceRepository\r\n            .createQueryBuilder(\"balance\")\r\n            .innerJoin(Pair, 'pair', 'pair.currency2 = \"balance\".currency')\r\n            .leftJoin(Order, 'order', `\r\n                    \"order\".currency2 = \"balance\".currency and \r\n                    \"order\".\"isActive\" = true and\r\n                    \"order\".\"prefilled\" < \"order\".\"amount1\" and\r\n                    \"order\".rate > \"pair\".\"sellRate\" * (1-cast(:rateMargin as decimal)) and \r\n                    \"order\".rate < \"pair\".\"sellRate\" * (1+cast(:rateMargin as decimal))`,\r\n                { rateMargin })\r\n            .where('\"order\".id is null')\r\n            .andWhere(`pair.updatedAt > CURRENT_TIMESTAMP - interval '5 seconds'`)\r\n            .andWhere(`\"balance\".amount > \"pair\".\"minAmount2\"`)\r\n            .andWhere(`\"balance\".amount > :amount1 * \"pair\".\"sellRate\"`, { amount1 })\r\n            .andWhere(`\"pair\".\"isActive\" = true`)\r\n            .select(`\r\n                \"balance\".\"accountId\",\r\n                \"pair\".\"sellRate\" as \"rate\",\r\n                GREATEST(cast(${amount1} as DECIMAL), \"pair\".\"minAmount1\") as amount1,\r\n                \"pair\".currency1,\r\n                \"pair\".currency2\r\n                `)\r\n            .getRawMany();\r\n    }\r\n\r\n}"
+        }
+    ]
+}

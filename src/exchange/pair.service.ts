@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { elapsedSecondsFrom, lock } from "../helpers";
+import { checkLimits, elapsedSecondsFrom, lock, updateModel } from "../helpers";
 import { PublicApiService } from "./publicApi.service";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Pair } from "./entities/pair.entity";
@@ -11,16 +11,21 @@ export class PairService  {
   pairs:{ [id: string]: Pair }={};
   lastRequestTime={};  
   FETCH_TIMEOUT;
+  minAmount;
+  minCost;
 
   constructor(
+    
     public publicApi: PublicApiService,
+
     @InjectRepository(Pair)
     private pairRepository: Repository<Pair>
   ) {    
     this.FETCH_TIMEOUT = Number(process.env.EXCHANGE_RATES_FETCH_TIMEOUT);
+    
   }
 
-  async fetchOrCreatePair(currency1: string, currency2: string): Promise<Pair> {
+  public async fetchOrCreatePair(currency1: string, currency2: string): Promise<Pair> {
     let pair = await this.pairRepository.findOneBy({currency1, currency2});
     if (!pair) {
       pair = this.pairRepository.create({currency1, currency2})
@@ -63,19 +68,29 @@ export class PairService  {
     return this.pairs[pair];
   }
 
+  async setInfo(pairModel, data) {
+    updateModel(pairModel, data);
+    
+    await this.pairRepository.save(
+      pairModel
+    );
+  }
+
   public async refreshPairInfo(currency1: string, currency2: string) {
     const pair = currency1 + '/' + currency2;
 
     const lastPrice = await this.publicApi.getLastPrice(pair);
     const {bid, ask} = await this.publicApi.getActualRates(pair);
+    const { minAmount, minCost, fee } = await this.publicApi.getMarketInfo(pair);
 
-    this.pairs[pair].lastPrice = lastPrice;
-    this.pairs[pair].buyRate = bid;
-    this.pairs[pair].sellRate = ask;
-
-    await this.pairRepository.save(
-      this.pairs[pair]
-    );
+    await this.setInfo(this.pairs[pair], {
+      lastPrice,
+      buyRate: bid,
+      sellRate: ask,
+      minAmount1: checkLimits(minAmount, minCost, ask),
+      minAmount2: minCost,
+      fee
+    });
 
     return this.pairs[pair];
   }
