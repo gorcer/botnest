@@ -25,7 +25,7 @@ export class PairService  {
     
   }
 
-  public async fetchOrCreatePair(pairName: string): Promise<Pair> {
+  public async fetchOrCreate(pairName: string): Promise<Pair> {
     let pair = await this.pairRepository.findOneBy({name: pairName});
     if (!pair) {
       const {currency1, currency2} = extractCurrency(pairName);
@@ -37,38 +37,6 @@ export class PairService  {
     }
     return pair;
   }
-
-
-
-  // async getOrRefreshPair(currency1: string, currency2: string):Promise<Pair> {
-
-  //   const pair = currency1 + '/' + currency2;
-  //   if (!this.pairs[pair]) {
-  //     this.pairs[pair] = await this.fetchOrCreatePair(currency1, currency2);
-  //   }
-
-  //   if (!this.lastRequestTime[pair]) {
-  //     this.lastRequestTime[pair] = 1;
-  //   }
-
-
-  //   if ( elapsedSecondsFrom(this.FETCH_TIMEOUT, this.lastRequestTime[pair]) ) {
-
-  //     await lock.acquire('requestLastPair ' + pair, async () => {
-
-  //       if ( !elapsedSecondsFrom(this.FETCH_TIMEOUT, this.lastRequestTime[pair])) {
-  //         return this.pairs[pair];
-  //       }
-
-  //       this.lastRequestTime[pair] = Date.now()/1000;
-  //       await this.refreshPairInfo(currency1, currency2);
-
-  //     });
-
-  //   }
-
-  //   return this.pairs[pair];
-  // }
 
   async setInfo(pairModel, data) {
     updateModel(pairModel, data);
@@ -91,23 +59,5 @@ export class PairService  {
     });
   }
 
-  // public async refreshPairInfo(currency1: string, currency2: string) {
-  //   const pair = currency1 + '/' + currency2;
-
-  //   const lastPrice = await this.publicApi.getLastPrice(pair);
-  //   const {bid, ask} = await this.publicApi.getActualRates(pair);
-  //   const { minAmount, minCost, fee } = await this.publicApi.getMarketInfo(pair);
-
-  //   await this.setInfo(this.pairs[pair], {
-  //     lastPrice,
-  //     buyRate: bid,
-  //     sellRate: ask,
-  //     minAmount1: checkLimits(minAmount, minCost, ask),
-  //     minAmount2: minCost,
-  //     fee
-  //   });
-
-  //   return this.pairs[pair];
-  // }
 
 }

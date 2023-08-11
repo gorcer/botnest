@@ -28,6 +28,11 @@ export function elapsedSecondsFrom(sec, from) {
 }
 
 export function isSuitableRate(rate: number, lastRate: number, needMargin:number) {
+
+    if (!lastRate) {
+        return true;
+    }
+
     const margin = divide(Math.abs(lastRate - rate), lastRate, 15);
     return compareTo(margin, needMargin) > 0;
 }
@@ -49,4 +54,12 @@ export function checkLimits(minAmount: number, minCost: number, price: number, a
    }
 
    return amount1;
+}
+
+export function extractCurrency(pair:string) {
+    const symbols = pair.split('/');
+    return {
+      currency1: symbols[0],
+      currency2: symbols[1]
+    };
 }

@@ -6,5 +6,6 @@ export class UpdateOrderDto extends PartialType(CreateOrderDto) {
     filled?: number;
     prefilled?:number;
     profit?:number;
-    profitPc?:number;
+    anualProfitPc?:number;
+    closedAt?: Date;
 }

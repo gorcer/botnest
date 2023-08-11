@@ -1,12 +1,10 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Order } from './order/entities/order.entity';
 import { BotModule } from './bot/bot.module';
 import { ConfigModule } from '@nestjs/config';
-import { Balance } from './balance/entities/balance.entity';
 import { FileLogService } from './log/filelog.service';
-import { Pair } from './exchange/entities/pair.entity';
-import { BalanceLog } from './balance/entities/balanceLog.entity';
+import { Entities } from './all.entities';
+
 
 @Module({
   imports: [    
@@ -18,7 +16,7 @@ import { BalanceLog } from './balance/entities/balanceLog.entity';
       username: process.env.DB_LOGIN,
       password:  process.env.DB_PASS,
       database:  process.env.DB_NAME,
-      entities: [Pair, Order, Balance, BalanceLog],
+      entities: Entities,      
       synchronize: true,
       logging: process.env.DB_LOGGING == 'true'
     }),        
@@ -27,4 +25,8 @@ import { BalanceLog } from './balance/entities/balanceLog.entity';
   controllers: [],
   providers: [ FileLogService],
 })
-export class AppModule {}
+export class AppModule {
+  constructor() {
+    process.env.TZ = process.env.TIMEZONE
+  }
+}

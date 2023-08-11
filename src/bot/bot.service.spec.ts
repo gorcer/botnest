@@ -13,7 +13,7 @@ import { SilentLogService } from '../log/silentlog.service';
 import { FileLogService } from '../log/filelog.service';
 import { ApiService } from '../exchange/api.service';
 import ccxt from 'ccxt';
-import { AccountService } from '../exchange/account.service';
+import { AccountService } from '../user/account.service';
 import { PublicApiService } from '../exchange/publicApi.service';
 
 const { divide, subtract, multiply, compareTo, add } = require("js-big-decimal");
