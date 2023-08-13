@@ -56,7 +56,7 @@ export function checkLimits(minAmount: number, minCost: number, price: number, a
    return amount1;
 }
 
-export function extractCurrency(pair:string) {
+export function extractCurrency(pair:string):{currency1: string, currency2: string} {
     const symbols = pair.split('/');
     return {
       currency1: symbols[0],

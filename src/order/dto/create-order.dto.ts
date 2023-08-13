@@ -14,5 +14,6 @@ export class CreateOrderDto {
     pairId: number;  
     currency1: string;  
     currency2: string;  
+    createdAtSec:number;
 }
 

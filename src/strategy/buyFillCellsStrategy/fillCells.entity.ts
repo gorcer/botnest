@@ -14,6 +14,9 @@ export class FillCells {
     @Column({type: "int", default: 1})    
     accountId: number;
 
+    @Column({type: "int", default: 1})
+    pairId: number;
+
     @Column({type: "decimal", default:0})
     risk: number;
     

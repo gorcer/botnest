@@ -85,13 +85,10 @@ export class Order {
 
 
     
-    @BeforeInsert()
-    beforeInsert() {
-      // if (this.type == OrderType.BUY) {
-      //   this.filled = this.amount1;
-      // }
-      this.createdAtSec = Math.floor(Date.now() / 1000)
-    }
+    // @BeforeInsert()
+    // beforeInsert() {    
+    //   this.createdAtSec = Math.floor(Date.now() / 1000)
+    // }
 
 
 }

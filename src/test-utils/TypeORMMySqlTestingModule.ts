@@ -12,4 +12,5 @@ export const TypeORMMySqlTestingModule = (entities: any[]) =>
     database:  process.env.DB_NAME,
     entities: Entities,
     synchronize: true,
+    logging: process.env.DB_LOGGING == 'true'
   });

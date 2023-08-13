@@ -153,14 +153,26 @@ export class LonelyTraderService {
 		}
 		this.api = await this.accounts.getApiForAccount(this.account.id);
 
-		this.strategies.setStrategyForAccount(
-			this.account.id,
-			FillCells,
-			{
-				orderAmount: Number(process.env.BOT_ORDER_AMOUNT),
-			});
+			// актуализируем пары
+			for (const pairName of this.config.pairs) {
+				const pair = await this.pairs.fetchOrCreate(pairName);
+				await this.pairs.actualize(pair)
+				const {currency2} = extractCurrency(pairName);
+				const balance = await this.balance.getBalance(this.account.id, currency2);
 
-		this.strategies.setStrategyForAccount(
+				await this.strategies.setStrategyForAccount(
+					this.account.id,
+					FillCells,
+					{
+						orderAmount: Number(process.env.BOT_ORDER_AMOUNT),
+						pair,
+						balance
+					});
+			}
+
+		
+
+		await this.strategies.setStrategyForAccount(
 			this.account.id,
 			AwaitProfit,
 			{
@@ -186,11 +198,7 @@ export class LonelyTraderService {
 				// проверить состояние открытых ордеров
 				await this.checkCloseOrders();
 
-				// актуализируем пары
-				for (const pairName of this.config.pairs) {
-					const pair = await this.pairs.fetchOrCreate(pairName);
-					await this.pairs.actualize(pair)
-				}
+			
 
 				syncStatus = true;
 			} catch (e) {

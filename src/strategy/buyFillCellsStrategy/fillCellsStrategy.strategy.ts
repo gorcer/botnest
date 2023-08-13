@@ -9,7 +9,7 @@ import { RequestBuyInfoDto } from "../dto/request-buy-info.dto";
 import { BuyStrategyInterface } from "../interfaces/buyStrategy.interface";
 import { FillCells } from "./fillCells.entity";
 
-const { add, divide } = require('js-big-decimal');
+const { multiply, compareTo, subtract, add, divide } = require('js-big-decimal');
 
 
 @Injectable()
@@ -22,6 +22,23 @@ export class FillCellsStrategy implements BuyStrategyInterface {
         private balanceRepository: Repository<Balance>
     ) { }
 
+    prepareAttributes({balance, pair, orderAmount}) {
+
+        if (compareTo(orderAmount, pair.minAmount1)<0) {
+            orderAmount = pair.minAmount1;
+        }
+
+        const totalBalance = add(balance.amount, balance.inOrders);
+        const diffRate = subtract(pair.sellRate, pair.historicalMinRate);
+        const maxOrderCnt = Math.floor(divide(totalBalance, multiply(orderAmount, pair.sellRate)));
+
+        return {
+            orderAmount: orderAmount,
+            cellSize: Math.floor(divide(diffRate, maxOrderCnt)),
+            pairId: pair.id
+        }
+    }
+
     get(): Promise<Array<RequestBuyInfoDto>> {
         return this.balanceRepository
             .createQueryBuilder("balance")
@@ -32,7 +49,7 @@ export class FillCellsStrategy implements BuyStrategyInterface {
                     "order".currency2 = "balance".currency and 
                     "order"."isActive" = true and
                     "order"."prefilled" < "order"."amount1" and
-                    "order".rate > (("pair"."sellRate" / strategy.cellSize)::int * strategy.cellSize ) and 
+                    "order".rate >= (("pair"."sellRate" / strategy.cellSize)::int * strategy.cellSize ) and 
                     "order".rate < ((("pair"."sellRate" / strategy.cellSize)::int + 1) * strategy.cellSize)`
                 )
             .where('"order".id is null')

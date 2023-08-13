@@ -142,16 +142,7 @@ export class BotService {
 						),
 						parentOrder.fee
 					);
-
-					updateOrderDto.anualProfitPc =
-						multiply( //pc in year
-							SEC_IN_YEAR,
-							divide( // pc per second
-								divide(updateOrderDto.profit, parentOrder.amount2, 15), // absPc
-								(order.createdAtSec - parentOrder.createdAtSec), // elapsed
-								15
-							)
-						);
+					updateOrderDto.anualProfitPc = divide(multiply(SEC_IN_YEAR, updateOrderDto.profit), order.amount2, 15)					
 
 					updateOrderDto.closedAt = new Date();
 
@@ -210,7 +201,8 @@ export class BotService {
 					amount1: extOrder.amount,
 					amount2: extOrder.cost,
 					fee: feeInCurrency2Cost,
-					accountId
+					accountId,
+					createdAtSec: Math.floor(Date.now() / 1000)
 				});
 
 				await this.balance.income(accountId, currency1, order.id, OperationType.BUY, extOrder.amount);
@@ -286,6 +278,7 @@ export class BotService {
 					parentId: orderInfo.id,
 					side: OrderSideEnum.SELL,
 					accountId: orderInfo.accountId,
+					createdAtSec: Math.floor(Date.now() / 1000)
 				});
 				this.log.info("New close order",
 					orderInfo.id, ' => ', closeOrder.id,

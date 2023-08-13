@@ -14,6 +14,11 @@ import { PairService } from '../../exchange/pair.service';
 import { BalanceService } from '../../balance/balance.service';
 import { BalanceModule } from '../../balance/balance.module';
 import { equal } from 'assert';
+import { extractCurrency } from '../../helpers';
+import { FillCells } from './fillCells.entity';
+import { StrategyService } from '../strategy.service';
+import { Entities } from '../../all.entities';
+import { StrategyModule } from '../strategy.module';
 
 describe('AccountsReadyToBuy', () => {
 
@@ -21,6 +26,7 @@ describe('AccountsReadyToBuy', () => {
   let orderService: OrderService;
   let pairService: PairService;
   let balanceService: BalanceService;
+  let strategyService: StrategyService;
 
   let orderRepository: Repository<Order>;
   let pairRepository: Repository<Pair>;
@@ -32,14 +38,14 @@ describe('AccountsReadyToBuy', () => {
         ConfigModule.forRoot({
           envFilePath: '.test.env',
         }),
-        TypeORMMySqlTestingModule([Balance, Order, Pair]),
-        TypeOrmModule.forFeature([Balance, Order, Pair]),
+        TypeORMMySqlTestingModule(Entities),
+        TypeOrmModule.forFeature(Entities),
         OrderModule,
         ExchangeModule,
-        BalanceModule
+        BalanceModule,
+        StrategyModule
       ],
-      providers: [
-        FillCellsStrategy,
+      providers: [        
       ],
     }).compile();
 
@@ -47,10 +53,12 @@ describe('AccountsReadyToBuy', () => {
     orderService = module.get<OrderService>(OrderService);
     pairService = module.get<PairService>(PairService);
     balanceService = module.get<BalanceService>(BalanceService);
+    strategyService = module.get<StrategyService>(StrategyService);
+
     orderRepository = module.get<Repository<Order>>(getRepositoryToken(Order));
     pairRepository = module.get<Repository<Pair>>(getRepositoryToken(Pair));
 
-    await prepareDB();
+    
   });
 
 
@@ -59,25 +67,54 @@ describe('AccountsReadyToBuy', () => {
     expect(service).toBeDefined();
   });
 
+  it('cell size', async () => {
+    const config = service.prepareAttributes({
+      orderAmount: 0.0001,
+      balance: {
+        amount: 900,
+        inOrders: 100
+      },
+      pair: {
+        id: 1,
+        historicalMinRate: 10000,
+        sellRate: 20000,
+        minAmount1: 0.001
+      }
+    });
+
+
+    equal(config.cellSize, Math.floor(10000 / ((900+100) / (20000*0.001)) ));
+  });
+
   it('get orders', async () => {
 
-    const currency1 = 'BTC';
-    const currency2 = 'USDT';
+    const pairName = 'BTC/USDT';
+    const { currency1, currency2 } = extractCurrency(pairName);
     const accountId = 1;
     const balanceUSDT = 1000;
     const sellRate = 31000;
     const minAmount1 = 0.01;
 
-
-    const pair = await pairService.fetchOrCreate(currency1, currency2);
+    await prepareDB();
+    
+    const pair = await pairService.fetchOrCreate(pairName);
     await pairService.setInfo(pair, {
       lastPrice: 30000,
       buyRate: 29000,
       sellRate: sellRate,
       minAmount1,
       minAmount2: 10,
+      historicalMinRate: 13000
     });
 
+    strategyService.setStrategyForAccount(accountId, FillCells, {
+      balance: {
+        amount: 900,
+        inOrders: 100
+      },
+      pair,
+      orderAmount: 0.0001
+    });    
     
     await balanceService.set(
       accountId,
@@ -88,7 +125,7 @@ describe('AccountsReadyToBuy', () => {
 
       // Без баланса ничего не выйдет
       {
-        const accounts = await service.get(0.00001, 0.0001);
+        const accounts = await service.get();
         equal(accounts.length, 0);
       }
 
@@ -100,13 +137,15 @@ describe('AccountsReadyToBuy', () => {
       });
       // Баланс есть, оредров нет
     {
-      const accounts = await service.get(0.00001, 0.0001);
+      const accounts = await service.get();
       equal(accounts.length, 1);
       equal(accounts[0].rate, sellRate);
       equal(accounts[0].amount1, minAmount1);
     }
 
     await orderService.create({
+      pairName,
+      pairId: pair.id,
       accountId,
       amount1: 0.01,
       amount2: 10,
@@ -114,11 +153,12 @@ describe('AccountsReadyToBuy', () => {
       currency2,
       expectedRate: sellRate,
       rate: 25000,
-      extOrderId: "1"
+      extOrderId: "1",
+      createdAtSec: Math.floor(Date.now() / 1000)
     });
     // Есть ордер, но в другой рэйт
     {
-      const accounts = await service.get(0.00001, 0.0001);
+      const accounts = await service.get();
       equal(accounts.length, 1);
     }
     
@@ -130,11 +170,14 @@ describe('AccountsReadyToBuy', () => {
       currency2,
       expectedRate: sellRate,
       rate: sellRate,
-      extOrderId: "1"
+      extOrderId: "1",
+      pairName,
+      pairId: pair.id,
+      createdAtSec: Math.floor(Date.now() / 1000)
     });
     // Есть ордер и в наш рейт
     {
-      const accounts = await service.get(0.00001, 0.0001);
+      const accounts = await service.get();
       equal(accounts.length, 0);
     }
 

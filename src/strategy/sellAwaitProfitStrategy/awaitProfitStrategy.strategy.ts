@@ -20,7 +20,14 @@ export class AwaitProfitStrategy implements SellStrategyInterface {
     private ordersRepository: Repository<Order>
   ) { }
 
-  async get(): Promise<Array<RequestSellInfoDto>> {
+  prepareAttributes(config) {
+    return config;
+  }
+
+  async get(now?): Promise<Array<RequestSellInfoDto>> {
+
+    if (!now)
+      now = "extract(epoch from now())"; 
 
     return await this.ordersRepository
       .createQueryBuilder("order")
@@ -30,16 +37,16 @@ export class AwaitProfitStrategy implements SellStrategyInterface {
       100*((("pair"."buyRate" * "order".amount1 * (1-pair.fee)) / ("order".amount2 + "order".fee))-1) >= 
         case 
           when 
-            (extract(epoch from now()) - "order"."createdAtSec") < :SEC_IN_DAY
+            (${now} - "order"."createdAtSec") < ${SEC_IN_DAY}
           then  
-            ( (strategy.minDailyProfit / :SEC_IN_YEAR) * (extract(epoch from now()) - "order"."createdAtSec") )
+            ( (strategy.minDailyProfit / ${SEC_IN_YEAR}) * (${now} - "order"."createdAtSec") )
           else  
-            ( (strategy.minYerlyProfit / :SEC_IN_YEAR) * (extract(epoch from now()) - "order"."createdAtSec") )
+            ( (strategy.minYerlyProfit / ${SEC_IN_YEAR}) * (${now} - "order"."createdAtSec") )
         end        
-        `, {SEC_IN_DAY, SEC_IN_YEAR})
+        `)
       .andWhere(`"order".side = :side`, { side: OrderSideEnum.BUY })
       .andWhere(`"order".rate < "pair"."buyRate"`)
-      .andWhere(`"order"."createdAtSec" < extract(epoch from now())+1`)
+      .andWhere(`"order"."createdAtSec" < ${now}+1`)
       .andWhere('"order"."isActive" = true')
       .andWhere('"order"."prefilled" < "order"."amount1"')
       .select(`

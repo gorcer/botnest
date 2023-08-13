@@ -15,13 +15,18 @@ import { BalanceService } from '../../balance/balance.service';
 import { BalanceModule } from '../../balance/balance.module';
 import { equal } from 'assert';
 import { AwaitProfitStrategy } from './awaitProfitStrategy.strategy';
+import { extractCurrency } from '../../helpers';
+import { AwaitProfit } from './awaitProfit.entity';
+import { StrategyService } from '../strategy.service';
+import { StrategyModule } from '../strategy.module';
 
 describe('ActiveOrdersAboveProfit', () => {
 
-  let service: FillCellsStrategy;
+  let service: AwaitProfitStrategy;
   let orderService: OrderService;
   let pairService: PairService;
   let balanceService: BalanceService;
+  let strategyService: StrategyService;
 
   let orderRepository: Repository<Order>;
   let pairRepository: Repository<Pair>;
@@ -33,21 +38,23 @@ describe('ActiveOrdersAboveProfit', () => {
         ConfigModule.forRoot({
           envFilePath: '.test.env',
         }),
-        TypeORMMySqlTestingModule([Balance, Order, Pair]),
-        TypeOrmModule.forFeature([Balance, Order, Pair]),
+        TypeORMMySqlTestingModule([Balance, Order, Pair, AwaitProfit]),
+        TypeOrmModule.forFeature([Balance, Order, Pair, AwaitProfit]),
         OrderModule,
         ExchangeModule,
-        BalanceModule
+        BalanceModule,
+        StrategyModule
       ],
       providers: [
-        FillCellsStrategy,
       ],
     }).compile();
 
-    service = module.get<FillCellsStrategy>(FillCellsStrategy);
+    service = module.get<AwaitProfitStrategy>(AwaitProfitStrategy);
     orderService = module.get<OrderService>(OrderService);
     pairService = module.get<PairService>(PairService);
     balanceService = module.get<BalanceService>(BalanceService);
+    strategyService = module.get<StrategyService>(StrategyService);
+
     orderRepository = module.get<Repository<Order>>(getRepositoryToken(Order));
     pairRepository = module.get<Repository<Pair>>(getRepositoryToken(Pair));
 
@@ -60,42 +67,72 @@ describe('ActiveOrdersAboveProfit', () => {
     expect(service).toBeDefined();
   });
 
-  it('get orders', async () => {
+  it('get orders to sell', async () => {
 
-    const currency1 = 'BTC';
-    const currency2 = 'USDT';
+    const pairName = 'BTC/USDT';
+    const { currency1, currency2 } = extractCurrency(pairName);
     const accountId = 1;
     const balanceUSDT = 1000;
-    const sellRate = 31000;
+    const buyRate = 11000;
+    const sellRate = 11000;
     const minAmount1 = 0.01;
 
 
-    const pair = await pairService.fetchOrCreate(currency1, currency2);
-    await pairService.setInfo(pair, {
-      lastPrice: 30000,
-      buyRate: 29000,
-      sellRate: sellRate,
-      minAmount1,
-      minAmount2: 10,
-    });
 
-    
-      
-      {
-        
+    strategyService.setStrategyForAccount(accountId, AwaitProfit, {
+      minDailyProfit: 200,
+      minYerlyProfit: 30
+    });
+    const pair = await pairService.fetchOrCreate(pairName);
     await orderService.create({
+      pairName,
+      pairId: pair.id,
       accountId,
       amount1: 0.01,
       amount2: 10,
       currency1,
       currency2,
       expectedRate: sellRate,
-      rate: 25000,
-      extOrderId: "1"
+      rate: 10000,
+      extOrderId: "1",
+      createdAtSec: 0
     });
-        const orders = await service.get(30, 300);
-        
-      }
+
+    
+    
+
+    {
+
+      await pairService.setInfo(pair, {
+        lastPrice: buyRate,
+        buyRate: buyRate,
+        sellRate: sellRate,
+        minAmount1,
+        minAmount2: 10,
+        fee: 0.001
+      });
+      
+      const orders = await service.get(10);
+      equal(orders.length, 1)
+    }
+
+
+
+   
+      
+    {
+      await pairService.setInfo(pair, {
+        lastPrice: 10000,
+        buyRate: 10000,
+        sellRate: 10000,
+        minAmount1,
+        minAmount2: 10,
+        fee: 0.001
+      });    
+      
+      const orders = await service.get(10);
+      equal(orders.length, 0)
+    }
 
 
 

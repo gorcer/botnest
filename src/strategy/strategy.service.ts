@@ -33,6 +33,9 @@ export class StrategyService {
     async setStrategyForAccount(accountId:number, strategyModel:any, config: any) {        
         const strategyRepository = this.entityManager.getRepository(strategyModel);
 
+        const service = this.getStrategy(strategyModel.name);
+        config = service.prepareAttributes(config);
+
         let strategy = await strategyRepository.findOne({ where: { accountId } });
         if (!strategy) {
             strategy = strategyRepository.create({...{accountId}, ...config })           

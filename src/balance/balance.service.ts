@@ -89,11 +89,21 @@ export class BalanceService {
         }
     }
 
-    public async getBalanceAmount(accountId: number, currency: string) {
+    public async getBalance(accountId: number, currency: string):Promise<Balance> {
 
         await this.checkBalances(accountId);
         if (this.balances[accountId]?.[currency] != undefined) {
-            return this.balances[accountId][currency].amount;
+            return this.balances[accountId][currency];
+        } else {
+            return null;
+        }
+    }
+    
+    public async getBalanceAmount(accountId: number, currency: string) {
+
+        const balance = await this.getBalance(accountId, currency);
+        if (balance) {
+            return balance.amount;
         } else {
             return 0;
         }
