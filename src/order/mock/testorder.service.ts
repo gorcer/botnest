@@ -61,10 +61,6 @@ export class TestOrderService {
     updateModel(this.orders[id], updateOrderDto);
   }
 
-  async getActiveOrdersAboveProfit(currentRate: number, dailyProfit:number, yerlyProfit:number): Promise<Array<Order>> {
-      return Object.values(this.orders);
-  }
-
   async getSumByParentId(parentId:number, attribute: string) {
     const result = Object.values(this.orders).reduce((accumulator, currentValue:CreateOrderDto) => {
       return add(accumulator, (parentId == currentValue.parentId ? currentValue[attribute] : 0));

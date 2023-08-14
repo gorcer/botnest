@@ -41,7 +41,7 @@ export class AccountService {
     }
 
 
-    async getApiForAccount(accountId: number) {
+    async getApiForAccount(accountId: number):Promise<ApiService> {
 
         if (!this.exchanges[accountId]) {
             

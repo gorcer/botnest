@@ -5,6 +5,6 @@ export class RequestSellInfoDto {
     pairName: string;
     accountId: number;    
     pairId: number;
-    buyRate: number;    
+    rate: number;    
 }
 

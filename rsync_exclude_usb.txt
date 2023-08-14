@@ -35,3 +35,4 @@ tests/
 .git
 .env
 _log
+.test.env

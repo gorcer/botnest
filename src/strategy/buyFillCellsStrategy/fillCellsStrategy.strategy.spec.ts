@@ -125,7 +125,7 @@ describe('AccountsReadyToBuy', () => {
 
       // Без баланса ничего не выйдет
       {
-        const accounts = await service.get();
+        const accounts = await service.get(60*60);
         equal(accounts.length, 0);
       }
 
@@ -137,7 +137,7 @@ describe('AccountsReadyToBuy', () => {
       });
       // Баланс есть, оредров нет
     {
-      const accounts = await service.get();
+      const accounts = await service.get(60*60);
       equal(accounts.length, 1);
       equal(accounts[0].rate, sellRate);
       equal(accounts[0].amount1, minAmount1);
@@ -158,7 +158,7 @@ describe('AccountsReadyToBuy', () => {
     });
     // Есть ордер, но в другой рэйт
     {
-      const accounts = await service.get();
+      const accounts = await service.get(60*60);
       equal(accounts.length, 1);
     }
     

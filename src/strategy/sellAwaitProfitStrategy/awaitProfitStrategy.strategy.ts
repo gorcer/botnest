@@ -56,7 +56,7 @@ export class AwaitProfitStrategy implements SellStrategyInterface {
           "order"."accountId",
           "order"."amount1" - "order"."prefilled" as "needSell",
           "pair".id as "pairId",
-          "pair"."buyRate" as "buyRate"
+          "pair"."buyRate" as "rate"
       `)
       .getRawMany();
 

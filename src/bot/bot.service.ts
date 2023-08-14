@@ -21,8 +21,8 @@ const { divide, subtract, multiply, compareTo, add } = require("js-big-decimal")
 export class BotService {
 
 
-	buyStrategies:Array<BuyStrategyInterface>=[];
-	sellStrategies:Array<SellStrategyInterface>=[];
+	buyStrategies: Array<BuyStrategyInterface> = [];
+	sellStrategies: Array<SellStrategyInterface> = [];
 
 	constructor(
 
@@ -49,7 +49,7 @@ export class BotService {
 	}
 
 	runBuyStrategies() {
-		this.buyStrategies.forEach(async (strategy)=>{			
+		this.buyStrategies.forEach(async (strategy) => {
 
 			const orders = [];
 			const result = [];
@@ -69,7 +69,7 @@ export class BotService {
 					})
 				);
 			}
-	
+
 			await Promise.all(orders);
 
 		})
@@ -77,22 +77,22 @@ export class BotService {
 
 
 	runSellStrategies() {
-		this.sellStrategies.forEach(async (strategy)=>{			
+		this.sellStrategies.forEach(async (strategy) => {
 			this.log.info(strategy.constructor.name + ': Get active orders....');
 			const tm = Date.now();
 			const orderInfos = await strategy.get();
-	
+
 			this.log.info(strategy.constructor.name + ': Ok...' + orderInfos.length + ' orders ..' + ((Date.now() - tm) / 1000) + ' sec');
-	
+
 			const result = [];
 			for (const orderInfo of orderInfos) {
 				result.push(
 					this.createCloseOrder(orderInfo)
 				);
 			}
-	
+
 			await Promise.all(result);
-	
+
 			return orderInfos;
 		})
 	};
@@ -142,7 +142,13 @@ export class BotService {
 						),
 						parentOrder.fee
 					);
-					updateOrderDto.anualProfitPc = divide(multiply(SEC_IN_YEAR, updateOrderDto.profit), order.amount2, 15)					
+					updateOrderDto.anualProfitPc = divide(
+						multiply(
+							SEC_IN_YEAR,
+							divide(updateOrderDto.profit, subtract(order.createdAtSec, parentOrder.createdAtSec), 15)
+						),
+						parentOrder.amount2,
+						15);
 
 					updateOrderDto.closedAt = new Date();
 
@@ -237,7 +243,7 @@ export class BotService {
 
 		if (fee.currency != currency2) {
 			const pair = fee.currency + '/' + currency2;
-			const { lastPrice } = await this.publicApi.getLastPrice(pair);
+			const lastPrice = await this.publicApi.getLastPrice(pair);
 			if (!lastPrice) {
 				throw new Error("Unknown fee pair" + lastPrice);
 			}
@@ -252,7 +258,7 @@ export class BotService {
 
 	public async createCloseOrder(orderInfo: RequestSellInfoDto): Promise<Order> {
 
-		const price = orderInfo.buyRate;
+		const price = orderInfo.rate;
 		let closeOrder: Order;
 		const api = await this.api(orderInfo.accountId);
 		const pairName = orderInfo.pairName;

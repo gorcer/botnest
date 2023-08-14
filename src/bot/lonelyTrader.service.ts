@@ -153,7 +153,7 @@ export class LonelyTraderService {
 		}
 		this.api = await this.accounts.getApiForAccount(this.account.id);
 
-			// актуализируем пары
+			// актуализируем пары и стратегии
 			for (const pairName of this.config.pairs) {
 				const pair = await this.pairs.fetchOrCreate(pairName);
 				await this.pairs.actualize(pair)
