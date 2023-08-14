@@ -8,8 +8,12 @@ export class CreateOrderDto {
     amount2: number;
     fee?: number;
     parentId?: number;
-    side?: OrderSideEnum;
-    currency1: string;
-    currency2: string;
+    side?: OrderSideEnum;    
+    pairName: string;
     accountId: number;
+    pairId: number;  
+    currency1: string;  
+    currency2: string;  
+    createdAtSec:number;
 }
+

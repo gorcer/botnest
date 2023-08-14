@@ -39,3 +39,5 @@ _log
 .env
 
 todo.txt
+.lh
+.test.env

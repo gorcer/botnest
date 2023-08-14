@@ -15,7 +15,7 @@ export class Order {
     @CreateDateColumn()
     createdAt: Date;
 
-    @Column({type: "date", nullable: true})
+    @Column({type: "timestamp", nullable: true})
     closedAt: Date;
 
     @Column("int")
@@ -38,14 +38,19 @@ export class Order {
         enum: OrderSideEnum,   
         default: OrderSideEnum.BUY     
     })
-    side: OrderSideEnum
+    side: OrderSideEnum;        
 
-    
-    @Column({type:"varchar",default:'BTC'})
+    @Index()
+    @Column({type:"int", default:1, nullable: true})
+    pairId: number;
+
+    @Column({type:"varchar",default:'BTC/BUSD'})
+    pairName: string;
+
+    @Column({type:"varchar"})
     currency1: string;
-
     
-    @Column({type:"varchar",default:'USDT'})
+    @Column({type:"varchar"})
     currency2: string;
 
     @Column("decimal")
@@ -76,25 +81,14 @@ export class Order {
     profit: number;
     
     @Column({type: "decimal", default:0})
-    profitPc: number;
+    anualProfitPc: number;
 
-    get pairTitle(): string {        
-        return this.currency1 + '/' + this.currency2;
-    }
+
     
-    @BeforeInsert()
-    beforeInsert() {
-      // if (this.type == OrderType.BUY) {
-      //   this.filled = this.amount1;
-      // }
-      this.createdAtSec = Math.floor(Date.now() / 1000)
-    }
+    // @BeforeInsert()
+    // beforeInsert() {    
+    //   this.createdAtSec = Math.floor(Date.now() / 1000)
+    // }
 
-    @ManyToOne(type => Pair)
-    @JoinTable()
-    pair: Pair;
-
-    // @ManyToOne(() => Pair, pair => pair.orders)
-    // pair: Pair;
 
 }

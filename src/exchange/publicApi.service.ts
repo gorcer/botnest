@@ -38,7 +38,7 @@ export class PublicApiService extends ApiService {
     this.FETCH_TIMEOUT = Number(process.env.EXCHANGE_RATES_FETCH_TIMEOUT);
   }
 
-  async getLastPrice(pair: string) {
+  async getLastPrice(pair: string):Promise<number> {
     if (!this.lastPrice[pair] ||
       !this.lastPriceFetchTime[pair] ||
       elapsedSecondsFrom(this.FETCH_TIMEOUT, this.lastPriceFetchTime[pair])) {

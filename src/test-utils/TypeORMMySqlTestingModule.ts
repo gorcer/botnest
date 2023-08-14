@@ -1,8 +1,6 @@
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { BalanceLog } from '../balance/entities/balanceLog.entity';
-import { Balance } from '../balance/entities/balance.entity';
-import { Order } from '../order/entities/order.entity';
-import { Pair } from '../exchange/entities/pair.entity';
+import { Entities } from '../all.entities';
+
 
 export const TypeORMMySqlTestingModule = (entities: any[]) =>
   TypeOrmModule.forRoot({
@@ -12,6 +10,7 @@ export const TypeORMMySqlTestingModule = (entities: any[]) =>
     username: process.env.DB_LOGIN,
     password:  process.env.DB_PASS,
     database:  process.env.DB_NAME,
-    entities: [Pair, Order, Balance, BalanceLog],
+    entities: Entities,
     synchronize: true,
+    logging: process.env.DB_LOGGING == 'true'
   });

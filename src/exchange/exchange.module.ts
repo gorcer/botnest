@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AccountService } from './account.service';
-import { ApiService } from './api.service';
+import { AccountService } from '../user/account.service';
 import { PairService } from './pair.service';
 import { PublicApiService } from './publicApi.service';
 import { Pair } from './entities/pair.entity';
@@ -11,12 +10,10 @@ import { Pair } from './entities/pair.entity';
   imports: [TypeOrmModule.forFeature([Pair])],
   controllers: [],
   providers: [
-    PublicApiService,    
-    AccountService,
+    PublicApiService,        
     PairService
   ],
-  exports: [
-    AccountService,
+  exports: [    
     PairService
   ]
 })

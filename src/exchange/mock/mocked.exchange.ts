@@ -39,12 +39,12 @@ export class MockedExchange {
    
     setNextOrderBook(bid:number, ask:number) {
         this.orderbook.push({
-            bids: [ bid ],
-            asks: [ ask ]
+            bids: [ [ bid ] ],
+            asks: [ [ ask ] ]
         });
     };
 
-    watchOrderBook(pair, limit) {
+    fetchOrderBook(pair, limit) {
         
         const current = this.orderbook.shift();
         if (!current) {

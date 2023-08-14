@@ -12,7 +12,7 @@ const { compareTo, multiply, add, subtract } = require("js-big-decimal");
 export class BalanceService {
 
     balances: {
-        (account_id: number): BalancesDto
+        (account_id: number): Balance
     } | {} = {};
 
     constructor(
@@ -29,16 +29,17 @@ export class BalanceService {
 
     public async set(accountId: number, balances: BalancesDto) {
 
+        
         return await lock.acquire('Balance', async () => {
-            this.balances[accountId] = balances;
+            
             let operationType: OperationType;
             let operationAmount;
 
             for (const [currency, amount] of Object.entries(balances)) {
-                let balance: Balance = await this.balanceRepository.findOneBy({
+                let balance = await this.getBalance(
                     accountId,
                     currency,
-                });
+                );
                 if (!balance) {
                     if (compareTo(amount, 0) > 0) {
                         balance = this.balanceRepository.create({
@@ -48,6 +49,7 @@ export class BalanceService {
                         });
                         operationType = OperationType.INIT;
                         operationAmount = amount;
+                        this.balances[accountId][currency] = balance;
                     }
                 } else {
 
@@ -60,6 +62,7 @@ export class BalanceService {
                 }
 
                 if (balance) {
+                    
                     await this.balanceRepository.save(balance);
 
                     if (operationType) {
@@ -79,31 +82,30 @@ export class BalanceService {
 
     }
 
-    public async loadBalancesAmount(accountId: number) {
+    public async loadBalances(accountId: number) {
         const balances = await this.balanceRepository.find();
         for (const balance of balances) {
             if (!this.balances[accountId])
                 this.balances[accountId] = {};
 
-            this.balances[accountId][balance.currency] = balance.amount;
+            this.balances[accountId][balance.currency] = balance;
         }
     }
 
-    public async getBalanceAmount(accountId: number, currency: string) {
+    public async getBalance(accountId: number, currency: string):Promise<Balance> {
 
+        await this.checkBalances(accountId);
         if (this.balances[accountId]?.[currency] != undefined) {
             return this.balances[accountId][currency];
+        } else {
+            return null;
         }
+    }
+    
+    public async getBalanceAmount(accountId: number, currency: string) {
 
-        let balance = await this.balanceRepository.findOneBy({
-            currency,
-        });
+        const balance = await this.getBalance(accountId, currency);
         if (balance) {
-
-            if (!this.balances[accountId])
-                this.balances[accountId] = {};
-
-            this.balances[accountId][currency] = balance.amount;
             return balance.amount;
         } else {
             return 0;
@@ -112,7 +114,7 @@ export class BalanceService {
 
     private async checkBalances(accountId) {
         if (!this.balances[accountId]) {
-            this.loadBalancesAmount(accountId);
+            return this.loadBalances(accountId);
         }
 
     }
@@ -120,19 +122,12 @@ export class BalanceService {
 
     public async income(accountId: number, currency: string, sourceId:number, operationType: OperationType, amount: number) {
 
-        this.checkBalances(accountId);
-
-        if (this.balances[accountId]?.[currency] != undefined) {
-            this.balances[accountId][currency] = add(this.balances[accountId][currency], amount);
-        }
-
-        let balance = await this.balanceRepository.findOneBy({
-            accountId,
-            currency,
-        });
-        if (balance) {
-            balance.amount = add(balance.amount, amount);
-        }
+        
+        const balance = await this.getBalance(accountId, currency);
+        if (!balance) {
+            throw new Error('Unknown balance ' + accountId + ' ' + currency);
+        }        
+        balance.amount = add(balance.amount, amount);
         await this.balanceRepository.save(balance);
 
         this.balanceLogRepository.save(

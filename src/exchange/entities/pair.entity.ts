@@ -14,11 +14,15 @@ export class Pair {
     updatedAt: Date;
 
     @Index()
+    @Column({type:"varchar",default:'BTC/BUSD'})
+    name: string;
+
+    @Index()
     @Column({type:"varchar",default:'BTC'})
     currency1: string;
 
     @Index()
-    @Column({type:"varchar",default:'USDT'})
+    @Column({type:"varchar",default:'BUSD'})
     currency2: string;
 
     @Column({type: "decimal", nullable: true})
@@ -41,6 +45,9 @@ export class Pair {
 
     @Column({type: "decimal", nullable: true})
     fee: number;
+
+    @Column({type: "decimal", default: 13000})
+    historicalMinRate: number;
 
     // @OneToMany(() => Order, orders => orders.pair)
     // orders: Order[];
