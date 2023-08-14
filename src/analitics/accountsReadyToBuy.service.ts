@@ -29,7 +29,7 @@ export class AccountsReadyToBuy {
                     "order".rate < "pair"."sellRate" * (1+cast(:rateMargin as decimal))`,
                 { rateMargin })
             .where('"order".id is null')
-            .andWhere(`pair.updatedAt > CURRENT_TIMESTAMP - interval '5 seconds'`)
+            .andWhere(`pair."updatedAt" > CURRENT_TIMESTAMP - interval '5 seconds'`)
             .andWhere(`"balance".amount > "pair"."minAmount2"`)
             .andWhere(`"balance".amount > :amount1 * "pair"."sellRate"`, { amount1 })
             .andWhere(`"pair"."isActive" = true`)

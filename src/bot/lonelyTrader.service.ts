@@ -86,6 +86,7 @@ export class LonelyTraderService {
 		
 		let			
 			lastBid: number = 1,
+			lastAsk: number = 1,
 			lastStatUpdate = 0,
 			lastTradesUpdate = Date.now() / 1000;
 			
@@ -107,12 +108,13 @@ export class LonelyTraderService {
 
 				const { buyRate: rateBid, sellRate: rateAsk } = await this.pairs.getOrRefreshPair(this.accountConfig.currency1, this.accountConfig.currency2);
 
-				if (isSuitableRate(rateBid, lastBid, this.config.minBuyRateMarginToProcess)) {
+				if (isSuitableRate(rateAsk, lastAsk, this.config.minBuyRateMarginToProcess)) {
 					this.log.info('Rate ask: ', rateAsk);
 					const orders = await this.tryToBuy();
 					if (orders.length>0) {
 						await this.checkCloseOrders();
 					}
+					lastAsk = rateAsk;	
 				}
 
 				if (isSuitableRate(rateBid, lastBid, this.config.minSellRateMarginToProcess)) {

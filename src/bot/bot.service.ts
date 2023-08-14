@@ -78,7 +78,7 @@ export class BotService {
 						),
 						parentOrder.fee
 					);
-					updateOrderDto.profitPc = divide(multiply(SEC_IN_YEAR, updateOrderDto.profit), (order.createdAtSec - parentOrder.createdAtSec), 15)
+					updateOrderDto.profitPc = divide(multiply(SEC_IN_YEAR, updateOrderDto.profit), order.amount2, 15)
 
 				}
 				await this.orders.update(parentOrder.id, updateOrderDto);
