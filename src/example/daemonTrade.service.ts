@@ -167,13 +167,13 @@ export class DaemonTradeService {
 				FillCellsStrategy,
 				{
 					orderAmount: Number(process.env.STRATEGY_BUY_ORDER_AMOUNT),
-					risk: process.env.BOT_BUY_RISK,
+					risk: process.env.STRATEGY_BUY_RISK,
 					pairId: pair.id,
 					cellSize: FillCellsStrategy.calculateCellSize({
 						balance,
 						pair,
 						orderAmount: Number(process.env.STRATEGY_BUY_ORDER_AMOUNT),
-						risk: process.env.BOT_BUY_RISK,
+						risk: process.env.STRATEGY_BUY_RISK,
 					})
 				});
 		}
