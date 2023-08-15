@@ -30,9 +30,9 @@ export class AwaitProfitStrategy implements SellStrategyInterface {
       now = "extract(epoch from now())"; 
 
     return await this.ordersRepository
-      .createQueryBuilder("order")
+      .createQueryBuilder("order")      
+      .innerJoin(Pair, 'pair', 'pair.id = "order"."pairId"')
       .innerJoin(AwaitProfit, 'strategy', 'strategy."accountId" = "order"."accountId"')
-      .innerJoinAndSelect(Pair, 'pair', 'pair.id = "order"."pairId"')
       .andWhere(`
       100*((("pair"."buyRate" * "order".amount1 * (1-pair.fee)) / ("order".amount2 + "order".fee))-1) >= 
         case 

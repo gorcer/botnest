@@ -17,10 +17,11 @@ order by dt desc
 
 
 
--- Expected rate
+-- Expected sell
+
 select 
-order_id
-createdAt,
+order_id,
+"createdAt",
 t."elapsedDays",
 t."elapsedSeconds",
 orderRate,
@@ -32,53 +33,62 @@ expectedProfit
 from
 (
 SELECT 
-"order"."id" AS "order_id",
+"order".id as "order_id",
 "order"."createdAt",
-(extract(epoch from now()) - "order"."createdAtSec")/60/60/24 as "elapsedDays",
-(extract(epoch from now()) - "order"."createdAtSec") as "elapsedSeconds",
-"order"."rate" as orderRate,
+          "order"."pairName",
+          "order"."id",
+          "order"."prefilled",
+          "order"."accountId",
+          "order"."amount1" - "order"."prefilled" as "needSell",
+          "pair".id as "pairId",
+          "order"."rate" as orderRate,
 "pair"."buyRate" as currentRate,
 "order".amount1,
 ("order".amount2 + "order".fee) as amount2,
+          (extract(epoch from now()) - "order"."createdAtSec")/60/60/24 as "elapsedDays",
+(extract(epoch from now()) - "order"."createdAtSec") as "elapsedSeconds",
 100*((("pair"."buyRate" * "order".amount1*(1-pair.fee)) / ("order".amount2 + "order".fee))-1) as currentProfit,
-case
-          when
+case 
+          when 
             (extract(epoch from now()) - "order"."createdAtSec") < 86400
-          then
-            ( 0.000009512937595 * (extract(epoch from now()) - "order"."createdAtSec") )
-          else
-            ( 0.000000951293760 * (extract(epoch from now()) - "order"."createdAtSec") )
-        end as expectedProfit
-FROM "order" "order" 
-INNER JOIN "pair" "pair" ON "pair"."currency1" = "order".currency1 AND "pair"."currency2" = "order".currency2 
-WHERE 
-	"order".side = 'buy' and	
-	"order"."createdAtSec" < extract(epoch from now()) AND 
-	"order"."isActive" = true AND 
-	"order"."prefilled" < "order"."amount1"
+          then  
+            ( ("strategy"."minDailyProfit" / 31536000) * (extract(epoch from now()) - "order"."createdAtSec") )
+          else  
+            ( ("strategy"."minYerlyProfit" / 31536000) * (extract(epoch from now()) - "order"."createdAtSec") )
+        end  as expectedProfit
+       FROM "order" "order" 
+       INNER JOIN "strategy_sell_awaitProfit" "strategy" ON strategy."accountId" = "order"."accountId"  
+       INNER JOIN "pair" "pair" ON "pair"."id" = "order"."pairId" 
+       WHERE "order".side = 'buy' AND 
+--         "order".rate < "pair"."buyRate" AND 
+         "order"."createdAtSec" < extract(epoch from now())+1 AND 
+         "order"."isActive" = true AND 
+         "order"."prefilled" < "order"."amount1"
 ) as t
 order by expectedRate;
 
 
 -- Expected buy
 SELECT 
-"order".rate,
-"pair"."sellRate" * (1-cast(0.001 as decimal)) as from,
- "pair"."sellRate" * (1+cast(0.001 as decimal)) as to,
+				"order".id,
+				"order"."createdAt",
+				"order".rate as orderRate,
                 "balance"."accountId",
                 "pair"."sellRate" as "rate",
-                GREATEST(cast(0.0001 as DECIMAL), "pair"."minAmount1") as amount1,
-                "pair".currency1,
-                "pair".currency2
-                 FROM "balance" "balance" INNER JOIN "pair" "pair" ON "pair"."currency2" = "balance".currency  
-                 LEFT JOIN 
-"order" "order" ON
-                    "order".currency2 = "balance".currency and
+                (("pair"."sellRate" / "strategy"."cellSize")::int * "strategy"."cellSize" ) as rateFrom,
+                ((("pair"."sellRate" / "strategy"."cellSize")::int + 1) * "strategy"."cellSize") as rateTo,
+                GREATEST(cast(strategy."orderAmount" as DECIMAL), "pair"."minAmount1") as amount1,
+                "pair".id as "pairId",
+                "pair".name as "pairName"
+                 FROM "balance" "balance" INNER JOIN "pair" "pair" ON "pair"."currency2" = "balance".currency  INNER JOIN "strategy_buy_fillCells" "strategy" ON strategy."accountId" = balance."accountId"  LEFT JOIN "order" "order" ON 
+                    "order"."accountId" = "balance"."accountId" and
+                    "order".currency2 = "balance".currency and 
                     "order"."isActive" = true and
-                    "order"."prefilled" < "order"."amount1" and                   
-                    "order".rate > "pair"."sellRate" * (1-cast(0.001 as decimal)) and
-                    "order".rate < "pair"."sellRate" * (1+cast(0.001 as decimal))                     
-WHERE 
---"order".id is null AND 
-"balance".amount > "pair"."minAmount2" AND 
-"balance".amount > 0.0001 * "pair"."sellRate"  
+                    "order"."prefilled" < "order"."amount1" and
+                    "order".rate >= (("pair"."sellRate" / "strategy"."cellSize")::int * "strategy"."cellSize" ) and 
+                    "order".rate < ((("pair"."sellRate" / "strategy"."cellSize")::int + 1) * "strategy"."cellSize") 
+                  WHERE 
+                  -- "order".id is null AND 
+                  -- "pair"."updatedAt" > CURRENT_TIMESTAMP - interval '10 seconds' AND 
+                  "balance".amount > "pair"."minAmount2" AND "balance".amount > strategy."orderAmount" * "pair"."sellRate" AND "pair"."isActive" = true
+            

@@ -166,7 +166,8 @@ export class LonelyTraderService {
 					{
 						orderAmount: Number(process.env.BOT_ORDER_AMOUNT),
 						pair,
-						balance
+						balance,
+						risk: process.env.BOT_BUY_RISK
 					});
 			}
 

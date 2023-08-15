@@ -22,20 +22,28 @@ export class FillCellsStrategy implements BuyStrategyInterface {
         private balanceRepository: Repository<Balance>
     ) { }
 
-    prepareAttributes({balance, pair, orderAmount}) {
+    prepareAttributes({balance, pair, orderAmount, risk}) {
 
         if (compareTo(orderAmount, pair.minAmount1)<0) {
             orderAmount = pair.minAmount1;
         }
 
-        const totalBalance = add(balance.amount, balance.inOrders);
+        const totalBalance = balance.amount;
         const diffRate = subtract(pair.sellRate, pair.historicalMinRate);
         const maxOrderCnt = Math.floor(divide(totalBalance, multiply(orderAmount, pair.sellRate)));
+        let cellSize = divide(diffRate, maxOrderCnt);
+        if (risk != undefined) {
+            if (risk > 99)
+                risk = 99;
+
+            cellSize = multiply(cellSize, (1 - risk / 100));
+        }
 
         return {
             orderAmount: orderAmount,
-            cellSize: Math.floor(divide(diffRate, maxOrderCnt)),
-            pairId: pair.id
+            cellSize: Math.floor(cellSize),
+            pairId: pair.id,
+            risk
         }
     }
 
@@ -43,7 +51,7 @@ export class FillCellsStrategy implements BuyStrategyInterface {
         return this.balanceRepository
             .createQueryBuilder("balance")
             .innerJoin(Pair, 'pair', 'pair.currency2 = "balance".currency')
-            .innerJoin(FillCells, 'strategy', 'strategy."accountId" = balance."accountId"')
+            .innerJoin(FillCells, 'strategy', 'strategy."accountId" = balance."accountId" and strategy."pairId" = pair.id')
             .leftJoin(Order, 'order', `
                     "order"."accountId" = "balance"."accountId" and
                     "order".currency2 = "balance".currency and 

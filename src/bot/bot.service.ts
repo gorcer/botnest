@@ -75,15 +75,6 @@ export class BotService {
 		})
 	}
 
-	public async addStrategy(strategyName) {
-		const strategy = this.strategies.getStrategy(strategyName);
-		if (strategy.side == OrderSideEnum.BUY) {
-			this.buyStrategies.push(strategy);
-		} else {
-			this.sellStrategies.push(strategy);
-		}
-	}
-
 	runSellStrategies() {
 		this.sellStrategies.forEach(async (strategy) => {
 			this.log.info(strategy.constructor.name + ': Get active orders....');
@@ -150,7 +141,7 @@ export class BotService {
 						),
 						parentOrder.fee
 					);
-					updateOrderDto.anualProfitPc = divide(
+					updateOrderDto.anualProfitPc = 100*divide(
 						multiply(
 							SEC_IN_YEAR,
 							divide(updateOrderDto.profit, subtract(order.createdAtSec, parentOrder.createdAtSec), 15)

@@ -53,9 +53,9 @@ export class AccountService {
             let account = this.accounts[accountId];
 
             if (account.exchangeClass) {
-                this.exchanges[accountId] = new ApiService(account.exchangeClass, account.apiKey, account.secret, account.isSandbox)
+                this.exchanges[accountId] = new ApiService(account.exchangeClass, account.apiKey, account.secret, account.testMode)
             } else {
-                this.exchanges[accountId] = new ApiService(account.exchangeName, account.apiKey, account.secret, account.isSandbox);
+                this.exchanges[accountId] = new ApiService(account.exchangeName, account.apiKey, account.secret, account.testMode);
             }
         }
 
