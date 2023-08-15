@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { IterableTraderService } from './example/iterableTrader.service';
+import { DaemonTradeService } from './example/daemonTrade.service';
 import { InlineTradeService } from './example/inlineTrade.service';
 import { ExampleModule } from './example.module';
 import { AppModule } from './app.module';
@@ -15,7 +15,7 @@ async function bootstrap() {
   switch (command) {
     case 'iterable':
       {
-        const bot = await app.resolve(IterableTraderService);
+        const bot = await app.resolve(DaemonTradeService);
         await bot.trade();
       }
       break;

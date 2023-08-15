@@ -5,7 +5,7 @@ import { ConfigModule } from '@nestjs/config';
 import { FileLogService } from './log/filelog.service';
 import { Entities } from './all.entities';
 import { InlineTradeService } from './example/inlineTrade.service';
-import { IterableTraderService } from './example/iterableTrader.service';
+import { DaemonTradeService } from './example/daemonTrade.service';
 import { BalanceService } from './balance/balance.service';
 import { BalanceModule } from './balance/balance.module';
 
@@ -31,7 +31,7 @@ import { BalanceModule } from './balance/balance.module';
   providers: [ 
     FileLogService,
     InlineTradeService,
-    IterableTraderService,    
+    DaemonTradeService,    
   ],
 })
 export class ExampleModule {

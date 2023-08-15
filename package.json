@@ -1,9 +1,9 @@
 {
   "name": "botnest",
-  "version": "0.0.1",
-  "description": "",
-  "author": "",
-  "private": true,
+  "version": "0.0.2",
+  "description": "Fully customized trading bot for cryptocurrency exchange with custom strategies",
+  "author": "Egor Zaretskiy",
+  "private": false,
   "license": "UNLICENSED",
   "scripts": {
     "typeorm": "env-cmd ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js",

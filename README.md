@@ -1,13 +1,13 @@
 # Nest.JS + CCXT Trading Bot
 
-This is a trading bot for cryptocurrency exchange with an ability to use custom strategies.
-There are two strategies on a board:
+This is a trading bot for a cryptocurrency exchange with an ability to use custom strategies.
+There are two strategies on the board:
 
 1) FillCells - bot purchase bitcoin with predefined steps (every $50 of rates for example). If there is an already opened order with current rate step found, the purchase is not made.
 
 2) AwaitProfit - bot is waiting for the exchange to rise and try to sell buyed bitcoin. If anual profit percent more that 200% then bot try to sell bitcoin. After 24 hours needed anual profit decreases to 30%.
 
-This simple strategies guaranteed you take minimum 30% anual profit, just be patient) 
+These simple strategies will guarantee you at least 30% anual profits, just be patient) 
 
 
 ## Requirements:

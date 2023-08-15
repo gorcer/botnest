@@ -62,8 +62,8 @@ export class FillCellsStrategy implements BuyStrategyInterface {
                     "order".currency2 = "balance".currency and 
                     "order"."isActive" = true and
                     "order"."prefilled" < "order"."amount1" and
-                    "order".rate >= (("pair"."sellRate" / strategy.cellSize)::int * strategy.cellSize ) and 
-                    "order".rate < ((("pair"."sellRate" / strategy.cellSize)::int + 1) * strategy.cellSize)`
+                    "order".rate >= (floor("pair"."sellRate" / "strategy"."cellSize") * "strategy"."cellSize" ) and 
+                    "order".rate < (ceil("pair"."sellRate" / "strategy"."cellSize") * "strategy"."cellSize" )`
                 )
             .where('"order".id is null')
             .andWhere(`pair.updatedAt > CURRENT_TIMESTAMP - interval '${waitSeconds} seconds'`)

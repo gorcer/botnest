@@ -13,15 +13,15 @@ const { divide, subtract, multiply, compareTo, add } = require("js-big-decimal")
 
 
 @Injectable()
-export class IterableTraderService {
+export class DaemonTradeService {
 
 	account: Account;
 	pairs: Array<string>;
 	api: ApiService;
 	accountConfig;
 	lastRates = {};
-	minBuyRateMarginToProcess = 0.0001;
-	minSellRateMarginToProcess = 0.0001;
+	minBuyRateMarginToProcess;
+	minSellRateMarginToProcess;
 
 
 	constructor(		
@@ -84,11 +84,11 @@ export class IterableTraderService {
 					lastTradesUpdate = Date.now() / 1000;
 				}
 
-				for (const pairName of this.pairs) {
-					this.api.watchTrades(pairName).then((items => {
-						this.log.info('Watch trade', items[0]?.info?.id);
-					}));
-				}
+				// for (const pairName of this.pairs) {
+				// 	this.api.watchTrades(pairName).then((items => {
+				// 		this.log.info('Watch trade', items[0]?.info?.id);
+				// 	}));
+				// }
 
 
 			} catch (e) {
@@ -106,17 +106,30 @@ export class IterableTraderService {
 
 		for (const pairName of pairs) {
 
+			if (!this.lastRates[pairName]) {
+				this.lastRates[pairName] = {
+					bid: 0,
+					ask: 0
+				}
+			}
 			const rates = await this.botnest.getActualRates(pairName);
-			isBidMargined = isSuitableRate(rates.bid, this.lastRates[pairName]?.bid, minBuyRateMarginToProcess);
-			isAskMargined = isSuitableRate(rates.ask, this.lastRates[pairName]?.ask, minSellRateMarginToProcess);
+			isBidMargined = isSuitableRate(rates.bid, this.lastRates[pairName].bid, minBuyRateMarginToProcess);
+			isAskMargined = isSuitableRate(rates.ask, this.lastRates[pairName].ask, minSellRateMarginToProcess);
 
-			if (isBidMargined || isAskMargined) {
+			if (isBidMargined) {
 
 				changedPairs[pairName] = rates;
 
-				this.log.info('Rates by ' + pairName + ': ', rates);
+				this.log.info('Rates by ' + pairName + ' bid:', rates.bid);
+				this.lastRates[pairName]['bid'] = rates.bid;
+			}
 
-				this.lastRates[pairName] = rates;
+			if (isAskMargined) {
+
+				changedPairs[pairName] = rates;
+
+				this.log.info('Rates by ' + pairName + ' ask:', rates.ask);
+				this.lastRates[pairName]['ask'] = rates.ask;
 			}
 
 		}
@@ -126,6 +139,8 @@ export class IterableTraderService {
 
 	private async init() {
 
+		this.minBuyRateMarginToProcess = process.env.DAEMON_MIN_BUY_RATE_MARGIN;
+		this.minSellRateMarginToProcess = process.env.DAEMON_MIN_SELL_RATE_MARGIN;
 		this.pairs = process.env.PAIRS.replace(' ', '').split(',');
 
 		this.botnest.addStrategy(FillCellsStrategy);

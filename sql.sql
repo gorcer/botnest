@@ -26,8 +26,7 @@ t."elapsedDays",
 t."elapsedSeconds",
 orderRate,
 currentRate,
---(orderRate * (1 + (0.00075*2 + expectedProfit/100))) as expectedRate,
-(amount2 * (1+expectedProfit/100))/amount1 as expectedRate,
+("orderFee" + amount2 * (1+expectedProfit/100) + amount2*"pairFee")/amount1 as expectedRate,
 currentProfit,
 expectedProfit
 from
@@ -47,7 +46,7 @@ SELECT
 ("order".amount2 + "order".fee) as amount2,
           (extract(epoch from now()) - "order"."createdAtSec")/60/60/24 as "elapsedDays",
 (extract(epoch from now()) - "order"."createdAtSec") as "elapsedSeconds",
-100*((("pair"."buyRate" * "order".amount1*(1-pair.fee)) / ("order".amount2 + "order".fee))-1) as currentProfit,
+100*((("pair"."buyRate" * "order".amount1*(1-pair.fee)) / ("order".amount2 + "order".fee))-1) as currentProfit
 case 
           when 
             (extract(epoch from now()) - "order"."createdAtSec") < 86400
@@ -75,8 +74,10 @@ SELECT
 				"order".rate as orderRate,
                 "balance"."accountId",
                 "pair"."sellRate" as "rate",
-                (("pair"."sellRate" / "strategy"."cellSize")::int * "strategy"."cellSize" ) as rateFrom,
-                ((("pair"."sellRate" / "strategy"."cellSize")::int + 1) * "strategy"."cellSize") as rateTo,
+                "strategy"."cellSize",
+                ("pair"."sellRate" / "strategy"."cellSize")::int,
+                (floor("pair"."sellRate" / "strategy"."cellSize") * "strategy"."cellSize" ) as rateFrom,
+                (ceil("pair"."sellRate" / "strategy"."cellSize") * "strategy"."cellSize") as rateTo,
                 GREATEST(cast(strategy."orderAmount" as DECIMAL), "pair"."minAmount1") as amount1,
                 "pair".id as "pairId",
                 "pair".name as "pairName"
@@ -85,10 +86,11 @@ SELECT
                     "order".currency2 = "balance".currency and 
                     "order"."isActive" = true and
                     "order"."prefilled" < "order"."amount1" and
-                    "order".rate >= (("pair"."sellRate" / "strategy"."cellSize")::int * "strategy"."cellSize" ) and 
-                    "order".rate < ((("pair"."sellRate" / "strategy"."cellSize")::int + 1) * "strategy"."cellSize") 
+                    "order".rate >= (floor("pair"."sellRate" / "strategy"."cellSize") * "strategy"."cellSize" ) and 
+                    "order".rate < (ceil("pair"."sellRate" / "strategy"."cellSize") * "strategy"."cellSize") 
                   WHERE 
                   -- "order".id is null AND 
                   -- "pair"."updatedAt" > CURRENT_TIMESTAMP - interval '10 seconds' AND 
                   "balance".amount > "pair"."minAmount2" AND "balance".amount > strategy."orderAmount" * "pair"."sellRate" AND "pair"."isActive" = true
             
+                        
