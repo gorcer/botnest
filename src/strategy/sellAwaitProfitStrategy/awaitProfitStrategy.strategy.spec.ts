@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { OrderService } from '../../order/order.service';
 import { ConfigModule } from '@nestjs/config';
-import { FillCellsStrategy } from '../buyFillCellsStrategy/fillCellsStrategy.strategy';
 import { Balance } from '../../balance/entities/balance.entity';
 import { TypeOrmModule, getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -49,7 +48,7 @@ describe('ActiveOrdersAboveProfit', () => {
       ],
     }).compile();
 
-    service = module.get<AwaitProfitStrategy>(AwaitProfitStrategy);
+    
     orderService = module.get<OrderService>(OrderService);
     pairService = module.get<PairService>(PairService);
     balanceService = module.get<BalanceService>(BalanceService);
@@ -57,6 +56,8 @@ describe('ActiveOrdersAboveProfit', () => {
 
     orderRepository = module.get<Repository<Order>>(getRepositoryToken(Order));
     pairRepository = module.get<Repository<Pair>>(getRepositoryToken(Pair));
+
+    service = strategyService.getStrategy(AwaitProfitStrategy);
 
     await prepareDB();
   });
@@ -79,7 +80,7 @@ describe('ActiveOrdersAboveProfit', () => {
 
 
 
-    strategyService.setStrategyForAccount(accountId, AwaitProfit, {
+    strategyService.setStrategyForAccount(accountId, AwaitProfitStrategy, {
       minDailyProfit: 200,
       minYerlyProfit: 30
     });
@@ -140,7 +141,7 @@ describe('ActiveOrdersAboveProfit', () => {
 
   const prepareDB = async function () {
 
-    if (process.env.BOT_TEST != 'true') {
+    if (process.env.TEST_MODE != 'true') {
       throw new Error('Cant run in prod, you loss all data!!!');
     }
 

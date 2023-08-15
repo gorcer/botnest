@@ -6,6 +6,8 @@ import { FileLogService } from './log/filelog.service';
 import { Entities } from './all.entities';
 import { InlineTradeService } from './example/inlineTrade.service';
 import { IterableTraderService } from './example/iterableTrader.service';
+import { BalanceService } from './balance/balance.service';
+import { BalanceModule } from './balance/balance.module';
 
 
 @Module({
@@ -22,14 +24,17 @@ import { IterableTraderService } from './example/iterableTrader.service';
       synchronize: true,
       logging: process.env.DB_LOGGING == 'true'
     }),        
-    BotModule
+    BotModule,
+    BalanceModule
   ],
   controllers: [],
   providers: [ 
-    FileLogService
+    FileLogService,
+    InlineTradeService,
+    IterableTraderService,    
   ],
 })
-export class AppModule {
+export class ExampleModule {
   constructor() {
     process.env.TZ = process.env.TIMEZONE
   }

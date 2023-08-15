@@ -38,6 +38,7 @@ export class AccountService {
         );
 
         this.accounts[account.id] = account;
+        return this.accounts[account.id];
     }
 
 

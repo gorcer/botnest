@@ -15,21 +15,13 @@ export class PublicApiService extends ApiService {
 
 
   constructor() {
-    if (process.env.BOT_TEST == 'true') {
+    
       super(
         ccxt[process.env.EXCHANGE_NAME],
         '',
         '',
-        true
-      );
-    } else {
-      super(
-        ccxt[process.env.EXCHANGE_NAME],
-        '',
-        '',
-        false
-      );
-    }
+        process.env.TEST_MODE == 'true'
+      );   
 
     this.lastPrice = {};
     this.rates = {};
@@ -62,29 +54,29 @@ export class PublicApiService extends ApiService {
     return this.lastPrice[pair];
   }
 
-  async getActualRates(pair: string) {
+  async getActualRates(pairName: string) {
 
-    if (!this.rates[pair] ||
-      !this.lastRatesFetchTime[pair] ||
-      elapsedSecondsFrom(this.FETCH_TIMEOUT, this.lastRatesFetchTime[pair])) {
+    if (!this.rates[pairName] ||
+      !this.lastRatesFetchTime[pairName] ||
+      elapsedSecondsFrom(this.FETCH_TIMEOUT, this.lastRatesFetchTime[pairName])) {
 
-      await lock.acquire('fetchRates ' + pair, async () => {
+      await lock.acquire('fetchRates ' + pairName, async () => {
 
-        if (this.rates[pair] &&
-          this.lastRatesFetchTime[pair] &&
-          !elapsedSecondsFrom(this.FETCH_TIMEOUT, this.lastRatesFetchTime[pair])) {
-          return this.rates[pair];
+        if (this.rates[pairName] &&
+          this.lastRatesFetchTime[pairName] &&
+          !elapsedSecondsFrom(this.FETCH_TIMEOUT, this.lastRatesFetchTime[pairName])) {
+          return this.rates[pairName];
         }
 
-        this.lastRatesFetchTime[pair] = Date.now()/1000;
-        this.rates[pair] = await super.getActualRates(pair);
+        this.lastRatesFetchTime[pairName] = Date.now()/1000;
+        this.rates[pairName] = await super.getActualRates(pairName);
 
 
       });
 
     }
 
-    return this.rates[pair];
+    return this.rates[pairName];
   }
 
 }

@@ -7,21 +7,21 @@ import { Pair } from "../../exchange/entities/pair.entity";
 import { RequestSellInfoDto } from "../dto/request-sell-info.dto";
 import { AwaitProfit } from "./awaitProfit.entity";
 import { SellStrategyInterface } from "../interfaces/sellStrategy.interface";
+import { EntityManager } from 'typeorm';
 
 const { add, divide } = require('js-big-decimal');
 
-@Injectable()
+
 export class AwaitProfitStrategy implements SellStrategyInterface {
 
   side = OrderSideEnum.SELL;
+  repository:Repository<AwaitProfit>;
+  static model = AwaitProfit;
 
   constructor(
-    @InjectRepository(Order)
-    private ordersRepository: Repository<Order>
-  ) { }
-
-  prepareAttributes(config) {
-    return config;
+    private readonly entityManager: EntityManager,
+  ) { 
+    this.repository = this.entityManager.getRepository(AwaitProfitStrategy.model);
   }
 
   async get(now?): Promise<Array<RequestSellInfoDto>> {
@@ -29,8 +29,9 @@ export class AwaitProfitStrategy implements SellStrategyInterface {
     if (!now)
       now = "extract(epoch from now())"; 
 
-    return await this.ordersRepository
-      .createQueryBuilder("order")      
+    return await this.repository
+      .createQueryBuilder()      
+      .from(Order,'order')
       .innerJoin(Pair, 'pair', 'pair.id = "order"."pairId"')
       .innerJoin(AwaitProfit, 'strategy', 'strategy."accountId" = "order"."accountId"')
       .andWhere(`

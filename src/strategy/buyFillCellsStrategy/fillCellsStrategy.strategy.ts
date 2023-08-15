@@ -1,30 +1,33 @@
-import { Injectable } from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
+import { Inject, Injectable } from "@nestjs/common";
 import { Order, OrderSideEnum } from "../../order/entities/order.entity";
 import { Repository } from "typeorm";
-import { SEC_IN_YEAR } from "../../helpers";
 import { Pair } from "../../exchange/entities/pair.entity";
-import { Balance } from "../../balance/entities/balance.entity";
 import { RequestBuyInfoDto } from "../dto/request-buy-info.dto";
 import { BuyStrategyInterface } from "../interfaces/buyStrategy.interface";
 import { FillCells } from "./fillCells.entity";
+import { EntityManager } from 'typeorm';
+import { Balance } from "../../balance/entities/balance.entity";
+
+
 
 const { multiply, compareTo, subtract, add, divide } = require('js-big-decimal');
 
 
-@Injectable()
 export class FillCellsStrategy implements BuyStrategyInterface {
 
     side = OrderSideEnum.BUY;
+    repository:Repository<FillCells>;
+    static model = FillCells;
+    
+    constructor(              
+        private readonly entityManager: EntityManager,
+    ) { 
+        this.repository = this.entityManager.getRepository(FillCellsStrategy.model);
+    }
 
-    constructor(
-        @InjectRepository(Balance)
-        private balanceRepository: Repository<Balance>
-    ) { }
+    static calculateCellSize({balance, pair, orderAmount, risk}) {
 
-    prepareAttributes({balance, pair, orderAmount, risk}) {
-
-        if (compareTo(orderAmount, pair.minAmount1)<0) {
+        if (compareTo(pair.minAmount1, orderAmount) > 0 ) {
             orderAmount = pair.minAmount1;
         }
 
@@ -39,19 +42,21 @@ export class FillCellsStrategy implements BuyStrategyInterface {
             cellSize = multiply(cellSize, (1 - risk / 100));
         }
 
-        return {
-            orderAmount: orderAmount,
-            cellSize: Math.floor(cellSize),
-            pairId: pair.id,
-            risk
+        if (cellSize == 0) {
+            cellSize = multiply(pair.sellRate, 0.01);
         }
+
+        return cellSize;
     }
 
-    get(waitSeconds=10): Promise<Array<RequestBuyInfoDto>> {
-        return this.balanceRepository
-            .createQueryBuilder("balance")
-            .innerJoin(Pair, 'pair', 'pair.currency2 = "balance".currency')
-            .innerJoin(FillCells, 'strategy', 'strategy."accountId" = balance."accountId" and strategy."pairId" = pair.id')
+
+    get(waitSeconds=3): Promise<Array<RequestBuyInfoDto>> {
+
+        return this.repository
+            .createQueryBuilder()
+            .from(FillCells, 'strategy')            
+            .innerJoin(Balance, 'balance', 'strategy."accountId" = balance."accountId"')
+            .innerJoin(Pair, 'pair', 'pair.currency2 = "balance".currency and strategy."pairId" = pair.id')
             .leftJoin(Order, 'order', `
                     "order"."accountId" = "balance"."accountId" and
                     "order".currency2 = "balance".currency and 

@@ -1,11 +1,8 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { EntityManager } from 'typeorm';
 import { updateModel } from "../helpers";
-import { FillCells } from "./buyFillCellsStrategy/fillCells.entity";
 import { FillCellsStrategy } from "./buyFillCellsStrategy/fillCellsStrategy.strategy";
-import { BuyStrategyInterface } from "./interfaces/buyStrategy.interface";
-import { SellStrategyInterface } from "./interfaces/sellStrategy.interface";
-import { AwaitProfit } from "./sellAwaitProfitStrategy/awaitProfit.entity";
+import { StrategyInterface } from "./interfaces/strategy.interface";
 import { AwaitProfitStrategy } from "./sellAwaitProfitStrategy/awaitProfitStrategy.strategy";
 
 
@@ -17,33 +14,26 @@ export class StrategyService {
 
     constructor(
         @Inject(EntityManager) 
-        private readonly entityManager: EntityManager,
-        private strategyFillCells: FillCellsStrategy,
-        private strategyAwaitProfit: AwaitProfitStrategy,
+        private readonly entityManager: EntityManager,        
     ) {
     }
 
-    getStrategy(strategyName) {
-        if (!this[`strategy${strategyName}`]) {
-            throw new Error('Unknown strategy '+strategyName);
-        }
-        return this[`strategy${strategyName}`];
+    getStrategy(strategyService:any) {        
+        return new strategyService(this.entityManager);
     }
 
-    async setStrategyForAccount(accountId:number, strategyModel:any, config: any) {        
-        const strategyRepository = this.entityManager.getRepository(strategyModel);
-
-        const service = this.getStrategy(strategyModel.name);
-        config = service.prepareAttributes(config);
-
-        let strategy = await strategyRepository.findOne({ where: { accountId } });
-        if (!strategy) {
-            strategy = strategyRepository.create({...{accountId}, ...config })           
+    async setStrategyForAccount(accountId:number, strategyService:any, config: any) {        
+            
+        const strategyRepository = this.entityManager.getRepository(strategyService.model);
+    
+        let strategyItem = await strategyRepository.findOne({ where: { accountId } });
+        if (!strategyItem) {
+            strategyItem = strategyRepository.create({...{accountId}, ...config })           
         } else {
-            updateModel(strategy, config);
+            updateModel(strategyItem, config);
         }
         await strategyRepository.save(
-            strategy
+            strategyItem
         );
     }
 }

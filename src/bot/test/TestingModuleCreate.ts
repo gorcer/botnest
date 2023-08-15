@@ -1,6 +1,6 @@
 import { ConfigModule } from "@nestjs/config";
 import { Test, TestingModule } from "@nestjs/testing";
-import { BotService } from "../bot.service";
+import { TradeService } from "../trade.service";
 import { MockedExchange } from "../../exchange/mock/mocked.exchange";
 import { AccountService } from "../../user/account.service";
 import { StrategyService } from "../../strategy/strategy.service";
@@ -36,7 +36,7 @@ export async function TestingModuleCreate() {
             }),
         ],
         providers: [
-            BotService,
+            TradeService,
             MockedExchange,
             AccountService,
             {
@@ -71,7 +71,7 @@ export async function TestingModuleCreate() {
         ],
     }).compile();
 
-    const bot = await module.resolve<BotService>(BotService);
+    const bot = await module.resolve<TradeService>(TradeService);
     const pairs = module.get<PairService>(PairService);
     const publicExchange = bot.publicApi.exchange;
     const balances = module.get<BalanceService>(BalanceService);

@@ -14,11 +14,13 @@ import { RequestBuyInfoDto } from "../strategy/dto/request-buy-info.dto";
 import { StrategyService } from "../strategy/strategy.service";
 import { BuyStrategyInterface } from "../strategy/interfaces/buyStrategy.interface";
 import { SellStrategyInterface } from "../strategy/interfaces/sellStrategy.interface";
+import { PairService } from "../exchange/pair.service";
+import { PairRatesDto } from "./dto/pair-rates.dto";
 
 const { divide, subtract, multiply, compareTo, add } = require("js-big-decimal");
 
 @Injectable()
-export class BotService {
+export class TradeService {
 
 
 	buyStrategies: Array<BuyStrategyInterface> = [];
@@ -31,7 +33,7 @@ export class BotService {
 		private log: FileLogService,
 		public publicApi: PublicApiService,
 		private accounts: AccountService,
-		private strategies: StrategyService
+		private strategies: StrategyService,
 
 	) { }
 
@@ -39,8 +41,8 @@ export class BotService {
 		return this.accounts.getApiForAccount(accountId);
 	}
 
-	public async addStrategy(strategyName) {
-		const strategy = this.strategies.getStrategy(strategyName);
+	public async addStrategy(strategyService) {
+		const strategy = this.strategies.getStrategy(strategyService);
 		if (strategy.side == OrderSideEnum.BUY) {
 			this.buyStrategies.push(strategy);
 		} else {
@@ -48,11 +50,13 @@ export class BotService {
 		}
 	}
 
-	runBuyStrategies() {
-		this.buyStrategies.forEach(async (strategy) => {
+	async runBuyStrategies() {
 
-			const orders = [];
-			const result = [];
+		const orders = [];
+		const result = [];
+
+		for (const strategy of this.buyStrategies) {
+
 			this.log.info(strategy.constructor.name + ': Find accounts to buy....');
 			const accounts = await strategy.get();
 			this.log.info(strategy.constructor.name + ': Ok....' + accounts.length + ' accounts');
@@ -70,31 +74,38 @@ export class BotService {
 				);
 			}
 
-			await Promise.all(orders);
+		}
 
-		})
+		await Promise.all(result);
+		return orders;
 	}
 
-	runSellStrategies() {
-		this.sellStrategies.forEach(async (strategy) => {
+	async runSellStrategies() {
+		const result = [];
+		const orders = [];
+
+		for (const strategy of this.sellStrategies) {
 			this.log.info(strategy.constructor.name + ': Get active orders....');
 			const tm = Date.now();
 			const orderInfos = await strategy.get();
 
 			this.log.info(strategy.constructor.name + ': Ok...' + orderInfos.length + ' orders ..' + ((Date.now() - tm) / 1000) + ' sec');
 
-			const result = [];
+
 			for (const orderInfo of orderInfos) {
 				result.push(
 					this.createCloseOrder(orderInfo)
+						.then(order => {
+							orders.push(order);
+						})
 				);
 			}
+		}
 
-			await Promise.all(result);
-
-			return orderInfos;
-		})
+		await Promise.all(result);
+		return orders;
 	};
+
 
 	public async checkCloseOrder(order: Order, extOrder?): Promise<Order> {
 
@@ -141,7 +152,7 @@ export class BotService {
 						),
 						parentOrder.fee
 					);
-					updateOrderDto.anualProfitPc = 100*divide(
+					updateOrderDto.anualProfitPc = 100 * divide(
 						multiply(
 							SEC_IN_YEAR,
 							divide(updateOrderDto.profit, subtract(order.createdAtSec, parentOrder.createdAtSec), 15)

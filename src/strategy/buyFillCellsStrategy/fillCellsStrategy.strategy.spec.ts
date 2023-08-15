@@ -49,7 +49,7 @@ describe('AccountsReadyToBuy', () => {
       ],
     }).compile();
 
-    service = module.get<FillCellsStrategy>(FillCellsStrategy);
+    
     orderService = module.get<OrderService>(OrderService);
     pairService = module.get<PairService>(PairService);
     balanceService = module.get<BalanceService>(BalanceService);
@@ -58,7 +58,7 @@ describe('AccountsReadyToBuy', () => {
     orderRepository = module.get<Repository<Order>>(getRepositoryToken(Order));
     pairRepository = module.get<Repository<Pair>>(getRepositoryToken(Pair));
 
-    
+    service = strategyService.getStrategy(FillCellsStrategy);
   });
 
 
@@ -68,22 +68,22 @@ describe('AccountsReadyToBuy', () => {
   });
 
   it('cell size', async () => {
-    const config = service.prepareAttributes({
+    const cellSize = FillCellsStrategy.calculateCellSize({
       orderAmount: 0.0001,
       balance: {
-        amount: 900,
-        inOrders: 100
+        amount: 1000
       },
       pair: {
         id: 1,
         historicalMinRate: 10000,
         sellRate: 20000,
         minAmount1: 0.001
-      }
+      },
+      risk:0
     });
 
 
-    equal(config.cellSize, Math.floor(10000 / ((900+100) / (20000*0.001)) ));
+    equal(cellSize, Math.floor(10000 / ((1000) / (20000*0.001)) ));
   });
 
   it('get orders', async () => {
@@ -107,7 +107,10 @@ describe('AccountsReadyToBuy', () => {
       historicalMinRate: 13000
     });
 
-    strategyService.setStrategyForAccount(accountId, FillCells, {
+    strategyService.setStrategyForAccount(
+      accountId, 
+      FillCellsStrategy, 
+      {
       balance: {
         amount: 900,
         inOrders: 100
@@ -185,7 +188,7 @@ describe('AccountsReadyToBuy', () => {
 
   const prepareDB = async function () {
 
-    if (process.env.BOT_TEST != 'true') {
+    if (process.env.TEST_MODE != 'true') {
       throw new Error('Cant run in prod, you loss all data!!!');
     }
 

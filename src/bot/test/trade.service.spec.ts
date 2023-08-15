@@ -3,7 +3,7 @@ import { Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { AccountService } from '../../user/account.service';
 import { Account } from '../../user/entities/account.entity';
-import { BotService } from '../bot.service';
+import { TradeService } from '../trade.service';
 import { BalanceService } from '../../balance/balance.service';
 import { PairService } from '../../exchange/pair.service';
 import { MockedExchange } from '../../exchange/mock/mocked.exchange';
@@ -17,7 +17,7 @@ const { divide, subtract, multiply, compareTo, add } = require("js-big-decimal")
 
 describe('OrderService', () => {
   let accounts: AccountService;
-  let bot: BotService;
+  let bot: TradeService;
   let balances: BalanceService;
   let pairs: PairService;
   let publicExchange: MockedExchange;

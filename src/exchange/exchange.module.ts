@@ -14,7 +14,7 @@ import { Pair } from './entities/pair.entity';
     PairService
   ],
   exports: [    
-    PairService
+    PairService, PublicApiService
   ]
 })
 export class ExchangeModule {}

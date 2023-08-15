@@ -1,16 +1,10 @@
 import {  BeforeInsert, Column, CreateDateColumn, Entity, Index, JoinTable, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { BaseStrategyModel } from "../baseStrategyModel.entity";
 
 @Entity("strategy_sell_awaitProfit")
-export class AwaitProfit {
-    @PrimaryGeneratedColumn()
-    id: number;
-    
-    @CreateDateColumn()
-    createdAt: Date;
+export class AwaitProfit extends BaseStrategyModel{
 
-    @Index()
-    @Column({type: "int", default: 1})    
-    accountId: number;
+  
 
     @Column({type: "decimal", default: 200})
     minDailyProfit: number;

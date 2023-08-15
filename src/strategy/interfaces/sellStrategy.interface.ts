@@ -1,9 +1,8 @@
 import { OrderSideEnum } from "../../order/entities/order.entity";
 import { RequestSellInfoDto } from "../dto/request-sell-info.dto";
+import { StrategyInterface } from "./strategy.interface";
 
-export interface SellStrategyInterface {
-    side: OrderSideEnum,
+export interface SellStrategyInterface extends StrategyInterface {  
 
-    prepareAttributes(config:object),
     get():Promise<Array<RequestSellInfoDto>> 
 }
