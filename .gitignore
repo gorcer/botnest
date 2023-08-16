@@ -40,3 +40,6 @@ _log
 
 todo.txt
 .lh
+
+rsync_exclude_usb.txt
+deploy
