@@ -76,7 +76,7 @@ export class BotNest {
 		return this.publicApi.getActualRates(pairName);
 	}
 
-	public async getActiveOrdersSum(pairName: string, attribute: string) {
-		return this.orders.getActiveOrdersSum(pairName, attribute);
+	public async getActiveOrdersSum(currency1: string, attribute: string) {
+		return this.orders.getActiveOrdersSum(currency1, attribute);
 	}
 }

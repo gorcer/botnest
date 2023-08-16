@@ -69,11 +69,11 @@ export class OrderService {
     return result.sum;
   }
 
-  async getActiveOrdersSum(pairName: string, attribute: string):Promise<number> {
+  async getActiveOrdersSum(currency1: string, attribute: string):Promise<number> {
     const result = await this.ordersRepository
       .createQueryBuilder("order")
       .select(`SUM(${attribute}) as sum`)
-      .where({ pairName })
+      .where({ currency1 })
       .andWhere('"order"."isActive" = true')
       .andWhere('"order"."prefilled" < "order"."amount1"')      
       .getRawOne();

@@ -28,7 +28,7 @@ export class FillCellsStrategy implements BuyStrategyInterface {
     static calculateCellSize({balance, pair, orderAmount, risk}): number {
 
         if (!balance) {
-            return null;
+            return 0;
         }
 
         if (compareTo(pair.minAmount1, orderAmount) > 0 ) {
@@ -73,6 +73,7 @@ export class FillCellsStrategy implements BuyStrategyInterface {
             .andWhere(`"balance".available > "pair"."minAmount2"`)
             .andWhere(`"balance".available > strategy."orderAmount" * "pair"."sellRate"`)            
             .andWhere(`"pair"."isActive" = true`)
+            .andWhere(`"strategy"."cellSize" > 0`)
             .select(`
                 "balance"."accountId",
                 "pair"."sellRate" as "rate",

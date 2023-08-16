@@ -179,12 +179,12 @@ export class DaemonTradeService {
 					orderAmount: Number(process.env.STRATEGY_BUY_ORDER_AMOUNT),
 					risk: process.env.STRATEGY_BUY_RISK,
 					pairId: pair.id,
-					cellSize: FillCellsStrategy.calculateCellSize({
-						balance,
-						pair,
-						orderAmount: Number(process.env.STRATEGY_BUY_ORDER_AMOUNT),
-						risk: process.env.STRATEGY_BUY_RISK,
-					})
+					// cellSize: FillCellsStrategy.calculateCellSize({
+					// 	balance,
+					// 	pair,
+					// 	orderAmount: Number(process.env.STRATEGY_BUY_ORDER_AMOUNT),
+					// 	risk: process.env.STRATEGY_BUY_RISK,
+					// })
 				});
 		}
 
@@ -221,7 +221,7 @@ export class DaemonTradeService {
 
 		for (const pairName of this.pairs) {
 			const { currency1 } = extractCurrency(pairName);
-			const ordersSum = await this.botnest.getActiveOrdersSum(pairName, 'amount1');
+			const ordersSum = await this.botnest.getActiveOrdersSum(currency1, 'amount1');
 
 			const balance = await this.balance.getBalance(this.account.id, currency1);
 			if (balance) {

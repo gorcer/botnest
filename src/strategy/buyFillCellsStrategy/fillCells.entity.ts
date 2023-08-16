@@ -14,7 +14,7 @@ export class FillCells extends BaseStrategyModel{
     @Column({type: "decimal", default:0})
     risk: number;
     
-    @Column({type: "decimal", default: 10})
+    @Column({type: "decimal", default: 50})
     cellSize: number;
 
     
