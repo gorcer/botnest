@@ -33,18 +33,18 @@ export class InlineTradeService {
 
         // set buy strategy config for account
         await this.botnest.setStrategyForAccount(
-            account.id,
+            {accountId: account.id, pairId:pair.id},
             FillCellsStrategy,
             {
                 orderAmount: Number(process.env.STRATEGY_BUY_ORDER_AMOUNT),
-                risk: process.env.BOT_BUY_RISK,
+                risk: process.env.STRATEGY_BUY_RISK,
                 pairId: pair.id,
                 cellSize: process.env.INLINE_CELLSIZE
             });
 
         // set sell strategy for account
         await this.botnest.setStrategyForAccount(
-            account.id,
+            {accountId: account.id},
             AwaitProfitStrategy,
             {
                 minDailyProfit: Number(process.env.STRATEGY_SELL_MIN_DAILY_PROFIT), // % годовых если сделка закрывается за день

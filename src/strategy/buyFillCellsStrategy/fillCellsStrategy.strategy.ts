@@ -25,7 +25,11 @@ export class FillCellsStrategy implements BuyStrategyInterface {
         this.repository = this.entityManager.getRepository(FillCellsStrategy.model);
     }
 
-    static calculateCellSize({balance, pair, orderAmount, risk}) {
+    static calculateCellSize({balance, pair, orderAmount, risk}): number {
+
+        if (!balance) {
+            return null;
+        }
 
         if (compareTo(pair.minAmount1, orderAmount) > 0 ) {
             orderAmount = pair.minAmount1;
@@ -42,7 +46,7 @@ export class FillCellsStrategy implements BuyStrategyInterface {
             cellSize = multiply(cellSize, (1 - risk / 100));
         }
 
-        if (cellSize == 0) {
+        if (cellSize <= 0) {
             cellSize = multiply(pair.sellRate, 0.01);
         }
 
@@ -53,22 +57,21 @@ export class FillCellsStrategy implements BuyStrategyInterface {
     get(waitSeconds=3): Promise<Array<RequestBuyInfoDto>> {
 
         return this.repository
-            .createQueryBuilder()
-            .from(FillCells, 'strategy')            
-            .innerJoin(Balance, 'balance', 'strategy."accountId" = balance."accountId"')
-            .innerJoin(Pair, 'pair', 'pair.currency2 = "balance".currency and strategy."pairId" = pair.id')
+            .createQueryBuilder('strategy')                                  
+            .innerJoin(Pair, 'pair', 'strategy."pairId" = pair.id')
+            .innerJoin(Balance, 'balance', 'strategy."accountId" = balance."accountId" and balance.currency = pair.currency2')
             .leftJoin(Order, 'order', `
                     "order"."accountId" = "balance"."accountId" and
                     "order".currency2 = "balance".currency and 
                     "order"."isActive" = true and
                     "order"."prefilled" < "order"."amount1" and
                     "order".rate >= (floor("pair"."sellRate" / "strategy"."cellSize") * "strategy"."cellSize" ) and 
-                    "order".rate < (ceil("pair"."sellRate" / "strategy"."cellSize") * "strategy"."cellSize" )`
+                    "order".rate < ((floor("pair"."sellRate" / "strategy"."cellSize")+1) * "strategy"."cellSize")`
                 )
             .where('"order".id is null')
             .andWhere(`pair.updatedAt > CURRENT_TIMESTAMP - interval '${waitSeconds} seconds'`)
-            .andWhere(`"balance".amount > "pair"."minAmount2"`)
-            .andWhere(`"balance".amount > strategy."orderAmount" * "pair"."sellRate"`)
+            .andWhere(`"balance".available > "pair"."minAmount2"`)
+            .andWhere(`"balance".available > strategy."orderAmount" * "pair"."sellRate"`)            
             .andWhere(`"pair"."isActive" = true`)
             .select(`
                 "balance"."accountId",

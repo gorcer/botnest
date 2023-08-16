@@ -2,7 +2,6 @@ import { NestFactory } from '@nestjs/core';
 import { DaemonTradeService } from './example/daemonTrade.service';
 import { InlineTradeService } from './example/inlineTrade.service';
 import { ExampleModule } from './example.module';
-import { AppModule } from './app.module';
 
 
 async function bootstrap() {

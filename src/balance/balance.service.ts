@@ -29,6 +29,9 @@ export class BalanceService {
 
     public async set(accountId: number, balances: BalancesDto) {
 
+        if (!this.balances[accountId]) {
+            this.balances[accountId] = {};
+        }
         
         return await lock.acquire('Balance', async () => {
             
@@ -45,7 +48,8 @@ export class BalanceService {
                         balance = this.balanceRepository.create({
                             accountId,
                             currency,
-                            amount: amount
+                            amount: amount,
+                            available: amount
                         });
                         operationType = OperationType.INIT;
                         operationAmount = amount;
@@ -58,6 +62,7 @@ export class BalanceService {
                         operationType = OperationType.ACTUALIZE;
                         operationAmount = subtract(amount, balance.amount);
                         balance.amount = amount;
+                        balance.available = subtract(balance.amount, balance.inOrders);
                     }                    
                 }
 
@@ -83,7 +88,7 @@ export class BalanceService {
     }
 
     public async loadBalances(accountId: number) {
-        const balances = await this.balanceRepository.find();
+        const balances = await this.balanceRepository.find({where: {accountId}});
         for (const balance of balances) {
             if (!this.balances[accountId])
                 this.balances[accountId] = {};
@@ -113,14 +118,19 @@ export class BalanceService {
     }
 
     private async checkBalances(accountId) {
-        if (!this.balances[accountId]) {
+        if (
+            !this.balances[accountId] || 
+            Object.keys(this.balances[accountId]).length == 0
+            ) {
             return this.loadBalances(accountId);
         }
-
     }
 
+    public async saveBalance(balance:Balance) {
+        await this.balanceRepository.save(balance);
+    }
 
-    public async income(accountId: number, currency: string, sourceId:number, operationType: OperationType, amount: number) {
+    public async income(accountId: number, currency: string, sourceId:number, operationType: OperationType, amount: number, inOrders:boolean = false) {
 
         
         const balance = await this.getBalance(accountId, currency);
@@ -128,6 +138,15 @@ export class BalanceService {
             throw new Error('Unknown balance ' + accountId + ' ' + currency);
         }        
         balance.amount = add(balance.amount, amount);
+        if (inOrders) {
+            balance.inOrders = add(balance.inOrders, amount);
+        }
+        balance.available = subtract(balance.amount, balance.inOrders);
+        if (compareTo(balance.available,0)<0)
+            balance.available=0;
+
+        
+
         await this.balanceRepository.save(balance);
 
         this.balanceLogRepository.save(
@@ -145,7 +164,7 @@ export class BalanceService {
         return balance;
     }
 
-    public async outcome(accountId: number, currency: string, sourceId:number, operationType: OperationType, amount: number) {
+    public async outcome(accountId: number, currency: string, sourceId:number, operationType: OperationType, amount: number, inOrders:boolean = false) {
         return this.income(accountId, currency, sourceId, operationType, multiply(-1, amount));
     }
 

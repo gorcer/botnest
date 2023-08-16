@@ -50,7 +50,7 @@ export class OrderService {
     return `This action removes a #${id} order`;
   }
 
-  async getActiveOrders() {
+  async getActiveOrders():Promise<Array<Order>> {
     return await this.ordersRepository
       .createQueryBuilder("order")
       .where(`"order".side = :side`, { side: OrderSideEnum.BUY })
@@ -59,45 +59,23 @@ export class OrderService {
       .getMany();
   }
 
-  async getActiveOrdersAboveProfit(buyFee: number, sellFee: number, dailyProfit: number, yerlyProfit: number): Promise<any> {
-
-    const profitPerSecDaily = divide(dailyProfit, SEC_IN_YEAR, 15);
-    const profitPerSecYerly = divide(yerlyProfit, SEC_IN_YEAR, 15);
-    const secondsInDay = 24 * 60 * 60;
-    const now = Math.floor(Date.now() / 1000);
-
-    return await this.ordersRepository
-      .createQueryBuilder("order")
-      .innerJoinAndSelect(Pair, 'pair', 'pair.currency1 = "order".currency1 AND pair.currency2 = "order".currency2')
-      .andWhere(`
-        100*(( ("pair"."buyRate" * ( 1 - ${add(buyFee, sellFee)})) / order.rate)-1) >= 
-        case 
-          when 
-            (${now} - "order"."createdAtSec") < ${secondsInDay}
-          then  
-            ( ${profitPerSecDaily} * (${now} - "order"."createdAtSec") )
-          else  
-            ( ${profitPerSecYerly} * (${now} - "order"."createdAtSec") )
-        end        
-        `) // Calculate annual profitability
-      .andWhere(`"order".side = :side`, { side: OrderSideEnum.BUY })
-      .andWhere(`"order".rate < "pair"."buyRate"`)
-      .andWhere(`"order"."createdAtSec" < ${(now + 1)}`)
-      .andWhere('"order"."isActive" = true')
-      .andWhere('"order"."prefilled" < "order"."amount1"')
-      .select(`
-          "order".*,
-          "pair"."buyRate" as "buyRate"
-      `)
-      .getRawMany();
-
-  }
-
-  async getSumByParentId(parentId: number, attribute: string) {
+  async getSumByParentId(parentId: number, attribute: string):Promise<number> {
     const result = await this.ordersRepository
       .createQueryBuilder("order")
       .select(`SUM(${attribute}) as sum`)
       .where({ parentId })
+      .getRawOne();
+
+    return result.sum;
+  }
+
+  async getActiveOrdersSum(pairName: string, attribute: string):Promise<number> {
+    const result = await this.ordersRepository
+      .createQueryBuilder("order")
+      .select(`SUM(${attribute}) as sum`)
+      .where({ pairName })
+      .andWhere('"order"."isActive" = true')
+      .andWhere('"order"."prefilled" < "order"."amount1"')      
       .getRawOne();
 
     return result.sum;

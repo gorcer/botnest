@@ -30,6 +30,7 @@ describe('AccountsReadyToBuy', () => {
 
   let orderRepository: Repository<Order>;
   let pairRepository: Repository<Pair>;
+  let balanceRepository: Repository<Balance>;
 
 
   beforeEach(async () => {
@@ -57,6 +58,7 @@ describe('AccountsReadyToBuy', () => {
 
     orderRepository = module.get<Repository<Order>>(getRepositoryToken(Order));
     pairRepository = module.get<Repository<Pair>>(getRepositoryToken(Pair));
+    balanceRepository = module.get<Repository<Balance>>(getRepositoryToken(Balance));
 
     service = strategyService.getStrategy(FillCellsStrategy);
   });
@@ -108,7 +110,7 @@ describe('AccountsReadyToBuy', () => {
     });
 
     strategyService.setStrategyForAccount(
-      accountId, 
+      {accountId, pairId: pair.id}, 
       FillCellsStrategy, 
       {
       balance: {
@@ -196,8 +198,7 @@ describe('AccountsReadyToBuy', () => {
       // Truncate orders
       await orderRepository
         .createQueryBuilder()
-        .delete()
-        .from(Order)
+        .delete()        
         .execute();
     }
 
@@ -205,8 +206,15 @@ describe('AccountsReadyToBuy', () => {
       // Truncate pairs
       await pairRepository
         .createQueryBuilder()
-        .delete()
-        .from(Pair)
+        .delete()        
+        .execute();
+    }
+
+    {
+      // Truncate pairs
+      await balanceRepository
+        .createQueryBuilder()
+        .delete()        
         .execute();
     }
 

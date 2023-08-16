@@ -16,25 +16,27 @@ These simple strategies will guarantee you at least 30% anual profits, just be p
 3. Node v16.14.0
 
 
-## How to run:
+## Instalation:
+
+```
+npm install botnest
+```
+
+```
+cp ./node_modules/botnest/.env.example .env
+```
+Or you can
 
 ```
 git clone git@github.com:gorcer/botnest.git
 cd botnest
 ```
 
-```
-cp .env.example .env
-```
-
-
 Fill settings in .env 
 (TEST_MODE = false for production)
 
 
-```
-npm i
-```
+# Usage as project (if you git clone it)
 
 To run one iteration:
 ```
@@ -46,28 +48,61 @@ To run as daemon:
 npm run example:daemon
 ```
 
-# How to develop your own bot?
+# Usage as component
 
-You neen BotNest - it is all in one service.
+All you need it's BotNest - it is all in one service.
 
-```
+```javascript
 import { BotNest } from "../bot/botnest.service";
 import { FillCellsStrategy } from "../strategy/buyFillCellsStrategy/fillCellsStrategy.strategy";
 import { AwaitProfitStrategy } from "../strategy/sellAwaitProfitStrategy/awaitProfitStrategy.strategy";
+ 
+const pairName = process.env.PAIRS.replace(' ', '').split(',')[0];
+const userId = 1;
+const cellSize = 50; // step for FillCellsStrategy
+const pair = await this.botnest.actualizePair(pairName)
 
-......
+// set bot strategies
+this.botnest.addStrategy(FillCellsStrategy);
+this.botnest.addStrategy(AwaitProfitStrategy);
 
- constructor(
-        private botnest: BotNest
-    ) {
+// add test account
+const account = await this.botnest.setUserAccount(userId, {
+    exchangeName: process.env.EXCHANGE_NAME,
+    apiKey: process.env.EXCHANGE_API_KEY,
+    secret: process.env.EXCHANGE_API_SECRET,
+    testMode: process.env.TEST_MODE == 'true',
+});
 
-    }
-.......
+// set buy strategy config for account
+await this.botnest.setStrategyForAccount(
+    {accountId: account.id, pairId:pair.id},
+    FillCellsStrategy,
+    {
+        orderAmount: Number(process.env.STRATEGY_BUY_ORDER_AMOUNT),
+        risk: process.env.STRATEGY_BUY_RISK,
+        pairId: pair.id,
+        cellSize: process.env.INLINE_CELLSIZE
+    });
 
-  this.botnest.addStrategy(FillCellsStrategy);
-  this.botnest.addStrategy(AwaitProfitStrategy);
+// set sell strategy for account
+await this.botnest.setStrategyForAccount(
+    {accountId: account.id},
+    AwaitProfitStrategy,
+    {
+        minDailyProfit: Number(process.env.STRATEGY_SELL_MIN_DAILY_PROFIT), 
+        minYearlyProfit: Number(process.env.STRATEGY_SELL_MIN_ANNUAL_PROFIT), 
+    });
 
-......
+
+// checking orders before start
+await this.botnest.checkCloseOrders();
+
+//get current rates
+const rates = await this.botnest.getActualRates(pairName);
+if (!rates.ask || !rates.bid) {
+    throw new Error('Cant resolve current rate, try to repeat later')
+}
 
 // set current rates
 await this.botnest.setRates({

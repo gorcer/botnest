@@ -165,7 +165,7 @@ describe('OrderService', () => {
       const elapsed = subtract(closeOrder.createdAtSec, order.createdAtSec);
       const profitPerSec = divide(order.profit, elapsed, 15);
       const profitPerYear = multiply(SEC_IN_YEAR, profitPerSec);
-      const anualProfit = divide(profitPerYear,  order.amount2);
+      const anualProfit = 100*divide(profitPerYear,  order.amount2);
       equal(order.anualProfitPc - anualProfit, 0);
 
       balanceUSDT = add(balanceUSDT, sellCost);

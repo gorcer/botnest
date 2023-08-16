@@ -22,13 +22,13 @@ export class StrategyService {
         return new strategyService(this.entityManager);
     }
 
-    async setStrategyForAccount(accountId:number, strategyService:any, config: any) {        
+    async setStrategyForAccount(where:any, strategyService:any, config: any) {        
             
         const strategyRepository = this.entityManager.getRepository(strategyService.model);
     
-        let strategyItem = await strategyRepository.findOne({ where: { accountId } });
+        let strategyItem = await strategyRepository.findOne({ where });
         if (!strategyItem) {
-            strategyItem = strategyRepository.create({...{accountId}, ...config })           
+            strategyItem = strategyRepository.create({...where, ...config })           
         } else {
             updateModel(strategyItem, config);
         }

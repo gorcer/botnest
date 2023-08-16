@@ -4,8 +4,7 @@ import { BotModule } from './bot/bot.module';
 import { ConfigModule } from '@nestjs/config';
 import { FileLogService } from './log/filelog.service';
 import { Entities } from './all.entities';
-import { InlineTradeService } from './example/inlineTrade.service';
-import { DaemonTradeService } from './example/daemonTrade.service';
+import { BotNest } from './bot/botnest.service';
 
 
 @Module({
@@ -26,10 +25,14 @@ import { DaemonTradeService } from './example/daemonTrade.service';
   ],
   controllers: [],
   providers: [ 
-    FileLogService
+    FileLogService,
+    BotNest
   ],
+  exports: [
+    BotNest
+  ]
 })
-export class AppModule {
+export class BotnestModule {
   constructor() {
     process.env.TZ = process.env.TIMEZONE
   }

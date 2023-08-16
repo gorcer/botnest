@@ -16,4 +16,10 @@ export class Balance {
     @Column("decimal")
     amount: number;
 
+    @Column({type:"decimal", default:0})
+    inOrders: number;
+
+    @Index()
+    @Column({type:"decimal", default:0})
+    available: number;
 }

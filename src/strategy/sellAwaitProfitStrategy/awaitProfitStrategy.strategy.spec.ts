@@ -74,13 +74,18 @@ describe('ActiveOrdersAboveProfit', () => {
     const { currency1, currency2 } = extractCurrency(pairName);
     const accountId = 1;
     const balanceUSDT = 1000;
+    const balanceBUSD = 1000;
     const buyRate = 11000;
     const sellRate = 11000;
     const minAmount1 = 0.01;
 
+    await balanceService.set(accountId, {
+      'USDT': balanceUSDT,
+      'BUSD': balanceBUSD
+    });
 
 
-    strategyService.setStrategyForAccount(accountId, AwaitProfitStrategy, {
+    strategyService.setStrategyForAccount({accountId}, AwaitProfitStrategy, {
       minDailyProfit: 200,
       minYerlyProfit: 30
     });
@@ -99,8 +104,7 @@ describe('ActiveOrdersAboveProfit', () => {
       createdAtSec: 0
     });
 
-    
-    
+     
 
     {
 
@@ -116,10 +120,7 @@ describe('ActiveOrdersAboveProfit', () => {
       const orders = await service.get(10);
       equal(orders.length, 1)
     }
-
-
-
-   
+ 
       
     {
       await pairService.setInfo(pair, {
@@ -134,8 +135,6 @@ describe('ActiveOrdersAboveProfit', () => {
       const orders = await service.get(10);
       equal(orders.length, 0)
     }
-
-
 
   });
 

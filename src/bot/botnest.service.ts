@@ -11,6 +11,7 @@ import { UpdateAccountDto } from "../user/dto/update-account.dto";
 import { Account } from "../user/entities/account.entity";
 import { PairRatesDto } from "./dto/pair-rates.dto";
 import { TradeService } from "./trade.service";
+import { OrderService } from "../order/order.service";
 
 @Injectable()
 export class BotNest {
@@ -22,6 +23,7 @@ export class BotNest {
 		private pairs: PairService,
 		private strategies: StrategyService,
 		public publicApi: PublicApiService,
+		private orders: OrderService,
 	) { }
 
 	public async addStrategy(strategyModel) {
@@ -43,8 +45,8 @@ export class BotNest {
 		return pair;
 	}
 
-	async setStrategyForAccount(accountId:number, strategy:any, config: any) {    
-		return this.strategies.setStrategyForAccount(accountId, strategy, config);
+	async setStrategyForAccount(where:object, strategy:any, config: any) {    
+		return this.strategies.setStrategyForAccount(where, strategy, config);
 	}
 
 	async checkCloseOrders(): Promise<Array<Order>> {
@@ -72,5 +74,9 @@ export class BotNest {
 
 	public async getActualRates(pairName:string):Promise<{bid:number, ask:number}> {
 		return this.publicApi.getActualRates(pairName);
+	}
+
+	public async getActiveOrdersSum(pairName: string, attribute: string) {
+		return this.orders.getActiveOrdersSum(pairName, attribute);
 	}
 }

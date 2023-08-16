@@ -30,7 +30,7 @@ export class AccountService {
         return account;
     }
 
-    async setAccount(account: Account, config:UpdateAccountDto) {
+    async setAccount(account: Account, config:UpdateAccountDto): Promise<Account> {
 
         updateModel(account, config);
         await this.repository.save(
@@ -52,6 +52,10 @@ export class AccountService {
             }
 
             let account = this.accounts[accountId];
+
+            if (!account) {
+                throw new Error('Unknown account ' + accountId);
+            }
 
             if (account.exchangeClass) {
                 this.exchanges[accountId] = new ApiService(account.exchangeClass, account.apiKey, account.secret, account.testMode)

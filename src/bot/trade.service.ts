@@ -221,7 +221,7 @@ export class TradeService {
 					createdAtSec: Math.floor(Date.now() / 1000)
 				});
 
-				await this.balance.income(accountId, currency1, order.id, OperationType.BUY, extOrder.amount);
+				await this.balance.income(accountId, currency1, order.id, OperationType.BUY, extOrder.amount, true);
 				await this.balance.outcome(accountId, currency2, order.id, OperationType.BUY, extOrder.cost);
 				if (feeCost && feeCurrency) {
 					await this.balance.outcome(accountId, feeCurrency, order.id, OperationType.BUY_FEE, feeCost);
@@ -305,7 +305,7 @@ export class TradeService {
 					extOrder
 				);
 
-				await this.balance.outcome(orderInfo.accountId, currency1, closeOrder.id, OperationType.SELL, closeOrder.amount1);
+				await this.balance.outcome(orderInfo.accountId, currency1, closeOrder.id, OperationType.SELL, closeOrder.amount1, true);
 
 				await this.orders.update(orderInfo.id, { prefilled: add(orderInfo.prefilled, extOrder.amount) })
 

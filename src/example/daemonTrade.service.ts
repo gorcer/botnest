@@ -24,9 +24,9 @@ export class DaemonTradeService {
 	minSellRateMarginToProcess;
 
 
-	constructor(		
-		private log: FileLogService,		
-		private balance: BalanceService,		
+	constructor(
+		private log: FileLogService,
+		private balance: BalanceService,
 		private botnest: BotNest
 	) {
 	}
@@ -39,7 +39,6 @@ export class DaemonTradeService {
 			lastTradesUpdate = Date.now() / 1000;
 
 		await this.init();
-		await this.prepare();
 
 		while (true) {
 
@@ -113,10 +112,10 @@ export class DaemonTradeService {
 				}
 			}
 			const rates = await this.botnest.getActualRates(pairName);
-			isBidMargined = isSuitableRate(rates.bid, this.lastRates[pairName].bid, minBuyRateMarginToProcess);
-			isAskMargined = isSuitableRate(rates.ask, this.lastRates[pairName].ask, minSellRateMarginToProcess);
+			const isCurrentBidMargined = isSuitableRate(rates.bid, this.lastRates[pairName].bid, minBuyRateMarginToProcess);
+			const isCurrentAskMargined = isSuitableRate(rates.ask, this.lastRates[pairName].ask, minSellRateMarginToProcess);
 
-			if (isBidMargined) {
+			if (isCurrentBidMargined) {
 
 				changedPairs[pairName] = rates;
 
@@ -124,13 +123,16 @@ export class DaemonTradeService {
 				this.lastRates[pairName]['bid'] = rates.bid;
 			}
 
-			if (isAskMargined) {
+			if (isCurrentAskMargined) {
 
 				changedPairs[pairName] = rates;
 
 				this.log.info('Rates by ' + pairName + ' ask:', rates.ask);
 				this.lastRates[pairName]['ask'] = rates.ask;
 			}
+
+			isBidMargined = isBidMargined || isCurrentBidMargined;
+			isAskMargined = isAskMargined || isCurrentAskMargined;
 
 		}
 
@@ -150,9 +152,14 @@ export class DaemonTradeService {
 			exchangeName: process.env.EXCHANGE_NAME,
 			apiKey: process.env.EXCHANGE_API_KEY,
 			secret: process.env.EXCHANGE_API_SECRET,
-			testMode: process.env.TEST_MODE == 'true',			
+			testMode: process.env.TEST_MODE == 'true',
 		});
 		this.api = await this.botnest.getApiForAccount(this.account.id);
+
+
+		// тут нужно загрузить в базу текущий баланс и в текущую переменную
+		await this.balance.loadBalances(this.account.id);
+		await this.checkBalance();
 
 		// актуализируем пары и стратегии
 		for (const pairName of this.pairs) {
@@ -163,7 +170,10 @@ export class DaemonTradeService {
 			const balance = await this.balance.getBalance(this.account.id, currency2);
 
 			await this.botnest.setStrategyForAccount(
-				this.account.id,
+				{
+					accountId: this.account.id,
+					pairId: pair.id
+				},
 				FillCellsStrategy,
 				{
 					orderAmount: Number(process.env.STRATEGY_BUY_ORDER_AMOUNT),
@@ -179,39 +189,21 @@ export class DaemonTradeService {
 		}
 
 
-
 		await this.botnest.setStrategyForAccount(
-			this.account.id,
+			{
+				accountId: this.account.id,
+			},
 			AwaitProfitStrategy,
 			{
 				minDailyProfit: Number(process.env.STRATEGY_SELL_MIN_DAILY_PROFIT), // % годовых если сделка закрывается за день
 				minYearlyProfit: Number(process.env.STRATEGY_SELL_MIN_ANNUAL_PROFIT), // % годовых если сделка живет больше дня						
 			});
+
+		// проверить состояние открытых ордеров
+		await this.checkCloseOrders();
 	}
 
 
-	private async prepare() {
-
-		let syncStatus = false;
-
-		while (!syncStatus) {
-			try {
-
-				// тут нужно загрузить в базу текущий баланс и в текущую переменную
-				await this.balance.loadBalances(this.account.id);
-				await this.checkBalance();
-
-				// проверить состояние открытых ордеров
-				await this.checkCloseOrders();
-
-				syncStatus = true;
-			} catch (e) {
-
-				this.log.error('Sync error...wait 5 min', e.message, e.stack);
-				await sleep(5 * 60);
-			}
-		}
-	}
 
 
 	private async checkCloseOrders() {
@@ -223,8 +215,23 @@ export class DaemonTradeService {
 		}
 	}
 
-	private async checkBalance() {		
+	private async checkBalance() {
+
 		await this.balance.set(this.account.id, await this.api.fetchBalances());
+
+		for (const pairName of this.pairs) {
+			const { currency1 } = extractCurrency(pairName);
+			const ordersSum = await this.botnest.getActiveOrdersSum(pairName, 'amount1');
+
+			const balance = await this.balance.getBalance(this.account.id, currency1);
+			if (balance) {
+				balance.inOrders = ordersSum ?? 0;
+				balance.available = subtract(balance.amount, balance.inOrders);
+				await this.balance.saveBalance(balance);
+			}
+		}
+
+
 	}
 
 

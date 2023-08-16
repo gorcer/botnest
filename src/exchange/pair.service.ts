@@ -50,11 +50,17 @@ export class PairService  {
     const {bid, ask} = await this.publicApi.getActualRates(pair.name);
     const { minAmount, minCost, fee } = await this.publicApi.getMarketInfo(pair.name);
 
+    let historicalMinRate = pair.historicalMinRate;
+    if (historicalMinRate > bid) {
+      historicalMinRate = bid;
+    }
+
     await this.setInfo(pair, {      
       buyRate: bid,
       sellRate: ask,
       minAmount1: checkLimits(minAmount, minCost, ask),
       minAmount2: minCost,
+      historicalMinRate,
       fee
     });
   }
