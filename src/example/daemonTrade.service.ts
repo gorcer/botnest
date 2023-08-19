@@ -126,7 +126,7 @@ export class DaemonTradeService {
 			const pair = await this.botnest.actualizePair(pairName)
 
 			const { currency2 } = extractCurrency(pairName);
-			// const balance = await this.balance.getBalance(this.account.id, currency2);
+			const balance = await this.balance.getBalance(this.account.id, currency2);
 
 			await this.botnest.setStrategyForAccount(
 				{
@@ -138,12 +138,12 @@ export class DaemonTradeService {
 					orderAmount: Number(process.env.STRATEGY_BUY_ORDER_AMOUNT),
 					risk: process.env.STRATEGY_BUY_RISK,
 					pairId: pair.id,
-					// cellSize: FillCellsStrategy.calculateCellSize({
-					// 	balance,
-					// 	pair,
-					// 	orderAmount: Number(process.env.STRATEGY_BUY_ORDER_AMOUNT),
-					// 	risk: process.env.STRATEGY_BUY_RISK,
-					// })
+					cellSize: FillCellsStrategy.calculateCellSize({
+						balance,
+						pair,
+						orderAmount: Number(process.env.STRATEGY_BUY_ORDER_AMOUNT),
+						risk: process.env.STRATEGY_BUY_RISK,
+					})
 				});
 		}
 
