@@ -12,10 +12,13 @@ import { Account } from "../user/entities/account.entity";
 import { PairRatesDto } from "./dto/pair-rates.dto";
 import { TradeService } from "./trade.service";
 import { OrderService } from "../order/order.service";
+import { isSuitableRate } from "../helpers";
+import { FileLogService } from "../log/filelog.service";
 
 @Injectable()
 export class BotNest {
-
+	
+	lastRates = {};
 
 	constructor(
 		public trade: TradeService,
@@ -24,6 +27,7 @@ export class BotNest {
 		private strategies: StrategyService,
 		public publicApi: PublicApiService,
 		private orders: OrderService,
+		private log: FileLogService,
 	) { }
 
 	public async addStrategy(strategyModel) {
@@ -78,5 +82,50 @@ export class BotNest {
 
 	public async getActiveOrdersSum(currency1: string, attribute: string) {
 		return this.orders.getActiveOrdersSum(currency1, attribute);
+	}
+
+	async checkRates(
+		pairs: Array<string>, 
+		minBuyRateMarginToProcess: number, 
+		minSellRateMarginToProcess: number
+		): Promise<{ isBidMargined: boolean, isAskMargined: boolean, changedPairs: PairRatesDto }> {
+
+		let isBidMargined = false, isAskMargined = false;
+		const changedPairs = {};
+
+		for (const pairName of pairs) {
+
+			if (!this.lastRates[pairName]) {
+				this.lastRates[pairName] = {
+					bid: 0,
+					ask: 0
+				}
+			}
+			const rates = await this.getActualRates(pairName);
+			const isCurrentBidMargined = isSuitableRate(rates.bid, this.lastRates[pairName].bid, minBuyRateMarginToProcess);
+			const isCurrentAskMargined = isSuitableRate(rates.ask, this.lastRates[pairName].ask, minSellRateMarginToProcess);
+
+			if (isCurrentBidMargined) {
+
+				changedPairs[pairName] = rates;
+
+				this.log.info('Rates by ' + pairName + ' bid:', rates.bid);
+				this.lastRates[pairName]['bid'] = rates.bid;
+			}
+
+			if (isCurrentAskMargined) {
+
+				changedPairs[pairName] = rates;
+
+				this.log.info('Rates by ' + pairName + ' ask:', rates.ask);
+				this.lastRates[pairName]['ask'] = rates.ask;
+			}
+
+			isBidMargined = isBidMargined || isCurrentBidMargined;
+			isAskMargined = isAskMargined || isCurrentAskMargined;
+
+		}
+
+		return { isBidMargined, isAskMargined, changedPairs };
 	}
 }

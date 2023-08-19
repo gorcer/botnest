@@ -57,7 +57,7 @@ export class FillCellsStrategy implements BuyStrategyInterface {
     get(waitSeconds=3): Promise<Array<RequestBuyInfoDto>> {
 
         return this.repository
-            .createQueryBuilder('strategy')                                  
+            .createQueryBuilder('strategy')
             .innerJoin(Pair, 'pair', 'strategy."pairId" = pair.id')
             .innerJoin(Balance, 'balance', 'strategy."accountId" = balance."accountId" and balance.currency = pair.currency2')
             .leftJoin(Order, 'order', `
@@ -71,9 +71,10 @@ export class FillCellsStrategy implements BuyStrategyInterface {
             .where('"order".id is null')
             .andWhere(`pair.updatedAt > CURRENT_TIMESTAMP - interval '${waitSeconds} seconds'`)
             .andWhere(`"balance".available > "pair"."minAmount2"`)
-            .andWhere(`"balance".available > strategy."orderAmount" * "pair"."sellRate"`)            
+            .andWhere(`"balance".available > strategy."orderAmount" * "pair"."sellRate"`)
             .andWhere(`"pair"."isActive" = true`)
             .andWhere(`"strategy"."cellSize" > 0`)
+            .andWhere(`"strategy"."isActive" = true`)
             .select(`
                 "balance"."accountId",
                 "pair"."sellRate" as "rate",

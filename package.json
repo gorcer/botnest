@@ -17,6 +17,7 @@
     "seed:create": "hygen seeds create",
     "seed:run": "ts-node -r tsconfig-paths/register ./src/database/seeds/run-seed.ts",
     "console-example": "ts-node ./src/examples.ts",
+    "console": "ts-node ./src/console.ts",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
@@ -30,7 +31,8 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "example:daemon": "npm run console-example iterable",
-    "example:inline": "npm run console-example inline"    
+    "example:inline": "npm run console-example inline",
+    "daemon": "npm run console daemon"
 
   },
   "dependencies": {

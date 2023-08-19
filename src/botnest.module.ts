@@ -5,6 +5,7 @@ import { ConfigModule } from '@nestjs/config';
 import { FileLogService } from './log/filelog.service';
 import { Entities } from './all.entities';
 import { BotNest } from './bot/botnest.service';
+import { DaemonService } from './daemon.service';
 
 
 @Module({
@@ -26,10 +27,9 @@ import { BotNest } from './bot/botnest.service';
   controllers: [],
   providers: [ 
     FileLogService,
-    BotNest
+    DaemonService    
   ],
-  exports: [
-    BotNest
+  exports: [   
   ]
 })
 export class BotnestModule {

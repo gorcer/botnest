@@ -23,8 +23,8 @@ describe('ApiService', () => {
     const exchangeClass =  ccxt[process.env.EXCHANGE_NAME];
     service = new ApiService(
       exchangeClass,
-      process.env.EXCHANGE_TESTNET_API_KEY,
-      process.env.EXCHANGE_TESTNET_API_SECRET,
+      process.env.EXCHANGE_API_KEY,
+      process.env.EXCHANGE_API_SECRET,
       true
       );
   });

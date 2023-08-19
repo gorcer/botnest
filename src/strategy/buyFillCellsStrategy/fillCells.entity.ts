@@ -16,7 +16,8 @@ export class FillCells extends BaseStrategyModel{
     
     @Column({type: "decimal", default: 50})
     cellSize: number;
-
-    
+      
+    @Column({type: "boolean", default: true})
+    isActive: boolean;   
     
 }

@@ -16,14 +16,12 @@ const { divide, subtract, multiply, compareTo, add } = require("js-big-decimal")
 export class DaemonTradeService {
 
 	account: Account;
+	minBuyRateMarginToProcess;
+	minSellRateMarginToProcess;
 	pairs: Array<string>;
 	api: ApiService;
 	accountConfig;
-	lastRates = {};
-	minBuyRateMarginToProcess;
-	minSellRateMarginToProcess;
-
-
+	
 	constructor(
 		private log: FileLogService,
 		private balance: BalanceService,
@@ -45,7 +43,7 @@ export class DaemonTradeService {
 			try {
 
 				// Проверяем есть ли значимое изменение курса
-				const { isBidMargined, isAskMargined, changedPairs } = await this.checkRates(this.pairs, this.minBuyRateMarginToProcess, this.minSellRateMarginToProcess);
+				const { isBidMargined, isAskMargined, changedPairs } = await this.botnest.checkRates(this.pairs, this.minBuyRateMarginToProcess, this.minSellRateMarginToProcess);
 
 				// Если есть, то отправляем курс боту
 				if (isBidMargined || isAskMargined) {
@@ -98,46 +96,7 @@ export class DaemonTradeService {
 		}
 	}
 
-	async checkRates(pairs: Array<string>, minBuyRateMarginToProcess: number, minSellRateMarginToProcess: number): Promise<{ isBidMargined: boolean, isAskMargined: boolean, changedPairs: PairRatesDto }> {
-
-		let isBidMargined = false, isAskMargined = false;
-		const changedPairs = {};
-
-		for (const pairName of pairs) {
-
-			if (!this.lastRates[pairName]) {
-				this.lastRates[pairName] = {
-					bid: 0,
-					ask: 0
-				}
-			}
-			const rates = await this.botnest.getActualRates(pairName);
-			const isCurrentBidMargined = isSuitableRate(rates.bid, this.lastRates[pairName].bid, minBuyRateMarginToProcess);
-			const isCurrentAskMargined = isSuitableRate(rates.ask, this.lastRates[pairName].ask, minSellRateMarginToProcess);
-
-			if (isCurrentBidMargined) {
-
-				changedPairs[pairName] = rates;
-
-				this.log.info('Rates by ' + pairName + ' bid:', rates.bid);
-				this.lastRates[pairName]['bid'] = rates.bid;
-			}
-
-			if (isCurrentAskMargined) {
-
-				changedPairs[pairName] = rates;
-
-				this.log.info('Rates by ' + pairName + ' ask:', rates.ask);
-				this.lastRates[pairName]['ask'] = rates.ask;
-			}
-
-			isBidMargined = isBidMargined || isCurrentBidMargined;
-			isAskMargined = isAskMargined || isCurrentAskMargined;
-
-		}
-
-		return { isBidMargined, isAskMargined, changedPairs };
-	}
+	
 
 	private async init() {
 
@@ -167,7 +126,7 @@ export class DaemonTradeService {
 			const pair = await this.botnest.actualizePair(pairName)
 
 			const { currency2 } = extractCurrency(pairName);
-			const balance = await this.balance.getBalance(this.account.id, currency2);
+			// const balance = await this.balance.getBalance(this.account.id, currency2);
 
 			await this.botnest.setStrategyForAccount(
 				{
