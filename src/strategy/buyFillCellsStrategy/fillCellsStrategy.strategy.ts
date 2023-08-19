@@ -38,6 +38,11 @@ export class FillCellsStrategy implements BuyStrategyInterface {
         const totalBalance = balance.amount;
         const diffRate = subtract(pair.sellRate, pair.historicalMinRate);
         const maxOrderCnt = Math.floor(divide(totalBalance, multiply(orderAmount, pair.sellRate)));
+
+        if (compareTo(maxOrderCnt,0) == 0 ) {
+            return 0;            
+        }
+
         let cellSize = divide(diffRate, maxOrderCnt);
         if (risk != undefined) {
             if (risk > 99)
