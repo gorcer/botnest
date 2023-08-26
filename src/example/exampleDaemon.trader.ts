@@ -13,7 +13,7 @@ const { divide, subtract, multiply, compareTo, add } = require("js-big-decimal")
 
 
 @Injectable()
-export class DaemonTradeService {
+export class ExampleDaemonTrader {
 
 	account: Account;
 	minBuyRateMarginToProcess;

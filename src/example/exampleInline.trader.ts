@@ -4,7 +4,7 @@ import { FillCellsStrategy } from "../strategy/buyFillCellsStrategy/fillCellsStr
 import { AwaitProfitStrategy } from "../strategy/sellAwaitProfitStrategy/awaitProfitStrategy.strategy";
 
 @Injectable()
-export class InlineTradeService {
+export class ExampleInlineTrader {
 
     constructor(
         private botnest: BotNest

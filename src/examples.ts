@@ -1,26 +1,26 @@
 import { NestFactory } from '@nestjs/core';
-import { DaemonTradeService } from './example/daemonTrade.service';
-import { InlineTradeService } from './example/inlineTrade.service';
+import { ExampleDaemonTrader } from './example/exampleDaemon.trader';
+import { ExampleInlineTrader } from './example/exampleInline.trader';
 import { ExampleModule } from './example.module';
 
 
 async function bootstrap() {
 
 
-  const app = await NestFactory.create(ExampleModule);
+  const app = await NestFactory.create(ExampleModule.register());
 
   const command = process.argv[2];
 
   switch (command) {
     case 'iterable':
       {
-        const bot = await app.resolve(DaemonTradeService);
+        const bot = await app.resolve(ExampleDaemonTrader);
         await bot.trade();
       }
       break;
     case 'inline':
       {
-        const bot = await app.resolve(InlineTradeService);
+        const bot = await app.resolve(ExampleInlineTrader);
         await bot.trade();
       }
       break;

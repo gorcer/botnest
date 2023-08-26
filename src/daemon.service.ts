@@ -15,9 +15,7 @@ export class DaemonService {
     constructor(
         private botnest: BotNest,
         private log: FileLogService
-    ) {
-
-    }
+    ) {}
 
     private async init() {
 
