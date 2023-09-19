@@ -1,7 +1,7 @@
 import { ConfigModule } from "@nestjs/config";
 import { Test, TestingModule } from "@nestjs/testing";
 import { TradeService } from "../trade.service";
-import { MockedExchange } from "../../exchange/mock/mocked.exchange";
+import { DummyExchange } from "../../exchange/mock/dummy.exchange";
 import { AccountService } from "../../user/account.service";
 import { StrategyService } from "../../strategy/strategy.service";
 import { PublicApiService } from "../../exchange/publicApi.service";
@@ -37,7 +37,7 @@ export async function TestingModuleCreate() {
         ],
         providers: [
             TradeService,
-            MockedExchange,
+            DummyExchange,
             AccountService,
             {
                 provide: getRepositoryToken(Account),
@@ -49,7 +49,7 @@ export async function TestingModuleCreate() {
             },
             {
                 provide: PublicApiService,
-                useValue: new ApiService(MockedExchange),
+                useValue: new ApiService(DummyExchange),
             },
             {
                 provide: FileLogService,

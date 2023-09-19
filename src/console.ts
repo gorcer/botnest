@@ -6,7 +6,7 @@ import { BotnestModule } from './botnest.module';
 
 async function bootstrap() {
 
-  const app = await NestFactory.create(BotnestModule.register());
+  const app = await NestFactory.create(BotnestModule);
 
   const command = process.argv[2];
 

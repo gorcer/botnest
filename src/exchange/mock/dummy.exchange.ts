@@ -1,16 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { OrderSide, OrderType } from 'ccxt/js/src/base/types';
 import { Order, OrderSideEnum } from '../../order/entities/order.entity';
-const {
-  divide,
-  subtract,
-  multiply,
-  compareTo,
-  add,
-} = require('js-big-decimal');
 
 @Injectable()
-export class MockedExchange {
+export class DummyExchange {
   markets = [
     {
       symbol: 'BTC/USDT',
@@ -25,7 +18,7 @@ export class MockedExchange {
     },
   ];
 
-  rowN = 0;
+  rownN = 0;
   data = [];
 
   orders = [];
@@ -39,6 +32,13 @@ export class MockedExchange {
 
   fetchTickers() {
     return this.tickers;
+  }
+
+  setNextOrderBook(bid: number, ask: number) {
+    this.orderbook.push({
+      bids: [[bid]],
+      asks: [[ask]],
+    });
   }
 
   fetchOrderBook(pair, limit) {
@@ -73,6 +73,11 @@ export class MockedExchange {
     };
   }
 
+  setNextOrder(order) {
+    order.id = this.lastOrderId++;
+    this.orders.push(order);
+  }
+
   createOrder(
     symbol: string,
     side: OrderSideEnum,
@@ -80,20 +85,6 @@ export class MockedExchange {
     amount: number,
     price?: number,
   ) {
-    this.lastOrderId++;
-
-    this.orders[this.lastOrderId] = {
-      price: price,
-      amount: amount,
-      cost: multiply(price, amount),
-      fees: [
-        {
-          cost: 0,
-          currency: 'USDT',
-        },
-      ],
-    };
-
     return this.orders.shift();
   }
 

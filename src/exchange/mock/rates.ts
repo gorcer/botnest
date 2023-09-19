@@ -48,13 +48,11 @@ function readObjectFromFile(filePath) {
     }
 }
 
-
 export function getRatesFromFile(fn){
     return readObjectFromFile(fn);
 }
 
-export async function loadRates()
-{
+export async function loadRates() {
     const fn = 'data.json';
 
     const rates = readObjectFromFile(fn);

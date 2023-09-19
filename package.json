@@ -1,12 +1,12 @@
 {
   "name": "botnest",
-  "version": "0.0.12",
+  "version": "0.0.5",
   "description": "Fully customized trading bot for cryptocurrency exchange with custom strategies",
   "author": "Egor Zaretskiy",
   "private": false,
   "license": "UNLICENSED",
-  "main":"dist/index.js",
-  "types":"dist/index.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/inde.d.ts",
   "scripts": {
     "typeorm": "env-cmd ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js",
     "migration:generate": "npm run typeorm -- --dataSource=src/database/data-source.ts migration:generate",
@@ -33,7 +33,6 @@
     "example:daemon": "npm run console-example iterable",
     "example:inline": "npm run console-example inline",
     "daemon": "npm run console daemon"
-
   },
   "dependencies": {
     "@angular/cli": "^16.1.4",
@@ -53,6 +52,7 @@
     "graphql": "^16.7.1",
     "js-big-decimal": "^1.4.1",
     "nest-commander": "^3.11.0",
+    "node-fetch": "^3.3.2",
     "pg": "^8.11.1",
     "postgresql": "^0.0.1",
     "reflect-metadata": "^0.1.13",

@@ -6,7 +6,7 @@ import { Account } from '../../user/entities/account.entity';
 import { TradeService } from '../trade.service';
 import { BalanceService } from '../../balance/balance.service';
 import { PairService } from '../../exchange/pair.service';
-import { MockedExchange } from '../../exchange/mock/mocked.exchange';
+import { DummyExchange } from '../../exchange/mock/dummy.exchange';
 import { TestingModuleCreate } from './TestingModuleCreate';
 import { equal, notEqual } from 'assert';
 import { ApiService } from '../../exchange/api.service';
@@ -20,7 +20,7 @@ describe('OrderService', () => {
   let bot: TradeService;
   let balances: BalanceService;
   let pairs: PairService;
-  let publicExchange: MockedExchange;
+  let publicExchange: DummyExchange;
   let api: ApiService;
 
   beforeEach(async () => {

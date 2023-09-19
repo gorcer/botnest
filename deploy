@@ -8,8 +8,8 @@ elif [ $1 == "prod" ]
        if [ $2 == "go" ]
             then
                 echo "Running prod deploy"
-                cd office && npm run prod && cd ..
-                #rsync -azv --no-perms --no-owner --no-group --force --delete --progress --exclude-from=rsync_exclude.txt -e "ssh" ./ df:/var/www/hexonomica.com
+                npm run build
+                rsync -azv --no-perms --no-owner --no-group --force --delete --progress --exclude-from=rsync_exclude.txt -e "ssh" ./ df:/var/www/botnest
         else
             echo "Error. Please make sure youve indicated correct parameters";
         fi

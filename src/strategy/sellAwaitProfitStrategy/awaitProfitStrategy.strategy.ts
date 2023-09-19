@@ -24,7 +24,7 @@ export class AwaitProfitStrategy implements SellStrategyInterface {
     this.repository = this.entityManager.getRepository(AwaitProfitStrategy.model);
   }
 
-  async get(now?, waitSeconds=3): Promise<Array<RequestSellInfoDto>> {
+  async get(now?): Promise<Array<RequestSellInfoDto>> {
 
     if (!now)
       now = "extract(epoch from now())"; 
@@ -44,11 +44,11 @@ export class AwaitProfitStrategy implements SellStrategyInterface {
             ( (strategy.minYerlyProfit / ${SEC_IN_YEAR}) * (${now} - "order"."createdAtSec") )
         end        
         `)
-      .andWhere(`pair.updatedAt > CURRENT_TIMESTAMP - interval '${waitSeconds} seconds'`)
       .andWhere(`"order".side = :side`, { side: OrderSideEnum.BUY })
       .andWhere(`"order".rate < "pair"."buyRate"`)
       .andWhere(`"order"."createdAtSec" < ${now}+1`)
       .andWhere('"order"."isActive" = true')
+      .andWhere('"strategy"."isActive" = true')
       .andWhere('"order"."prefilled" < "order"."amount1"')
       .select(`
           "order"."pairName",

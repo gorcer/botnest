@@ -2,9 +2,10 @@ import { Injectable } from "@nestjs/common";
 import { BotNest } from "../bot/botnest.service";
 import { FillCellsStrategy } from "../strategy/buyFillCellsStrategy/fillCellsStrategy.strategy";
 import { AwaitProfitStrategy } from "../strategy/sellAwaitProfitStrategy/awaitProfitStrategy.strategy";
+import { DummyExchange } from "../exchange/mock/dummy.exchange";
 
 @Injectable()
-export class ExampleInlineTrader {
+export class HistoryTradeService {
 
     constructor(
         private botnest: BotNest
@@ -25,10 +26,7 @@ export class ExampleInlineTrader {
 
         // add test account
         const account = await this.botnest.setUserAccount(userId, {
-            exchangeName: process.env.EXCHANGE_NAME,
-            apiKey: process.env.EXCHANGE_API_KEY,
-            secret: process.env.EXCHANGE_API_SECRET,
-            testMode: process.env.TEST_MODE == 'true',
+            exchangeClass: DummyExchange
         });
 
         // set buy strategy config for account

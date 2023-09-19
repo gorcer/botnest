@@ -20,7 +20,6 @@ import { StrategyService } from '../strategy.service';
 import { StrategyModule } from '../strategy.module';
 
 describe('ActiveOrdersAboveProfit', () => {
-
   let service: AwaitProfitStrategy;
   let orderService: OrderService;
   let pairService: PairService;
@@ -29,7 +28,6 @@ describe('ActiveOrdersAboveProfit', () => {
 
   let orderRepository: Repository<Order>;
   let pairRepository: Repository<Pair>;
-
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -42,13 +40,11 @@ describe('ActiveOrdersAboveProfit', () => {
         OrderModule,
         ExchangeModule,
         BalanceModule,
-        StrategyModule
+        StrategyModule,
       ],
-      providers: [
-      ],
+      providers: [],
     }).compile();
 
-    
     orderService = module.get<OrderService>(OrderService);
     pairService = module.get<PairService>(PairService);
     balanceService = module.get<BalanceService>(BalanceService);
@@ -62,14 +58,11 @@ describe('ActiveOrdersAboveProfit', () => {
     await prepareDB();
   });
 
-
-
   it('should be defined', () => {
     expect(service).toBeDefined();
   });
 
   it('get orders to sell', async () => {
-
     const pairName = 'BTC/USDT';
     const { currency1, currency2 } = extractCurrency(pairName);
     const accountId = 1;
@@ -80,14 +73,13 @@ describe('ActiveOrdersAboveProfit', () => {
     const minAmount1 = 0.01;
 
     await balanceService.set(accountId, {
-      'USDT': balanceUSDT,
-      'BUSD': balanceBUSD
+      USDT: balanceUSDT,
+      BUSD: balanceBUSD,
     });
 
-
-    strategyService.setStrategyForAccount({accountId}, AwaitProfitStrategy, {
+    strategyService.setStrategyForAccount({ accountId }, AwaitProfitStrategy, {
       minDailyProfit: 200,
-      minYerlyProfit: 30
+      minYerlyProfit: 30,
     });
     const pair = await pairService.fetchOrCreate(pairName);
     await orderService.create({
@@ -100,28 +92,24 @@ describe('ActiveOrdersAboveProfit', () => {
       currency2,
       expectedRate: sellRate,
       rate: 10000,
-      extOrderId: "1",
-      createdAtSec: 0
+      extOrderId: '1',
+      createdAtSec: 0,
     });
 
-     
-
     {
-
       await pairService.setInfo(pair, {
         lastPrice: buyRate,
         buyRate: buyRate,
         sellRate: sellRate,
         minAmount1,
         minAmount2: 10,
-        fee: 0.001
+        fee: 0.001,
       });
-      
+
       const orders = await service.get(10);
-      equal(orders.length, 1)
+      equal(orders.length, 1);
     }
- 
-      
+
     {
       await pairService.setInfo(pair, {
         lastPrice: 10000,
@@ -129,39 +117,36 @@ describe('ActiveOrdersAboveProfit', () => {
         sellRate: 10000,
         minAmount1,
         minAmount2: 10,
-        fee: 0.001
-      });    
-      
-      const orders = await service.get(10);
-      equal(orders.length, 0)
-    }
+        fee: 0.001,
+      });
 
+      const orders = await service.get(10);
+      equal(orders.length, 0);
+    }
   });
 
   const prepareDB = async function () {
-
     if (process.env.TEST_MODE != 'true') {
       throw new Error('Cant run in prod, you loss all data!!!');
     }
 
     {
       // Truncate orders
-      await orderRepository
-        .createQueryBuilder()
-        .delete()
-        .from(Order)
-        .execute();
+      await orderRepository.createQueryBuilder().delete().from(Order).execute();
     }
 
     {
       // Truncate pairs
+      await pairRepository.createQueryBuilder().delete().from(Pair).execute();
+    }
+
+    {
+      // Truncate AwaitProfit
       await pairRepository
         .createQueryBuilder()
         .delete()
-        .from(Pair)
+        .from(AwaitProfit)
         .execute();
     }
-
-  }
-
+  };
 });
