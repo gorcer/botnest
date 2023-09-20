@@ -1,131 +1,199 @@
-import { Injectable } from "@nestjs/common";
-import { ApiService } from "../exchange/api.service";
-import { PairService } from "../exchange/pair.service";
-import { PublicApiService } from "../exchange/publicApi.service";
-import { Order } from "../order/entities/order.entity";
-import { BuyStrategyInterface } from "../strategy/interfaces/buyStrategy.interface";
-import { StrategyInterface } from "../strategy/interfaces/strategy.interface";
-import { StrategyService } from "../strategy/strategy.service";
-import { AccountService } from "../user/account.service";
-import { UpdateAccountDto } from "../user/dto/update-account.dto";
-import { Account } from "../user/entities/account.entity";
-import { PairRatesDto } from "./dto/pair-rates.dto";
-import { TradeService } from "./trade.service";
-import { OrderService } from "../order/order.service";
-import { isSuitableRate } from "../helpers";
-import { FileLogService } from "../log/filelog.service";
+import { Injectable } from '@nestjs/common';
+import { ApiService } from '../exchange/api.service';
+import { PairService } from '../exchange/pair.service';
+import { PublicApiService } from '../exchange/publicApi.service';
+import { Order } from '../order/entities/order.entity';
+import { StrategyService } from '../strategy/strategy.service';
+import { AccountService } from '../user/account.service';
+import { ExchangePairRatesDto, RateDto } from './dto/pair-rates.dto';
+import { TradeService } from './trade.service';
+import { OrderService } from '../order/order.service';
+import { isSuitableRate } from '../helpers/helpers';
+import { FileLogService } from '../log/filelog.service';
+import { BalanceService } from '../balance/balance.service';
+import { subtract } from '../helpers/bc';
+import { ExchangeService } from '../exchange/exchange.service';
+import { Exchange } from '../exchange/entities/exchange.entity';
+
 
 @Injectable()
 export class BotNest {
-	
-	lastRates = {};
+  lastRates = {};
+  publicApi: PublicApiService;
 
-	constructor(
-		public trade: TradeService,
-		private accounts: AccountService,
-		private pairs: PairService,
-		private strategies: StrategyService,
-		public publicApi: PublicApiService,
-		private orders: OrderService,
-		private log: FileLogService,
-	) { }
+  constructor(
+    public trade: TradeService,
+    private accounts: AccountService,
+    private pairs: PairService,
+    private strategies: StrategyService,
+    private orders: OrderService,
+    private log: FileLogService,
+    private balance: BalanceService,
+    private exchange: ExchangeService,
+  ) { }
 
-	public async addStrategy(strategyModel) {
-		this.trade.addStrategy(strategyModel);
-	}
+  public async fetchOrCreateExchange(alias: string, test_mode: boolean) {
+    return await this.exchange.fetchOrCreate(alias, test_mode);
+  }
 
-	async setUserAccount(userId:number, config) {
-		const account = await this.accounts.fetchOrCreate(userId);
-		return this.accounts.setAccount(account, config);
-	}
+  public async getExchanges() {
+    return await this.exchange.getAllActive();
+  }
 
-	async getApiForAccount(accountId: number):Promise<ApiService> {
-		return this.accounts.getApiForAccount(accountId);
-	}
+  public async checkBalance(accountId: number) {
+    const api = await this.getApiForAccount(accountId);
 
-	async actualizePair(pairName: string) {
-		const pair = await this.pairs.fetchOrCreate(pairName);
-		await this.pairs.actualize(pair)
-		return pair;
-	}
+    await this.balance.set(accountId, await api.fetchBalances());
 
-	async setStrategyForAccount(where:object, strategy:any, config: any) {    
-		return this.strategies.setStrategyForAccount(where, strategy, config);
-	}
+    const balances = await this.balance.loadBalances(accountId);
 
-	async checkCloseOrders(): Promise<Array<Order>> {
-		return this.trade.checkCloseOrders();
-	}
+    for (const currency of Object.keys(balances)) {
+      const ordersSum = await this.getActiveOrdersSum(
+        accountId,
+        currency,
+        'amount1',
+      );
 
-	public async setRates(rates: PairRatesDto ) {
+      const balance = await this.balance.getBalance(accountId, currency);
+      if (balance) {
+        balance.inOrders = ordersSum ?? 0;
+        balance.available = subtract(balance.amount, balance.inOrders);
+        await this.balance.saveBalance(balance);
+      }
+    }
+  }
 
-		for (const [pairName, rate] of Object.entries(rates)) {
-			const pair = await this.pairs.fetchOrCreate(pairName);
-			await this.pairs.setInfo(pair, {
-				buyRate: rate.bid,
-				sellRate: rate.ask
-			});
-		}
-	}
+  public async addStrategy(strategyModel) {
+    this.trade.addStrategy(strategyModel);
+  }
 
-	async runBuyStrategies() {
-		return this.trade.runBuyStrategies();
-	}
+  async setUserAccount(userId: number, config) {
+    const account = await this.accounts.fetchOrCreate(userId);
+    return this.accounts.setAccount(account, config);
+  }
 
-	async runSellStrategies() {
-		return this.trade.runSellStrategies();
-	}
+  async getApiForAccount(accountId: number): Promise<ApiService> {
+    return this.accounts.getApiForAccount(accountId);
+  }
 
-	public async getActualRates(pairName:string):Promise<{bid:number, ask:number}> {
-		return this.publicApi.getActualRates(pairName);
-	}
+  async actualizePair(exchange: Exchange, pairName: string) {
+    const pair = await this.pairs.fetchOrCreate(exchange.id, pairName);
+    const api = this.getApiForExchange(exchange);
+    await this.pairs.actualize(api, pair);
+    return pair;
+  }
 
-	public async getActiveOrdersSum(currency1: string, attribute: string) {
-		return this.orders.getActiveOrdersSum(currency1, attribute);
-	}
+  async setStrategyForAccount(where: object, strategy: any, config: any) {
+    return this.strategies.setStrategyForAccount(where, strategy, config);
+  }
 
-	async checkRates(
-		pairs: Array<string>, 
-		minBuyRateMarginToProcess: number, 
-		minSellRateMarginToProcess: number
-		): Promise<{ isBidMargined: boolean, isAskMargined: boolean, changedPairs: PairRatesDto }> {
+  async checkCloseOrders(): Promise<Array<Order>> {
+    return this.trade.checkCloseOrders();
+  }
 
-		let isBidMargined = false, isAskMargined = false;
-		const changedPairs = {};
+  public async setRates(rates: ExchangePairRatesDto) {
+    for (const [exchangeId, pairRates] of Object.entries(rates)) {
+      for (const [pairName, rate] of Object.entries(pairRates)) {
+        const pair = await this.pairs.fetchOrCreate(Number(exchangeId), pairName);
+        await this.pairs.setInfo(pair, {
+          buyRate: (rate as RateDto).bid,
+          sellRate: (rate as RateDto).ask,
+        });
+      }
+    }
+  }
 
-		for (const pairName of pairs) {
+  async runBuyStrategies() {
+    return this.trade.runBuyStrategies();
+  }
 
-			if (!this.lastRates[pairName]) {
-				this.lastRates[pairName] = {
-					bid: 0,
-					ask: 0
-				}
-			}
-			const rates = await this.getActualRates(pairName);
-			const isCurrentBidMargined = isSuitableRate(rates.bid, this.lastRates[pairName].bid, minBuyRateMarginToProcess);
-			const isCurrentAskMargined = isSuitableRate(rates.ask, this.lastRates[pairName].ask, minSellRateMarginToProcess);
+  async runSellStrategies() {
+    return this.trade.runSellStrategies();
+  }
 
-			if (isCurrentBidMargined) {
+  public async getActualRates(
+    api: PublicApiService,
+    pairName: string,
+  ): Promise<{ bid: number; ask: number }> {
+    return api.getActualRates(pairName);
+  }
 
-				changedPairs[pairName] = rates;
+  public async getActiveOrdersSum(
+    accountId: number,
+    currency1: string,
+    attribute: string,
+  ) {
+    return this.orders.getActiveOrdersSum(accountId, currency1, attribute);
+  }
 
-				this.log.info('Rates by ' + pairName + ' bid:', rates.bid);
-				this.lastRates[pairName]['bid'] = rates.bid;
-			}
+  public getApiForExchange(exchange: Exchange): PublicApiService {
+    return this.exchange.getApiForExchange(exchange);
+  }
 
-			if (isCurrentAskMargined) {
+  public async checkRates(
+    pairs: Array<string>,
+    minBuyRateMarginToProcess: number,
+    minSellRateMarginToProcess: number,
+  ): Promise<{
+    isBidMargined: boolean;
+    isAskMargined: boolean;
+    changedPairs: ExchangePairRatesDto;
+  }> {
+    let isBidMargined = false,
+      isAskMargined = false;
+    const changedPairs = {};
 
-				changedPairs[pairName] = rates;
+    const exchanges = await this.exchange.getAllActive();
 
-				this.log.info('Rates by ' + pairName + ' ask:', rates.ask);
-				this.lastRates[pairName]['ask'] = rates.ask;
-			}
+    for (const exchange of exchanges) {
 
-			isBidMargined = isBidMargined || isCurrentBidMargined;
-			isAskMargined = isAskMargined || isCurrentAskMargined;
+      if (!this.lastRates[exchange.id]) {
+        this.lastRates[exchange.id] = {};
+      }
+      const api = this.exchange.getApiForExchange(exchange);
 
-		}
+      for (const pairName of pairs) {
 
-		return { isBidMargined, isAskMargined, changedPairs };
-	}
+        if (!this.lastRates[exchange.id][pairName]) {
+          this.lastRates[exchange.id][pairName] = {
+            bid: 0,
+            ask: 0,
+          };
+        }
+        const lastRates = this.lastRates[exchange.id][pairName];
+        const rates = await api.getActualRates(pairName);
+
+        const isCurrentBidMargined = isSuitableRate(
+          rates.bid,
+          lastRates.bid,
+          minBuyRateMarginToProcess,
+        );
+        const isCurrentAskMargined = isSuitableRate(
+          rates.ask,
+          lastRates.ask,
+          minSellRateMarginToProcess,
+        );
+
+        if (isCurrentBidMargined) {
+          changedPairs[exchange.id] = changedPairs[exchange.id] || {};
+          changedPairs[exchange.id][pairName] = rates;
+
+          this.log.info(`[${exchange.alias}] Rates by ${pairName} bid:`, rates.bid);
+          lastRates.bid = rates.bid;
+        }
+
+        if (isCurrentAskMargined) {
+          changedPairs[exchange.id] = changedPairs[exchange.id] || {};
+          changedPairs[exchange.id][pairName] = rates;
+
+          this.log.info(`[${exchange.alias}] Rates by ${pairName} ask:`, rates.ask);
+          lastRates.ask = rates.ask;
+        }
+
+        isBidMargined = isBidMargined || isCurrentBidMargined;
+        isAskMargined = isAskMargined || isCurrentAskMargined;
+      }
+    }
+    return { isBidMargined, isAskMargined, changedPairs };
+  }
 }

@@ -14,7 +14,7 @@ import { BalanceService } from '../../balance/balance.service';
 import { BalanceModule } from '../../balance/balance.module';
 import { equal } from 'assert';
 import { AwaitProfitStrategy } from './awaitProfitStrategy.strategy';
-import { extractCurrency } from '../../helpers';
+import { extractCurrency } from '../../helpers/helpers';
 import { AwaitProfit } from './awaitProfit.entity';
 import { StrategyService } from '../strategy.service';
 import { StrategyModule } from '../strategy.module';

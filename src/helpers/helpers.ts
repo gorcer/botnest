@@ -1,12 +1,12 @@
+import { compareTo, divide, multiply } from "./bc";
+
 const AsyncLock = require('async-lock');
 const asynclock = new AsyncLock();
 
-const { divide, subtract, multiply, compareTo, add } = require("js-big-decimal");
 
 export const SEC_IN_HOUR = 60 * 60;
 export const SEC_IN_DAY = SEC_IN_HOUR * 24; 
 export const SEC_IN_YEAR = SEC_IN_DAY * 365;
-
 export const lock = asynclock;
 
 /**

@@ -22,7 +22,6 @@ export class ApiService {
             secret
         });
         this.exchange.setSandboxMode(sandBoxMode);        
-
     }
 
     public async getActualRates(pair:string):Promise<{bid:number, ask:number}> {

@@ -14,7 +14,7 @@ import { PairService } from '../../exchange/pair.service';
 import { BalanceService } from '../../balance/balance.service';
 import { BalanceModule } from '../../balance/balance.module';
 import { equal } from 'assert';
-import { extractCurrency } from '../../helpers';
+import { extractCurrency } from '../../helpers/helpers';
 import { FillCells } from './fillCells.entity';
 import { StrategyService } from '../strategy.service';
 import { Entities } from '../../all.entities';

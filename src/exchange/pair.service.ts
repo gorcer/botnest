@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { checkLimits, elapsedSecondsFrom, extractCurrency, lock, updateModel } from "../helpers";
+import { checkLimits, elapsedSecondsFrom, extractCurrency, lock, updateModel } from "../helpers/helpers";
 import { PublicApiService } from "./publicApi.service";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Pair } from "./entities/pair.entity";
@@ -9,31 +9,31 @@ import { Repository } from "typeorm";
 export class PairService  {
 
   pairs:{ [id: string]: Pair }={};
-  lastRequestTime={};  
+
   FETCH_TIMEOUT;
   minAmount;
   minCost;
-
+  publicApi: PublicApiService;
+  
   constructor(
-    
-    public publicApi: PublicApiService,
-
     @InjectRepository(Pair)
     private pairRepository: Repository<Pair>
   ) {    
-    this.FETCH_TIMEOUT = Number(process.env.EXCHANGE_RATES_FETCH_TIMEOUT);
-    
+    this.FETCH_TIMEOUT = Number(process.env.EXCHANGE_RATES_FETCH_TIMEOUT);  
   }
 
-  public async fetchOrCreate(pairName: string): Promise<Pair> {
-    let pair = await this.pairRepository.findOneBy({name: pairName});
+  public setPublicApi(api:PublicApiService) {
+    this.publicApi = api;
+  }
+
+  public async fetchOrCreate(exchange_id: number, pairName: string): Promise<Pair> {
+    let pair = await this.pairRepository.findOneBy({exchange_id, name: pairName});
     if (!pair) {
       const {currency1, currency2} = extractCurrency(pairName);
-      pair = this.pairRepository.create({name: pairName, currency1, currency2})
+      pair = this.pairRepository.create({exchange_id, name: pairName, currency1, currency2})
       await this.pairRepository.save(
         pair
-      );      
-      this.lastRequestTime[pairName] = 1;
+      );            
     }
     return pair;
   }
@@ -46,9 +46,9 @@ export class PairService  {
     );
   }
 
-  async actualize(pair:Pair) {
-    const {bid, ask} = await this.publicApi.getActualRates(pair.name);
-    const { minAmount, minCost, fee } = await this.publicApi.getMarketInfo(pair.name);
+  async actualize(api: PublicApiService, pair:Pair) {
+    const {bid, ask} = await api.getActualRates(pair.name);
+    const { minAmount, minCost, fee } = await api.getMarketInfo(pair.name);
 
     let historicalMinRate = pair.historicalMinRate;
     if (historicalMinRate > bid) {

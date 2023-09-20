@@ -12,7 +12,7 @@ import { equal, notEqual } from 'assert';
 import { ApiService } from '../../exchange/api.service';
 import { RequestSellInfoDto } from '../../strategy/dto/request-sell-info.dto';
 import { Order } from '../../order/entities/order.entity';
-import { SEC_IN_YEAR } from '../../helpers';
+import { SEC_IN_YEAR } from '../../helpers/helpers';
 const { divide, subtract, multiply, compareTo, add } = require("js-big-decimal");
 
 describe('OrderService', () => {

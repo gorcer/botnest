@@ -10,6 +10,8 @@ elif [ $1 == "prod" ]
                 echo "Running prod deploy"
                 npm run build
                 rsync -azv --no-perms --no-owner --no-group --force --delete --progress --exclude-from=rsync_exclude.txt -e "ssh" ./ df:/var/www/botnest
+                ssh df 'cd /var/www/botnest && forever stop ./dist/console.js'
+                ssh df 'cd /var/www/botnest && forever start -o ./_log/forever_out.log -e ./_log/forever_err.log ./dist/console.js daemon'
         else
             echo "Error. Please make sure youve indicated correct parameters";
         fi

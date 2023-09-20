@@ -5,13 +5,15 @@ import { AwaitProfitStrategy } from '../strategy/sellAwaitProfitStrategy/awaitPr
 
 @Injectable()
 export class InlineTradeService {
-  constructor(private botnest: BotNest) {}
+  constructor(private botnest: BotNest) { }
 
   async trade() {
     const pairName = process.env.PAIRS.replace(' ', '').split(',')[0];
     const userId = 1;
-    const cellSize = 50; // step for FillCellsStrategy
-    const pair = await this.botnest.actualizePair(pairName);
+
+    const exchange = await this.botnest.fetchOrCreateExchange(process.env.EXCHANGE_NAME, process.env.TEST_MODE == 'true');
+    const publicApi = this.botnest.getApiForExchange(exchange);
+    const pair = await this.botnest.actualizePair(exchange, pairName);
 
     // set bot strategies
     this.botnest.addStrategy(FillCellsStrategy);
@@ -51,20 +53,23 @@ export class InlineTradeService {
     await this.botnest.checkCloseOrders();
 
     //get current rates
-    const rates = await this.botnest.getActualRates(pairName);
+    const rates = await this.botnest.getActualRates(publicApi, pairName);
     if (!rates.ask || !rates.bid) {
       throw new Error('Cant resolve current rate, try to repeat later');
     }
 
     // set current rates
     await this.botnest.setRates({
-      pairName: rates,
-    });
+      [exchange.id]: {      
+        pairName: rates,
+      }
+    }
+    );
 
     // run buy strategies
     await this.botnest.runBuyStrategies();
 
-    // run sell strategies
-    await this.botnest.runSellStrategies();
+// run sell strategies
+await this.botnest.runSellStrategies();
   }
 }

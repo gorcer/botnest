@@ -1,9 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { ApiService } from "./api.service";
 import { pro as ccxt } from "ccxt";
-import { elapsedSecondsFrom, lock } from "../helpers";
+import { elapsedSecondsFrom, lock } from "../helpers/helpers";
 
-@Injectable()
 export class PublicApiService extends ApiService {
 
   lastPrice;
@@ -12,16 +11,14 @@ export class PublicApiService extends ApiService {
   lastPriceFetchTime;
   FETCH_TIMEOUT;
 
+  constructor(exchange_name: string, test_mode: boolean) {
 
-
-  constructor() {
-    
-      super(
-        ccxt[process.env.EXCHANGE_NAME],
-        '',
-        '',
-        process.env.TEST_MODE == 'true'
-      );   
+    super(
+      ccxt[exchange_name],
+      '',
+      '',
+      test_mode
+    );
 
     this.lastPrice = {};
     this.rates = {};
@@ -30,7 +27,7 @@ export class PublicApiService extends ApiService {
     this.FETCH_TIMEOUT = Number(process.env.EXCHANGE_RATES_FETCH_TIMEOUT);
   }
 
-  async getLastPrice(pair: string):Promise<number> {
+  async getLastPrice(pair: string): Promise<number> {
     if (!this.lastPrice[pair] ||
       !this.lastPriceFetchTime[pair] ||
       elapsedSecondsFrom(this.FETCH_TIMEOUT, this.lastPriceFetchTime[pair])) {
@@ -43,12 +40,9 @@ export class PublicApiService extends ApiService {
           return this.lastPrice[pair];
         }
 
-        this.lastPriceFetchTime[pair] = Date.now()/1000;
+        this.lastPriceFetchTime[pair] = Date.now() / 1000;
         this.lastPrice[pair] = await super.getLastPrice(pair);
-
-
       });
-
     }
 
     return this.lastPrice[pair];
@@ -68,7 +62,7 @@ export class PublicApiService extends ApiService {
           return this.rates[pairName];
         }
 
-        this.lastRatesFetchTime[pairName] = Date.now()/1000;
+        this.lastRatesFetchTime[pairName] = Date.now() / 1000;
         this.rates[pairName] = await super.getActualRates(pairName);
 
 

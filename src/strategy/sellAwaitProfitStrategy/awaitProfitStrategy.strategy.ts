@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Order, OrderSideEnum } from "../../order/entities/order.entity";
 import { Repository } from "typeorm";
-import { SEC_IN_DAY, SEC_IN_YEAR } from "../../helpers";
+import { SEC_IN_DAY, SEC_IN_YEAR } from "../../helpers/helpers";
 import { Pair } from "../../exchange/entities/pair.entity";
 import { RequestSellInfoDto } from "../dto/request-sell-info.dto";
 import { AwaitProfit } from "./awaitProfit.entity";

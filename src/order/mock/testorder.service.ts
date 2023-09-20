@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { CreateOrderDto } from '../dto/create-order.dto';
 import { UpdateOrderDto } from '../dto/update-order.dto';
 import { Order, OrderSideEnum } from '../entities/order.entity';
-import { updateModel } from '../../helpers';
+import { updateModel } from '../../helpers/helpers';
 const { add,divide } = require('js-big-decimal');
 
 @Injectable()

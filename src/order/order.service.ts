@@ -4,21 +4,18 @@ import { UpdateOrderDto } from './dto/update-order.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Order, OrderSideEnum } from './entities/order.entity';
 import { Repository } from 'typeorm';
-import { SEC_IN_YEAR } from '../helpers';
+import { SEC_IN_YEAR } from '../helpers/helpers';
 import { Pair } from '../exchange/entities/pair.entity';
 const { add, divide } = require('js-big-decimal');
 
 @Injectable()
 export class OrderService {
-
   constructor(
     @InjectRepository(Order)
-    private ordersRepository: Repository<Order>
-  ) { }
+    private ordersRepository: Repository<Order>,
+  ) {}
 
-  async create(
-    createOrderDto: CreateOrderDto
-  ): Promise<Order> {
+  async create(createOrderDto: CreateOrderDto): Promise<Order> {
     const order = this.ordersRepository.create(createOrderDto);
     return await this.ordersRepository.save(order);
   }
@@ -30,11 +27,11 @@ export class OrderService {
   getLastOrder(accountId: number) {
     return this.ordersRepository.findOne({
       where: {
-        accountId
+        accountId,
       },
       order: {
-        id: 'DESC'
-      }
+        id: 'DESC',
+      },
     });
   }
 
@@ -50,18 +47,18 @@ export class OrderService {
     return `This action removes a #${id} order`;
   }
 
-  async getActiveOrders():Promise<Array<Order>> {
+  async getActiveOrders(): Promise<Array<Order>> {
     return await this.ordersRepository
-      .createQueryBuilder("order")
+      .createQueryBuilder('order')
       .where(`"order".side = :side`, { side: OrderSideEnum.BUY })
       .andWhere('"order"."isActive" = true')
       .andWhere('"order"."prefilled" < "order"."amount1"')
       .getMany();
   }
 
-  async getSumByParentId(parentId: number, attribute: string):Promise<number> {
+  async getSumByParentId(parentId: number, attribute: string): Promise<number> {
     const result = await this.ordersRepository
-      .createQueryBuilder("order")
+      .createQueryBuilder('order')
       .select(`SUM(${attribute}) as sum`)
       .where({ parentId })
       .getRawOne();
@@ -69,13 +66,17 @@ export class OrderService {
     return result.sum;
   }
 
-  async getActiveOrdersSum(currency1: string, attribute: string):Promise<number> {
+  async getActiveOrdersSum(
+    accountId: number,
+    currency1: string,
+    attribute: string,
+  ): Promise<number> {
     const result = await this.ordersRepository
-      .createQueryBuilder("order")
+      .createQueryBuilder('order')
       .select(`SUM(${attribute}) as sum`)
-      .where({ currency1 })
+      .where({ currency1, accountId })
       .andWhere('"order"."isActive" = true')
-      .andWhere('"order"."prefilled" < "order"."amount1"')      
+      .andWhere('"order"."prefilled" < "order"."amount1"')
       .getRawOne();
 
     return result.sum;

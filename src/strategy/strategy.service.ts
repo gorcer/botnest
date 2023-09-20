@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { EntityManager } from 'typeorm';
-import { updateModel } from "../helpers";
+import { updateModel } from "../helpers/helpers";
 import { FillCellsStrategy } from "./buyFillCellsStrategy/fillCellsStrategy.strategy";
 import { StrategyInterface } from "./interfaces/strategy.interface";
 import { AwaitProfitStrategy } from "./sellAwaitProfitStrategy/awaitProfitStrategy.strategy";

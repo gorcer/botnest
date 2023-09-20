@@ -1,4 +1,4 @@
-import {  BeforeInsert, Column, CreateDateColumn, Entity, Index, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { BeforeInsert, Column, CreateDateColumn, Entity, Index, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { Order } from "../../order/entities/order.entity";
 
 
@@ -6,7 +6,10 @@ import { Order } from "../../order/entities/order.entity";
 export class Pair {
     @PrimaryGeneratedColumn()
     id: number;
-    
+
+    @Column({ type: 'integer', default: 1})
+    exchange_id: number;
+
     @CreateDateColumn()
     createdAt: Date;
 
@@ -14,43 +17,43 @@ export class Pair {
     updatedAt: Date;
 
     @Index()
-    @Column({type:"varchar",default:'BTC/BUSD'})
+    @Column({ type: "varchar", default: 'BTC/BUSD' })
     name: string;
 
     @Index()
-    @Column({type:"varchar",default:'BTC'})
+    @Column({ type: "varchar", default: 'BTC' })
     currency1: string;
 
     @Index()
-    @Column({type:"varchar",default:'BUSD'})
+    @Column({ type: "varchar", default: 'BUSD' })
     currency2: string;
 
-    @Column({type: "decimal", nullable: true})
+    @Column({ type: "decimal", nullable: true })
     buyRate: number;
-    
-    @Column({type: "decimal", nullable: true})
+
+    @Column({ type: "decimal", nullable: true })
     sellRate: number;
-    
-    @Column({type: "decimal", nullable: true})
+
+    @Column({ type: "decimal", nullable: true })
     lastPrice: number;
-    
-    @Column({type: "decimal", nullable: true})
+
+    @Column({ type: "decimal", nullable: true })
     minAmount1: number;
 
-    @Column({type: "decimal", nullable: true})
+    @Column({ type: "decimal", nullable: true })
     minAmount2: number;
-    
-    @Column({type: "boolean", default: true})
+
+    @Column({ type: "boolean", default: true })
     isActive: boolean;
 
-    @Column({type: "decimal", nullable: true})
+    @Column({ type: "decimal", nullable: true })
     fee: number;
 
-    @Column({type: "decimal", default: 13000})
+    @Column({ type: "decimal", default: 13000 })
     historicalMinRate: number;
 
     // @OneToMany(() => Order, orders => orders.pair)
     // orders: Order[];
 
-    
+
 }
