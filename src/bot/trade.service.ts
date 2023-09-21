@@ -13,7 +13,6 @@ import { StrategyService } from '../strategy/strategy.service';
 import { BuyStrategyInterface } from '../strategy/interfaces/buyStrategy.interface';
 import { SellStrategyInterface } from '../strategy/interfaces/sellStrategy.interface';
 
-
 const {
   divide,
   subtract,
@@ -34,7 +33,7 @@ export class TradeService {
 
     private accounts: AccountService,
     private strategies: StrategyService,
-  ) { }
+  ) {}
 
   private api(accountId): Promise<ApiService> {
     return this.accounts.getApiForAccount(accountId);
@@ -89,11 +88,11 @@ export class TradeService {
 
       this.log.info(
         strategy.constructor.name +
-        ': Ok...' +
-        orderInfos.length +
-        ' orders ..' +
-        (Date.now() - tm) / 1000 +
-        ' sec',
+          ': Ok...' +
+          orderInfos.length +
+          ' orders ..' +
+          (Date.now() - tm) / 1000 +
+          ' sec',
       );
 
       for (const orderInfo of orderInfos) {
@@ -212,7 +211,11 @@ export class TradeService {
   ) {
     const fee = feeObj[0];
     const feeCost = feeObj[0]?.cost ?? 0;
-    const feeInCurrency2Cost = await this.calculateFee(api, feeObj[0], currency2);
+    const feeInCurrency2Cost = await this.calculateFee(
+      api,
+      feeObj[0],
+      currency2,
+    );
     const feeCurrency = fee?.currency;
 
     return { feeCost, feeInCurrency2Cost, feeCurrency };

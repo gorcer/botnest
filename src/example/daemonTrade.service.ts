@@ -105,11 +105,9 @@ export class DaemonTradeService {
     this.botnest.addStrategy(FillCellsStrategy);
     this.botnest.addStrategy(AwaitProfitStrategy);
 
-    this.account = await this.botnest.setUserAccount(1, {
-      exchangeName: process.env.EXCHANGE_NAME,
+    this.account = await this.botnest.setUserAccount(1, {      
       apiKey: process.env.EXCHANGE_API_KEY,
-      secret: process.env.EXCHANGE_API_SECRET,
-      testMode: process.env.TEST_MODE == 'true',
+      secret: process.env.EXCHANGE_API_SECRET,      
     });
     this.api = await this.botnest.getApiForAccount(this.account.id);
 

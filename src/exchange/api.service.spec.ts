@@ -3,7 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { equal } from 'assert';
 import { ApiService } from './api.service';
 import { pro as ccxt } from 'ccxt';
-const { add, subtract, compareTo } = require('js-big-decimal');
+import { add, compareTo, subtract } from '../helpers/bc';
 
 describe('ApiService', () => {
   let service: ApiService;

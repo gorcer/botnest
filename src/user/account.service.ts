@@ -39,12 +39,15 @@ export class AccountService {
   async getApiForAccount(accountId: number): Promise<ApiService> {
     if (!this.exchanges[accountId]) {
       if (!this.accounts[accountId]) {
-        this.accounts[accountId] = await this.repository.findOneBy({
-          id: accountId,
+        this.accounts[accountId] = await this.repository.findOne({
+          where: {
+            id: accountId,
+          },
+          relations: ['exchange'],
         });
       }
 
-      let account = this.accounts[accountId];
+      const account = this.accounts[accountId];
 
       if (!account) {
         throw new Error('Unknown account ' + accountId);
@@ -59,10 +62,10 @@ export class AccountService {
         );
       } else {
         this.exchanges[accountId] = new ApiService(
-          account.exchangeName,
+          account.exchange.exchange_name,
           account.apiKey,
           account.secret,
-          account.testMode,
+          account.exchange.test_mode,
         );
       }
     }

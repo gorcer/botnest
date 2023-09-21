@@ -5,13 +5,16 @@ import { AwaitProfitStrategy } from '../strategy/sellAwaitProfitStrategy/awaitPr
 
 @Injectable()
 export class InlineTradeService {
-  constructor(private botnest: BotNest) { }
+  constructor(private botnest: BotNest) {}
 
   async trade() {
     const pairName = process.env.PAIRS.replace(' ', '').split(',')[0];
     const userId = 1;
 
-    const exchange = await this.botnest.fetchOrCreateExchange(process.env.EXCHANGE_NAME, process.env.TEST_MODE == 'true');
+    const exchange = await this.botnest.fetchOrCreateExchange(
+      process.env.EXCHANGE_NAME,
+      process.env.TEST_MODE == 'true',
+    );
     const publicApi = this.botnest.getApiForExchange(exchange);
     const pair = await this.botnest.actualizePair(exchange, pairName);
 
@@ -21,10 +24,8 @@ export class InlineTradeService {
 
     // add test account
     const account = await this.botnest.setUserAccount(userId, {
-      exchangeName: process.env.EXCHANGE_NAME,
       apiKey: process.env.EXCHANGE_API_KEY,
       secret: process.env.EXCHANGE_API_SECRET,
-      testMode: process.env.TEST_MODE == 'true',
     });
 
     // set buy strategy config for account
@@ -60,16 +61,15 @@ export class InlineTradeService {
 
     // set current rates
     await this.botnest.setRates({
-      [exchange.id]: {      
+      [exchange.id]: {
         pairName: rates,
-      }
-    }
-    );
+      },
+    });
 
     // run buy strategies
     await this.botnest.runBuyStrategies();
 
-// run sell strategies
-await this.botnest.runSellStrategies();
+    // run sell strategies
+    await this.botnest.runSellStrategies();
   }
 }

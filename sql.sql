@@ -92,8 +92,6 @@ SELECT
                     "order".rate >= (floor("pair"."sellRate" / "strategy"."cellSize") * "strategy"."cellSize" ) and      
                     "order".rate < (ceil("pair"."sellRate" / "strategy"."cellSize") * "strategy"."cellSize" ) 
                     WHERE 
---                    "order".id is null AND 
---                    "pair"."updatedAt" > CURRENT_TIMESTAMP - interval '3 seconds' AND 
                     "balance".available > "pair"."minAmount2" AND "balance".available > strategy."orderAmount" * "pair"."sellRate" AND "pair"."isActive" = true
             
                         

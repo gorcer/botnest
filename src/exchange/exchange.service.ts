@@ -1,45 +1,46 @@
-import { Injectable } from "@nestjs/common";
-import { checkLimits, elapsedSecondsFrom, extractCurrency, lock, updateModel } from "../helpers/helpers";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Exchange } from "./entities/exchange.entity";
-import { Repository } from "typeorm";
-import { PublicApiService } from "./publicApi.service";
+import { Injectable } from '@nestjs/common';
+import {
+  checkLimits,
+  elapsedSecondsFrom,
+  extractCurrency,
+  lock,
+  updateModel,
+} from '../helpers/helpers';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Exchange } from './entities/exchange.entity';
+import { Repository } from 'typeorm';
+import { PublicApiService } from './publicApi.service';
 
 @Injectable()
 export class ExchangeService {
-
-  apis={};
+  apis = {};
 
   constructor(
     @InjectRepository(Exchange)
-    private exchangeRepository: Repository<Exchange>
-  ) { }
+    private exchangeRepository: Repository<Exchange>,
+  ) {}
 
-  public getApiForExchange(exchange: Exchange) {    
-    this.apis[exchange.id] = this.apis[exchange.id] || (new PublicApiService(exchange.exchange_name, exchange.test_mode));
+  public getApiForExchange(exchange: Exchange): PublicApiService {
+    this.apis[exchange.id] =
+      this.apis[exchange.id] ||
+      new PublicApiService(exchange.exchange_name, exchange.test_mode);
     return this.apis[exchange.id];
   }
 
   public async getAllActive(): Promise<Exchange[]> {
-    let exchange = await this.exchangeRepository.findBy({ is_active: true });
-    return exchange;
+    return await this.exchangeRepository.findBy({ is_active: true });
   }
 
-  public async findOne(alias: string): Promise<Exchange> {
-    let exchange = await this.exchangeRepository.findOneBy({ alias });
-    return exchange;
-  }
-
-  public async fetchOrCreate(alias: string, test_mode:boolean): Promise<Exchange> {
-    let exchange = await this.exchangeRepository.findOneBy({ alias });
+  public async fetchOrCreate(
+    title: string,
+    test_mode: boolean,
+  ): Promise<Exchange> {
+    let exchange = await this.exchangeRepository.findOneBy({ title });
     if (!exchange) {
-      const opt = { alias,title: alias, exchange_name:alias, test_mode };
+      const opt = { title, exchange_name: title, test_mode };
       exchange = this.exchangeRepository.create(opt);
-      await this.exchangeRepository.save(
-        exchange
-      );      
+      await this.exchangeRepository.save(exchange);
     }
     return exchange;
   }
-
 }

@@ -4,26 +4,20 @@ import { OrderModule } from '../order/order.module';
 import { BalanceModule } from '../balance/balance.module';
 import { FileLogService } from '../log/filelog.service';
 import { ExchangeModule } from '../exchange/exchange.module';
-import { DaemonTradeService } from '../example/daemonTrade.service';
 import { StrategyModule } from '../strategy/strategy.module';
 import { UserModule } from '../user/user.module';
 import { BotNest } from './botnest.service';
-
 
 @Module({
   imports: [
     StrategyModule,
     ExchangeModule,
     OrderModule,
-    BalanceModule, 
-    UserModule,       
+    BalanceModule,
+    UserModule,
   ],
   controllers: [],
-  providers: [
-    FileLogService,
-    TradeService,     
-    BotNest,    
-  ],
+  providers: [FileLogService, TradeService, BotNest],
   exports: [BotNest],
 })
 export class BotModule {}

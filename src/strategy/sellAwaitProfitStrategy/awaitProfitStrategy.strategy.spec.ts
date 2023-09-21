@@ -71,6 +71,7 @@ describe('ActiveOrdersAboveProfit', () => {
     const buyRate = 11000;
     const sellRate = 11000;
     const minAmount1 = 0.01;
+    const exchange_id=1;
 
     await balanceService.set(accountId, {
       USDT: balanceUSDT,
@@ -81,7 +82,7 @@ describe('ActiveOrdersAboveProfit', () => {
       minDailyProfit: 200,
       minYerlyProfit: 30,
     });
-    const pair = await pairService.fetchOrCreate(pairName);
+    const pair = await pairService.fetchOrCreate(exchange_id, pairName);
     await orderService.create({
       pairName,
       pairId: pair.id,

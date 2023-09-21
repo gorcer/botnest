@@ -15,7 +15,6 @@ import { subtract } from '../helpers/bc';
 import { ExchangeService } from '../exchange/exchange.service';
 import { Exchange } from '../exchange/entities/exchange.entity';
 
-
 @Injectable()
 export class BotNest {
   lastRates = {};
@@ -30,10 +29,10 @@ export class BotNest {
     private log: FileLogService,
     private balance: BalanceService,
     private exchange: ExchangeService,
-  ) { }
+  ) {}
 
-  public async fetchOrCreateExchange(alias: string, test_mode: boolean) {
-    return await this.exchange.fetchOrCreate(alias, test_mode);
+  public async fetchOrCreateExchange(title: string, test_mode: boolean) {
+    return await this.exchange.fetchOrCreate(title, test_mode);
   }
 
   public async getExchanges() {
@@ -94,7 +93,10 @@ export class BotNest {
   public async setRates(rates: ExchangePairRatesDto) {
     for (const [exchangeId, pairRates] of Object.entries(rates)) {
       for (const [pairName, rate] of Object.entries(pairRates)) {
-        const pair = await this.pairs.fetchOrCreate(Number(exchangeId), pairName);
+        const pair = await this.pairs.fetchOrCreate(
+          Number(exchangeId),
+          pairName,
+        );
         await this.pairs.setInfo(pair, {
           buyRate: (rate as RateDto).bid,
           sellRate: (rate as RateDto).ask,
@@ -146,14 +148,12 @@ export class BotNest {
     const exchanges = await this.exchange.getAllActive();
 
     for (const exchange of exchanges) {
-
       if (!this.lastRates[exchange.id]) {
         this.lastRates[exchange.id] = {};
       }
       const api = this.exchange.getApiForExchange(exchange);
 
       for (const pairName of pairs) {
-
         if (!this.lastRates[exchange.id][pairName]) {
           this.lastRates[exchange.id][pairName] = {
             bid: 0,
@@ -178,7 +178,10 @@ export class BotNest {
           changedPairs[exchange.id] = changedPairs[exchange.id] || {};
           changedPairs[exchange.id][pairName] = rates;
 
-          this.log.info(`[${exchange.alias}] Rates by ${pairName} bid:`, rates.bid);
+          this.log.info(
+            `[${exchange.title}] Rates by ${pairName} bid:`,
+            rates.bid,
+          );
           lastRates.bid = rates.bid;
         }
 
@@ -186,7 +189,10 @@ export class BotNest {
           changedPairs[exchange.id] = changedPairs[exchange.id] || {};
           changedPairs[exchange.id][pairName] = rates;
 
-          this.log.info(`[${exchange.alias}] Rates by ${pairName} ask:`, rates.ask);
+          this.log.info(
+            `[${exchange.title}] Rates by ${pairName} ask:`,
+            rates.ask,
+          );
           lastRates.ask = rates.ask;
         }
 

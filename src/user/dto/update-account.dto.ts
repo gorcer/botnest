@@ -1,6 +1,6 @@
 export class UpdateAccountDto {
-    exchangeName: string;
-    apiKey: string;
-    secret: string;
-    testMode: boolean;
+  exchange_id?: number;
+  apiKey: string;
+  secret: string;
+  exchange?: object;
 }

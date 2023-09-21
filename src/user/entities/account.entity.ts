@@ -2,8 +2,11 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
+  ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import { Exchange } from '../../exchange/entities/exchange.entity';
 
 @Entity()
 export class Account {
@@ -16,11 +19,8 @@ export class Account {
   @Column('int')
   userId: number;
 
-  @Column({ type: 'varchar', default: 'binance' })
-  exchangeName: string;
-
-  @Column({ type: 'boolean', default: false })
-  testMode: boolean;
+  @Column({ type: 'integer', default: 1 })
+  exchange_id: number;
 
   @Column({ type: 'varchar', nullable: true })
   apiKey: string;
@@ -33,4 +33,8 @@ export class Account {
 
   @Column({ type: Date, nullable: true })
   deleted_at: Date;
+
+  @ManyToOne(() => Exchange, (exchange) => exchange.accounts)
+  @JoinColumn({ name: 'exchange_id' }) 
+  exchange: Exchange
 }

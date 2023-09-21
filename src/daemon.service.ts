@@ -11,13 +11,9 @@ export class DaemonService {
   minSellRateMarginToProcess;
   pairs: Array<string>;
 
-  constructor(
-    private botnest: BotNest,
-    private log: FileLogService
-  ) { }
+  constructor(private botnest: BotNest, private log: FileLogService) {}
 
   public async init() {
-
     this.minBuyRateMarginToProcess = process.env.DAEMON_MIN_BUY_RATE_MARGIN;
     this.minSellRateMarginToProcess = process.env.DAEMON_MIN_SELL_RATE_MARGIN;
     this.pairs = process.env.PAIRS.replace(' ', '').split(',');
@@ -34,13 +30,10 @@ export class DaemonService {
       }
     }
     this.log.info('Ok');
-
-    
   }
 
   async trade() {
     let lastTradesUpdate = Date.now() / 1000;
-
 
     while (true) {
       try {
@@ -66,7 +59,7 @@ export class DaemonService {
         }
 
         if (elapsedSecondsFrom(SEC_IN_HOUR / 4, lastTradesUpdate)) {
-          promises.push(this.botnest.checkCloseOrders());
+          this.botnest.checkCloseOrders(); // no wait
           lastTradesUpdate = Date.now() / 1000;
         }
 
