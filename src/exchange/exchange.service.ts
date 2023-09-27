@@ -8,7 +8,7 @@ import {
 } from '../helpers/helpers';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Exchange } from './entities/exchange.entity';
-import { Repository } from 'typeorm';
+import { MoreThan, Repository } from 'typeorm';
 import { PublicApiService } from './publicApi.service';
 
 @Injectable()
@@ -30,7 +30,10 @@ export class ExchangeService {
   public async getAllActive(): Promise<Exchange[]> {
     return await this.exchangeRepository.find(
       { 
-        where: { is_active: true },
+        where: { 
+          is_active: true,
+          accounts_count: MoreThan(0)
+        },
         relations: ['pairs']
 
       }
