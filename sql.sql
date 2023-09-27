@@ -1,3 +1,5 @@
+pg_dump -h localhost -U admin -W tradebot > ./tradebot.sql
+
 
 -- Get profit stat
 select 
