@@ -41,7 +41,6 @@ export class DaemonTradeService {
         // Проверяем есть ли значимое изменение курса
         const { isBidMargined, isAskMargined, changedPairs } =
           await this.botnest.checkRates(
-            this.pairs,
             this.minBuyRateMarginToProcess,
             this.minSellRateMarginToProcess,
           );

@@ -6,6 +6,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Account } from '../../user/entities/account.entity';
+import { Pair } from './pair.entity';
 
 @Entity()
 export class Exchange {
@@ -24,7 +25,14 @@ export class Exchange {
   @Column({ type: 'boolean', default: true })
   is_active: boolean;
 
+  @Column({ type: 'integer', default: 0 })
+  accounts_count: number;
+
   @OneToMany(() => Account, (account) => account.exchange)
   @JoinColumn({ name: 'exchange_id' })
   accounts: Account[];
+
+  @OneToMany(() => Pair, (pair) => pair.exchange)
+  @JoinColumn({ name: 'exchange_id' })
+  pairs: Pair[];
 }

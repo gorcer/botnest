@@ -2,11 +2,17 @@ import { OrderSide, OrderType } from 'ccxt/js/src/base/types';
 import { BalancesDto } from '../balance/dto/balances.dto';
 import { OrderSideEnum } from '../order/entities/order.entity';
 import { pro as ccxt } from 'ccxt';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
+import { Inject } from '@nestjs/common';
 
 export class ApiService {
   exchange;
   lastTradesFetching;
   markets = {};
+
+  @Inject(CACHE_MANAGER)
+  private cacheManager: Cache;
 
   constructor(exchangeClass, apiKey = '', secret = '', sandBoxMode = true) {
     if (typeof exchangeClass == 'string') {
@@ -41,10 +47,11 @@ export class ApiService {
     if (this.markets[pair]) {
       return this.markets[pair];
     }
+    const allMarkets = await this.exchange.fetchMarkets();
+    const markets = allMarkets.filter((item) => item.symbol == pair);
 
-    const markets = (await this.exchange.fetchMarkets()).filter(
-      (item) => item.symbol == pair,
-    );
+    if (markets.length == 0) return null;
+
     const { amount, cost } = markets[0].limits;
     const { taker, maker } = markets[0];
 
@@ -95,8 +102,14 @@ export class ApiService {
     return this.exchange.fetchTrades(pair, since);
   }
 
-  async getLastPrice(pair) {
-    const tickers = await this.fetchTickers();
-    return tickers[pair].last;
+  async getLastPrice(pair: string) {
+    let value = await this.cacheManager.get('lastPrice.' + pair);
+    if (!value) {
+      const tickers = await this.fetchTickers();
+      value = tickers[pair].last;
+      await this.cacheManager.set('lastPrice.' + pair, value, 10);
+    }
+
+    return value;
   }
 }

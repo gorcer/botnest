@@ -7,6 +7,7 @@ import { ExchangeModule } from '../exchange/exchange.module';
 import { StrategyModule } from '../strategy/strategy.module';
 import { UserModule } from '../user/user.module';
 import { BotNest } from './botnest.service';
+import { CacheModule } from '@nestjs/cache-manager';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { BotNest } from './botnest.service';
     OrderModule,
     BalanceModule,
     UserModule,
+    CacheModule.register(),
   ],
   controllers: [],
   providers: [FileLogService, TradeService, BotNest],

@@ -19,8 +19,8 @@ export class Account {
   @Column('int')
   userId: number;
 
-  @Column({ type: 'integer', default: 1 })
-  exchange_id: number;
+  @Column({ type: 'decimal', default: 0 })
+  profit: number;
 
   @Column({ type: 'varchar', nullable: true })
   apiKey: string;
@@ -34,7 +34,11 @@ export class Account {
   @Column({ type: Date, nullable: true })
   deleted_at: Date;
 
-  @ManyToOne(() => Exchange, (exchange) => exchange.accounts)
-  @JoinColumn({ name: 'exchange_id' }) 
-  exchange: Exchange
+  @ManyToOne(() => Exchange, {nullable: true})
+  @JoinColumn({ name: 'exchange_id' })
+  exchange: Exchange;
+
+  
+  // @Column('int', { nullable: true }) // Поле для хранения идентификатора связанной сущности
+  // exchange_id: number;
 }

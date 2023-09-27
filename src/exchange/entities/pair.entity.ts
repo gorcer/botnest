@@ -1,14 +1,12 @@
-import { BeforeInsert, Column, CreateDateColumn, Entity, Index, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { BeforeInsert, Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { Order } from "../../order/entities/order.entity";
+import { Exchange } from "./exchange.entity";
 
 
 @Entity()
 export class Pair {
     @PrimaryGeneratedColumn()
     id: number;
-
-    @Column({ type: 'integer', default: 1})
-    exchange_id: number;
 
     @CreateDateColumn()
     createdAt: Date;
@@ -55,5 +53,8 @@ export class Pair {
     // @OneToMany(() => Order, orders => orders.pair)
     // orders: Order[];
 
+    @ManyToOne(() => Exchange, (exchange) => exchange.pairs)
+    @JoinColumn({ name: 'exchange_id' })
+    exchange: Exchange
 
 }

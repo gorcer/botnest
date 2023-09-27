@@ -51,7 +51,7 @@ describe('OrderService', () => {
     publicExchange.setNextOrderBook(buyPrice, buyPrice);
     await balances.set(accountId, await api.fetchBalances());
     const pair = await pairs.fetchOrCreate(exchange_id, pairName);
-    await pairs.actualize(publicApi, pair);
+    await pairs.actualize(publicApi, pair.name, exchange_id);
     let balanceBTC: number = await bot.balance.getBalanceAmount(
       accountId,
       'BTC',

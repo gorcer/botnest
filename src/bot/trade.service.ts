@@ -12,14 +12,7 @@ import { RequestSellInfoDto } from '../strategy/dto/request-sell-info.dto';
 import { StrategyService } from '../strategy/strategy.service';
 import { BuyStrategyInterface } from '../strategy/interfaces/buyStrategy.interface';
 import { SellStrategyInterface } from '../strategy/interfaces/sellStrategy.interface';
-
-const {
-  divide,
-  subtract,
-  multiply,
-  compareTo,
-  add,
-} = require('js-big-decimal');
+import { add, compareTo, divide, multiply, subtract } from '../helpers/bc';
 
 @Injectable()
 export class TradeService {
@@ -35,7 +28,7 @@ export class TradeService {
     private strategies: StrategyService,
   ) {}
 
-  private api(accountId): Promise<ApiService> {
+  private api(accountId: number): Promise<ApiService> {
     return this.accounts.getApiForAccount(accountId);
   }
 
@@ -196,7 +189,6 @@ export class TradeService {
           );
         }
         await this.orders.update(parentOrder.id, updateOrderDto);
-
         return order;
       }
 

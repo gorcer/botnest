@@ -18,7 +18,7 @@ export class ExchangeService {
   constructor(
     @InjectRepository(Exchange)
     private exchangeRepository: Repository<Exchange>,
-  ) {}
+  ) { }
 
   public getApiForExchange(exchange: Exchange): PublicApiService {
     this.apis[exchange.id] =
@@ -28,7 +28,13 @@ export class ExchangeService {
   }
 
   public async getAllActive(): Promise<Exchange[]> {
-    return await this.exchangeRepository.findBy({ is_active: true });
+    return await this.exchangeRepository.find(
+      { 
+        where: { is_active: true },
+        relations: ['pairs']
+
+      }
+      );
   }
 
   public async fetchOrCreate(

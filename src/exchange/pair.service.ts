@@ -13,8 +13,7 @@ export class PairService  {
   FETCH_TIMEOUT;
   minAmount;
   minCost;
-  publicApi: PublicApiService;
-  
+    
   constructor(
     @InjectRepository(Pair)
     private pairRepository: Repository<Pair>
@@ -22,15 +21,11 @@ export class PairService  {
     this.FETCH_TIMEOUT = Number(process.env.EXCHANGE_RATES_FETCH_TIMEOUT);  
   }
 
-  public setPublicApi(api:PublicApiService) {
-    this.publicApi = api;
-  }
-
   public async fetchOrCreate(exchange_id: number, pairName: string): Promise<Pair> {
-    let pair = await this.pairRepository.findOneBy({exchange_id, name: pairName});
+    let pair = await this.pairRepository.findOneBy({exchange: { id: exchange_id }, name: pairName});
     if (!pair) {
       const {currency1, currency2} = extractCurrency(pairName);
-      pair = this.pairRepository.create({exchange_id, name: pairName, currency1, currency2})
+      pair = this.pairRepository.create({exchange: { id: exchange_id }, name: pairName, currency1, currency2})
       await this.pairRepository.save(
         pair
       );            
@@ -46,9 +41,14 @@ export class PairService  {
     );
   }
 
-  async actualize(api: PublicApiService, pair:Pair) {
-    const {bid, ask} = await api.getActualRates(pair.name);
-    const { minAmount, minCost, fee } = await api.getMarketInfo(pair.name);
+  async actualize(api: PublicApiService, pairName:string, exchangeId: number) {
+    const marketInfo = await api.getMarketInfo(pairName)
+    if (!marketInfo)
+      return null;     
+
+    const { minAmount, minCost, fee } = marketInfo;
+    const {bid, ask} = await api.getActualRates(pairName);
+    const pair = await this.fetchOrCreate(exchangeId, pairName);
 
     let historicalMinRate = pair.historicalMinRate;
     if (historicalMinRate > bid) {
@@ -63,6 +63,8 @@ export class PairService  {
       historicalMinRate,
       fee
     });
+
+    return pair;
   }
 
 

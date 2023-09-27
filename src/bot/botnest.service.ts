@@ -75,11 +75,10 @@ export class BotNest {
     return this.accounts.getApiForAccount(accountId);
   }
 
-  async actualizePair(exchange: Exchange, pairName: string) {
-    const pair = await this.pairs.fetchOrCreate(exchange.id, pairName);
+  async actualizePair(exchange: Exchange, pairName: string) { 
+    
     const api = this.getApiForExchange(exchange);
-    await this.pairs.actualize(api, pair);
-    return pair;
+    return await this.pairs.actualize(api, pairName, exchange.id);    
   }
 
   async setStrategyForAccount(where: object, strategy: any, config: any) {
@@ -133,7 +132,6 @@ export class BotNest {
   }
 
   public async checkRates(
-    pairs: Array<string>,
     minBuyRateMarginToProcess: number,
     minSellRateMarginToProcess: number,
   ): Promise<{
@@ -153,7 +151,8 @@ export class BotNest {
       }
       const api = this.exchange.getApiForExchange(exchange);
 
-      for (const pairName of pairs) {
+      for (const pair of exchange.pairs) {
+        const pairName = pair.name;
         if (!this.lastRates[exchange.id][pairName]) {
           this.lastRates[exchange.id][pairName] = {
             bid: 0,
