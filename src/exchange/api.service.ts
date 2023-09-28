@@ -103,12 +103,12 @@ export class ApiService {
   }
 
   async getLastPrice(pair: string) {
-    let value = await this.cacheManager.get('lastPrice.' + pair);
-    if (!value) {
+    // let value = await this.cacheManager.get('lastPrice.' + pair);
+    // if (!value) {
       const tickers = await this.fetchTickers();
-      value = tickers[pair].last;
-      await this.cacheManager.set('lastPrice.' + pair, value, 10);
-    }
+      const value = tickers[pair].last;
+      // await this.cacheManager.set('lastPrice.' + pair, value, 10);
+    // }
 
     return value;
   }
