@@ -40,7 +40,7 @@ export class DaemonService {
         const promises = [];
 
         const { isBidMargined, isAskMargined, changedPairs } =
-          await this.botnest.checkRates(            
+          await this.botnest.checkRates(
             this.minBuyRateMarginToProcess,
             this.minSellRateMarginToProcess,
           );

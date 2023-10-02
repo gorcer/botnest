@@ -12,6 +12,8 @@ export class AccountService {
   accounts = {};
 
   constructor(
+    private apiService: ApiService,
+
     @InjectRepository(Account)
     private repository: Repository<Account>,
   ) {}
@@ -54,14 +56,14 @@ export class AccountService {
       }
 
       if (account.exchangeClass) {
-        this.exchanges[accountId] = new ApiService(
+        this.exchanges[accountId] = this.apiService.getApi(
           account.exchangeClass,
           account.apiKey,
           account.secret,
           account.testMode,
         );
       } else {
-        this.exchanges[accountId] = new ApiService(
+        this.exchanges[accountId] = this.apiService.getApi(
           account.exchange.exchange_name,
           account.apiKey,
           account.secret,

@@ -3,4 +3,5 @@ export class UpdateAccountDto {
   apiKey: string;
   secret: string;
   exchange?: object;
+  exchangeClass?: object;
 }

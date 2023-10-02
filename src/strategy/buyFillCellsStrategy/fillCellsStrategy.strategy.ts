@@ -7,14 +7,7 @@ import { BuyStrategyInterface } from '../interfaces/buyStrategy.interface';
 import { FillCells } from './fillCells.entity';
 import { EntityManager } from 'typeorm';
 import { Balance } from '../../balance/entities/balance.entity';
-
-const {
-  multiply,
-  compareTo,
-  subtract,
-  add,
-  divide,
-} = require('js-big-decimal');
+import { compareTo, divide, multiply, subtract } from '../../helpers/bc';
 
 export class FillCellsStrategy implements BuyStrategyInterface {
   side = OrderSideEnum.BUY;

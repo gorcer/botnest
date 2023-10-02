@@ -2,24 +2,22 @@ import { TradeService } from '../trade.service';
 import { BalanceService } from '../../balance/balance.service';
 import { PairService } from '../../exchange/pair.service';
 import { DummyExchange } from '../../exchange/mock/dummy.exchange';
-import { TestingModuleCreate } from './TestingModuleCreate';
+import { TestingModuleCreate } from '../../test-utils/TestingModuleCreate';
 import { equal, notEqual } from 'assert';
 import { ApiService } from '../../exchange/api.service';
 import { Order } from '../../order/entities/order.entity';
 import { SEC_IN_YEAR } from '../../helpers/helpers';
-import { PublicApiService } from '../../exchange/publicApi.service';
 import { add, divide, multiply, subtract } from '../../helpers/bc';
 
 describe('OrderService', () => {
   let bot: TradeService;
   let balances: BalanceService;
   let pairs: PairService;
-  let publicExchange: DummyExchange;
-  let publicApi: PublicApiService;
-  let api: ApiService;
+  let api;
+  let publicApi, apiService;
 
   beforeEach(async () => {
-    ({ bot, pairs, publicExchange, balances, api, publicApi } =
+    ({ bot, pairs, balances, api, publicApi, apiService } =
       await TestingModuleCreate());
   });
 
@@ -43,13 +41,13 @@ describe('OrderService', () => {
     const expectedProfit =
       (sellPrice - buyPrice) * amount - buyFeeCost - sellFeeCost * BNBUSDTRate;
 
-    publicExchange.setTickers({
+    api.setTickers({
       'BNB/USDT': {
         last: BNBUSDTRate,
       },
     });
-    publicExchange.setNextOrderBook(buyPrice, buyPrice);
-    await balances.set(accountId, await api.fetchBalances());
+    api.setNextOrderBook(buyPrice, buyPrice);
+    await balances.set(accountId, await apiService.fetchBalances(api));
     const pair = await pairs.fetchOrCreate(exchange_id, pairName);
     await pairs.actualize(publicApi, pair.name, exchange_id);
     let balanceBTC: number = await bot.balance.getBalanceAmount(
@@ -66,7 +64,7 @@ describe('OrderService', () => {
     );
 
     // Подготавливаем данные для покупки
-    publicExchange.setNextOrder({
+    api.setNextOrder({
       price: buyPrice,
       amount: amount,
       cost: buyCost,
@@ -108,7 +106,7 @@ describe('OrderService', () => {
     // Продаем ------------
     let closeOrder: Order;
     {
-      publicExchange.setNextOrder({
+      api.setNextOrder({
         price: sellPrice,
         amount: amount,
         cost: sellCost,
@@ -138,7 +136,7 @@ describe('OrderService', () => {
 
     // Частичное закрытие заявки ----------------------
     {
-      publicExchange.setNextOrder({
+      api.setNextOrder({
         price: sellPrice,
         amount: amount,
         cost: sellCost,
@@ -160,7 +158,7 @@ describe('OrderService', () => {
 
     // Проверяем закрытие заявки ---------------------------------
     {
-      publicExchange.setNextOrder({
+      api.setNextOrder({
         price: sellPrice,
         amount: amount,
         cost: sellCost,

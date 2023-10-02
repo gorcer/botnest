@@ -92,5 +92,7 @@ export class DummyExchange {
     return this.orders.shift();
   }
 
-  setSandboxMode(mode) {}
+  setSandboxMode(mode) {
+    return false;
+  }
 }

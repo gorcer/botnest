@@ -4,22 +4,25 @@ import { equal } from 'assert';
 import { ApiService } from './api.service';
 import { pro as ccxt } from 'ccxt';
 import { add, compareTo, subtract } from '../helpers/bc';
+import { CacheModule } from '@nestjs/cache-manager';
 
 describe('ApiService', () => {
-  let service: ApiService;
+  let apiService: ApiService;
+  let api;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: [
+        CacheModule.register(),
         ConfigModule.forRoot({
           envFilePath: '.test.env',
         }),
       ],
-      providers: [],
+      providers: [ApiService],
     }).compile();
-
+    apiService = module.get<ApiService>(ApiService);
     const exchangeClass = ccxt[process.env.EXCHANGE_NAME];
-    service = new ApiService(
+    api = apiService.getApi(
       exchangeClass,
       process.env.EXCHANGE_API_KEY,
       process.env.EXCHANGE_API_SECRET,
@@ -28,18 +31,19 @@ describe('ApiService', () => {
   });
 
   it('should be defined', () => {
-    expect(service).toBeDefined();
+    expect(api).toBeDefined();
   });
 
   it('create buy order and check balance', async () => {
     const currency1 = 'BTC';
     const currency2 = 'BUSD';
-    const prevBalances = await service.fetchBalances();
+    const prevBalances = await apiService.fetchBalances(api);
     const prevBTCBalance = prevBalances[currency1];
     const prevUSDTBalance = prevBalances[currency2];
     const amount1 = 0.001;
 
-    const order = await service.createOrder(
+    const order = await apiService.createOrder(
+      api,
       currency1 + '/' + currency2,
       'market',
       'buy',
@@ -47,7 +51,7 @@ describe('ApiService', () => {
     );
     const amount2 = order.cost;
 
-    const balances = await service.fetchBalances();
+    const balances = await apiService.fetchBalances(api);
     const BTCBalance = balances[currency1];
     const USDTBalance = balances[currency2];
 
@@ -63,11 +67,12 @@ describe('ApiService', () => {
     const currency2 = 'BTC';
     const amount1 = 0.1;
 
-    const prevBalances = await service.fetchBalances();
+    const prevBalances = await apiService.fetchBalances(api);
     const prevBTCBalance = prevBalances[currency1];
     const prevUSDTBalance = prevBalances[currency2];
 
-    const order = await service.createOrder(
+    const order = await apiService.createOrder(
+      api,
       currency1 + '/' + currency2,
       'market',
       'sell',
@@ -75,7 +80,7 @@ describe('ApiService', () => {
     );
     const amount2 = order.cost;
 
-    const balances = await service.fetchBalances();
+    const balances = await apiService.fetchBalances(api);
     const BTCBalance = balances[currency1];
     const USDTBalance = balances[currency2];
 

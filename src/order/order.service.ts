@@ -6,7 +6,6 @@ import { Order, OrderSideEnum } from './entities/order.entity';
 import { Repository } from 'typeorm';
 import { SEC_IN_YEAR } from '../helpers/helpers';
 import { Pair } from '../exchange/entities/pair.entity';
-const { add, divide } = require('js-big-decimal');
 
 @Injectable()
 export class OrderService {

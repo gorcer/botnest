@@ -1,35 +1,36 @@
 import { OrderSide, OrderType } from 'ccxt/js/src/base/types';
 import { BalancesDto } from '../balance/dto/balances.dto';
-import { OrderSideEnum } from '../order/entities/order.entity';
 import { pro as ccxt } from 'ccxt';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
-import { Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 
+@Injectable()
 export class ApiService {
-  exchange;
   lastTradesFetching;
   markets = {};
 
-  @Inject(CACHE_MANAGER)
-  private cacheManager: Cache;
+  constructor(@Inject(CACHE_MANAGER) private cacheManager: Cache) {}
 
-  constructor(exchangeClass, apiKey = '', secret = '', sandBoxMode = true) {
+  public getApi(exchangeClass, apiKey = '', secret = '', sandBoxMode = true) {
     if (typeof exchangeClass == 'string') {
       exchangeClass = ccxt[exchangeClass];
     }
 
-    this.exchange = new exchangeClass({
+    const api = new exchangeClass({
       apiKey,
       secret,
     });
-    this.exchange.setSandboxMode(sandBoxMode);
+    api.setSandboxMode(sandBoxMode);
+
+    return api;
   }
 
   public async getActualRates(
+    api,
     pair: string,
   ): Promise<{ bid: number; ask: number }> {
-    const orderBook = await this.exchange.fetchOrderBook(pair, 5);
+    const orderBook = await api.fetchOrderBook(pair, 5);
 
     if (orderBook.bids[0] == undefined || orderBook.asks[0] == undefined) {
       throw new Error('Can`t fetch rates');
@@ -42,12 +43,13 @@ export class ApiService {
   }
 
   public async getMarketInfo(
+    api,
     pair: string,
   ): Promise<{ minAmount: number; minCost: number; fee: number }> {
     if (this.markets[pair]) {
       return this.markets[pair];
     }
-    const allMarkets = await this.exchange.fetchMarkets();
+    const allMarkets = await api.fetchMarkets();
     const markets = allMarkets.filter((item) => item.symbol == pair);
 
     if (markets.length == 0) return null;
@@ -63,11 +65,11 @@ export class ApiService {
     return this.markets[pair];
   }
 
-  public async fetchBalances(): Promise<BalancesDto> {
+  public async fetchBalances(api): Promise<BalancesDto> {
     // const markets = (await this.exchange.fetchMarkets()).filter((item) => item.id == 'ETHUSDT');
     // console.log(markets[0].limits, markets[0]);
 
-    const balances = (await this.exchange.fetchBalance()).info.balances;
+    const balances = (await api.fetchBalance()).info.balances;
     const result = {};
     balances.forEach((item) => {
       result[item.asset] = item.free;
@@ -77,38 +79,40 @@ export class ApiService {
   }
 
   public async createOrder(
+    api,
     symbol: string,
     type: OrderType,
     side: OrderSide,
     amount: number,
     price?: number,
   ) {
-    return await this.exchange.createOrder(symbol, type, side, amount, price);
+    return await api.createOrder(symbol, type, side, amount, price);
   }
 
-  public async watchTrades(pair: string) {
-    return this.exchange.watchMyTrades(pair);
+  public async watchTrades(api, pair: string) {
+    return api.watchMyTrades(pair);
   }
 
-  public async fetchOrder(orderId: number, symbol: string) {
-    return this.exchange.fetchOrder(String(orderId), symbol);
+  public async fetchOrder(api, orderId: number, symbol: string) {
+    return api.fetchOrder(String(orderId), symbol);
   }
 
-  public async fetchTickers() {
-    return this.exchange.fetchTickers();
+  public async fetchTickers(api) {
+    return api.fetchTickers();
   }
 
-  public async fetchTrades(pair, since) {
-    return this.exchange.fetchTrades(pair, since);
+  public async fetchTrades(api, pair, since) {
+    return api.fetchTrades(pair, since);
   }
 
-  async getLastPrice(pair: string) {
-    // let value = await this.cacheManager.get('lastPrice.' + pair);
-    // if (!value) {
-      const tickers = await this.fetchTickers();
-      const value = tickers[pair].last;
-      // await this.cacheManager.set('lastPrice.' + pair, value, 10);
-    // }
+  async getLastPrice(api, pair: string) {
+    const key = api.id + '.lastPrice.' + pair;
+    let value = await this.cacheManager.get(key);
+    if (!value) {
+      const tickers = await api.fetchTickers();
+      value = tickers[pair].last;
+      await this.cacheManager.set(key, value, 10);
+    }
 
     return value;
   }

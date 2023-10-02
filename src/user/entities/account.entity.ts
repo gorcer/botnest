@@ -34,11 +34,10 @@ export class Account {
   @Column({ type: Date, nullable: true })
   deleted_at: Date;
 
-  @ManyToOne(() => Exchange, {nullable: true})
+  @ManyToOne(() => Exchange, { nullable: true })
   @JoinColumn({ name: 'exchange_id' })
   exchange: Exchange;
 
-  
   // @Column('int', { nullable: true }) // Поле для хранения идентификатора связанной сущности
   // exchange_id: number;
 }

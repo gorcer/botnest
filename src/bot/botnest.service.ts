@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ApiService } from '../exchange/api.service';
 import { PairService } from '../exchange/pair.service';
-import { PublicApiService } from '../exchange/publicApi.service';
 import { Order } from '../order/entities/order.entity';
 import { StrategyService } from '../strategy/strategy.service';
 import { AccountService } from '../user/account.service';
@@ -18,7 +17,6 @@ import { Exchange } from '../exchange/entities/exchange.entity';
 @Injectable()
 export class BotNest {
   lastRates = {};
-  publicApi: PublicApiService;
 
   constructor(
     public trade: TradeService,
@@ -29,6 +27,7 @@ export class BotNest {
     private log: FileLogService,
     private balance: BalanceService,
     private exchange: ExchangeService,
+    private apiService: ApiService,
   ) {}
 
   public async fetchOrCreateExchange(title: string, test_mode: boolean) {
@@ -42,7 +41,7 @@ export class BotNest {
   public async checkBalance(accountId: number) {
     const api = await this.getApiForAccount(accountId);
 
-    await this.balance.set(accountId, await api.fetchBalances());
+    await this.balance.set(accountId, await this.apiService.fetchBalances(api));
 
     const balances = await this.balance.loadBalances(accountId);
 
@@ -75,10 +74,9 @@ export class BotNest {
     return this.accounts.getApiForAccount(accountId);
   }
 
-  async actualizePair(exchange: Exchange, pairName: string) { 
-    
+  async actualizePair(exchange: Exchange, pairName: string) {
     const api = this.getApiForExchange(exchange);
-    return await this.pairs.actualize(api, pairName, exchange.id);    
+    return await this.pairs.actualize(api, pairName, exchange.id);
   }
 
   async setStrategyForAccount(where: object, strategy: any, config: any) {
@@ -113,10 +111,10 @@ export class BotNest {
   }
 
   public async getActualRates(
-    api: PublicApiService,
+    api,
     pairName: string,
   ): Promise<{ bid: number; ask: number }> {
-    return api.getActualRates(pairName);
+    return this.apiService.getActualRates(api, pairName);
   }
 
   public async getActiveOrdersSum(
@@ -127,7 +125,7 @@ export class BotNest {
     return this.orders.getActiveOrdersSum(accountId, currency1, attribute);
   }
 
-  public getApiForExchange(exchange: Exchange): PublicApiService {
+  public getApiForExchange(exchange: Exchange) {
     return this.exchange.getApiForExchange(exchange);
   }
 
@@ -160,7 +158,7 @@ export class BotNest {
           };
         }
         const lastRates = this.lastRates[exchange.id][pairName];
-        const rates = await api.getActualRates(pairName);
+        const rates = await this.apiService.getActualRates(api, pairName);
 
         const isCurrentBidMargined = isSuitableRate(
           rates.bid,

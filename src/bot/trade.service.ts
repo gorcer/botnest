@@ -26,6 +26,7 @@ export class TradeService {
 
     private accounts: AccountService,
     private strategies: StrategyService,
+    private apiService: ApiService,
   ) {}
 
   private api(accountId: number): Promise<ApiService> {
@@ -111,7 +112,8 @@ export class TradeService {
       if (!order.isActive || order.side != OrderSideEnum.SELL) return;
 
       if (!extOrder)
-        extOrder = await api.fetchOrder(
+        extOrder = await this.apiService.fetchOrder(
+          api,
           Number(order.extOrderId),
           order.pairName,
         );
@@ -226,7 +228,8 @@ export class TradeService {
     return await lock.acquire('Balance' + accountId, async () => {
       this.log.info('Try to buy', price, amount1, multiply(amount1, price));
 
-      const extOrder = await api.createOrder(
+      const extOrder = await this.apiService.createOrder(
+        api,
         pairName,
         'market',
         'buy',
@@ -304,7 +307,7 @@ export class TradeService {
 
     if (fee.currency != currency2) {
       const pair = fee.currency + '/' + currency2;
-      const lastPrice = await api.getLastPrice(pair);
+      const lastPrice = await this.apiService.getLastPrice(api, pair);
       if (!lastPrice) {
         throw new Error('Unknown fee pair' + lastPrice);
       }
@@ -324,7 +327,8 @@ export class TradeService {
     let extOrder;
 
     await lock.acquire('Balance' + orderInfo.accountId, async () => {
-      extOrder = await api.createOrder(
+      extOrder = await this.apiService.createOrder(
+        api,
         pairName,
         'limit',
         'sell',

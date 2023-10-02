@@ -9,35 +9,38 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Exchange } from './entities/exchange.entity';
 import { MoreThan, Repository } from 'typeorm';
-import { PublicApiService } from './publicApi.service';
+import { ApiService } from './api.service';
 
 @Injectable()
 export class ExchangeService {
   apis = {};
 
   constructor(
+    private apiService: ApiService,
     @InjectRepository(Exchange)
     private exchangeRepository: Repository<Exchange>,
-  ) { }
+  ) {}
 
-  public getApiForExchange(exchange: Exchange): PublicApiService {
+  public getApiForExchange(exchange: Exchange) {
     this.apis[exchange.id] =
       this.apis[exchange.id] ||
-      new PublicApiService(exchange.exchange_name, exchange.test_mode);
+      this.apiService.getApi(
+        exchange.exchange_name,
+        '',
+        '',
+        exchange.test_mode,
+      );
     return this.apis[exchange.id];
   }
 
   public async getAllActive(): Promise<Exchange[]> {
-    return await this.exchangeRepository.find(
-      { 
-        where: { 
-          is_active: true,
-          accounts_count: MoreThan(0)
-        },
-        relations: ['pairs']
-
-      }
-      );
+    return await this.exchangeRepository.find({
+      where: {
+        is_active: true,
+        accounts_count: MoreThan(0),
+      },
+      relations: ['pairs'],
+    });
   }
 
   public async fetchOrCreate(

@@ -9,8 +9,6 @@ import { AwaitProfit } from './awaitProfit.entity';
 import { SellStrategyInterface } from '../interfaces/sellStrategy.interface';
 import { EntityManager } from 'typeorm';
 
-const { add, divide } = require('js-big-decimal');
-
 export class AwaitProfitStrategy implements SellStrategyInterface {
   side = OrderSideEnum.SELL;
   repository: Repository<AwaitProfit>;
@@ -47,6 +45,9 @@ export class AwaitProfitStrategy implements SellStrategyInterface {
       .andWhere(`"order"."createdAtSec" < ${now}+1`)
       .andWhere('"order"."isActive" = true')
       .andWhere('"strategy"."isActive" = true')
+      .andWhere(
+        '("strategy"."pairId" is null or "strategy"."pairId" = "pair"."id")',
+      )
       .andWhere('"order"."prefilled" < "order"."amount1"')
       .select(
         `
