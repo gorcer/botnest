@@ -8,6 +8,7 @@ import { InlineTradeService } from './example/inlineTrade.service';
 import { DaemonTradeService } from './example/daemonTrade.service';
 import { BalanceService } from './balance/balance.service';
 import { BalanceModule } from './balance/balance.module';
+import { ExchangeModule } from './exchange/exchange.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { BalanceModule } from './balance/balance.module';
     }),
     BotModule,
     BalanceModule,
+    ExchangeModule,
   ],
   controllers: [],
   providers: [FileLogService, InlineTradeService, DaemonTradeService],

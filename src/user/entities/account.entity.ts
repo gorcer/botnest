@@ -28,6 +28,9 @@ export class Account {
   @Column({ type: 'varchar', nullable: true })
   secret: string;
 
+  @Column({ type: 'varchar', nullable: true })
+  password: string;
+
   @Column({ type: 'boolean', default: true })
   isActive: boolean;
 

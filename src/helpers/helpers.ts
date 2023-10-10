@@ -71,3 +71,61 @@ export function extractCurrency(pair: string): {
     currency2: symbols[1],
   };
 }
+
+
+export function amountFormat (value, digits) {
+  if (!value) {
+      value = '0';
+  }
+
+  if (parseFloat(value) == 0) {
+      return '0';
+  }
+
+  if (!digits) {
+      digits = 8;
+  } else {
+      digits = parseInt(digits);
+  }
+
+  value = value.toString().replace(/(^0+)([1-9]\d*)/, (...val) => {
+      return val[2]
+  });
+
+  let index = value.indexOf('.');
+  if (index == -1) {
+      value += '.';
+      index = value.length + 1;
+  }
+  return (value + '0'.repeat(digits)).substr(0, index + digits + 1);
+};
+
+export function numberTrim (value, digits) {
+  if (value) {
+
+
+      if (!isNaN(value))
+          return value;
+
+      if (digits) {
+          value = amountFormat(value, digits);
+      }
+
+      if (value.match(/(\d+\.\d*)/g) != null) {
+          value = value.replace(/0+$/, '');
+          if (value.substr(-1) == '.') {
+              value = value.substr(0, value.length - 1);
+          }
+      }
+
+      //value = value.replace(/(^0+)([1-9]\d*)(\.)/, (...val) => { return val[2] + val[3] });
+      value = value.replace(/(^0+)([1-9]\d*)/, (...val) => {
+          return val[2]
+      });
+      value = value.replace(/(^0+)(0)(\.)/, (...val) => {
+          return val[2] + val[3]
+      });
+  }
+
+  return value;
+};

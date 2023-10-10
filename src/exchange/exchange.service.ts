@@ -28,8 +28,10 @@ export class ExchangeService {
         exchange.exchange_name,
         '',
         '',
+        '',
         exchange.test_mode,
       );
+      this.apis[exchange.id].exchange_id = exchange.id;
     return this.apis[exchange.id];
   }
 

@@ -55,22 +55,16 @@ export class AccountService {
         throw new Error('Unknown account ' + accountId);
       }
 
-      if (account.exchangeClass) {
-        this.exchanges[accountId] = this.apiService.getApi(
-          account.exchangeClass,
-          account.apiKey,
-          account.secret,
-          account.testMode,
-        );
-      } else {
-        this.exchanges[accountId] = this.apiService.getApi(
-          account.exchange.exchange_name,
-          account.apiKey,
-          account.secret,
-          account.exchange.test_mode,
-        );
-      }
+      this.exchanges[accountId] = this.apiService.getApi(
+        account.exchangeClass || account.exchange.exchange_name,
+        account.apiKey,
+        account.secret,
+        account.password,
+        account.exchange.test_mode,
+      );
+
     }
+    this.exchanges[accountId].exchange_id = this.accounts[accountId].exchange_id;
 
     return this.exchanges[accountId];
   }

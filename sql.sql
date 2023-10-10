@@ -3,19 +3,25 @@ pg_dump -h localhost -U admin -W tradebot > ./tradebot.sql
 
 -- Get profit stat
 select 
- t.dt, t.spendUSDT, t.profit, (t.profit / t.spendUSDT)
+ t.dt, 
+ t.spendUSDT, 
+ t.profit, 
+ case when t.spendUSDT > 0 then
+ 	100*(t.profit / t.spendUSDT) 
+ else 0 end	as pc
  from
  (
 SELECT 
-TO_CHAR(o."createdAt", 'YYYY-MM-DD') as dt,
+TO_CHAR(o."closedAt", 'YYYY-MM-DD') as dt,
 sum(
-case when type = 'buy' then amount2 else 0 end
+case when side = 'buy' then amount2 else 0 end
 ) as spendUSDT,
 sum(profit) as profit
 from "order" o
 group by dt
 order by dt desc
 ) as t
+where dt is not null
 
 
 

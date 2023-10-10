@@ -28,6 +28,9 @@ export class Exchange {
   @Column({ type: 'integer', default: 0 })
   accounts_count: number;
 
+  @Column({ type: 'varchar', nullable: true })
+  auth_attributes: string;
+
   @OneToMany(() => Account, (account) => account.exchange)
   @JoinColumn({ name: 'exchange_id' })
   accounts: Account[];

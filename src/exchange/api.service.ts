@@ -5,14 +5,24 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { Injectable, Inject } from '@nestjs/common';
 
+class MarketInfoDto { 
+  minAmount: number; 
+  minCost: number; 
+  fee: number; 
+  pricePrecision: number; 
+  amountPrecision: number 
+};
+
+
+
 @Injectable()
 export class ApiService {
   lastTradesFetching;
-  markets = {};
 
-  constructor(@Inject(CACHE_MANAGER) private cacheManager: Cache) {}
 
-  public getApi(exchangeClass, apiKey = '', secret = '', sandBoxMode = true) {
+  constructor(@Inject(CACHE_MANAGER) private cacheManager: Cache) { }
+
+  public getApi(exchangeClass, apiKey = '', secret = '', password = '', sandBoxMode = true) {
     if (typeof exchangeClass == 'string') {
       exchangeClass = ccxt[exchangeClass];
     }
@@ -20,6 +30,8 @@ export class ApiService {
     const api = new exchangeClass({
       apiKey,
       secret,
+      password,
+      options: { 'defaultType': 'spot' }
     });
     api.setSandboxMode(sandBoxMode);
 
@@ -45,31 +57,41 @@ export class ApiService {
   public async getMarketInfo(
     api,
     pair: string,
-  ): Promise<{ minAmount: number; minCost: number; fee: number }> {
-    if (this.markets[pair]) {
-      return this.markets[pair];
+  ): Promise<MarketInfoDto> {
+
+    const key = api.exchange_id + '.market.' + pair;
+    let value: MarketInfoDto = await this.cacheManager.get(key);
+
+    if (!value) {
+      const allMarkets = await api.fetchMarkets();
+      const markets = allMarkets.filter((item) => item.symbol == pair);
+
+      if (markets.length == 0) return null;
+
+      const { amount: amountPrecision, price: pricePrecision } = markets[0].limits;
+      const { amount, cost } = markets[0].limits;
+      const { taker, maker } = markets[0];
+
+      value = {
+        amountPrecision,
+        pricePrecision,
+        minAmount: amount?.min,
+        minCost: cost?.min,
+        fee: Math.max(taker, maker),
+      };
+
+      await this.cacheManager.set(key, value, 1000);
     }
-    const allMarkets = await api.fetchMarkets();
-    const markets = allMarkets.filter((item) => item.symbol == pair);
 
-    if (markets.length == 0) return null;
-
-    const { amount, cost } = markets[0].limits;
-    const { taker, maker } = markets[0];
-
-    this.markets[pair] = {
-      minAmount: amount.min,
-      minCost: cost.min,
-      fee: Math.max(taker, maker),
-    };
-    return this.markets[pair];
+    return value;
   }
 
   public async fetchBalances(api): Promise<BalancesDto> {
     // const markets = (await this.exchange.fetchMarkets()).filter((item) => item.id == 'ETHUSDT');
     // console.log(markets[0].limits, markets[0]);
 
-    const balances = (await api.fetchBalance()).info.balances;
+    const response = await api.fetchBalance();
+    const balances = response.info.balances;
     const result = {};
     balances.forEach((item) => {
       result[item.asset] = item.free;
@@ -86,7 +108,13 @@ export class ApiService {
     amount: number,
     price?: number,
   ) {
-    return await api.createOrder(symbol, type, side, amount, price);
+    let order = await api.createOrder(symbol, type, side, amount, price);
+
+    if (typeof order.amount == 'undefined') {
+      order = await this.fetchOrder(api, order.id, symbol);
+    }
+
+    return order;
   }
 
   public async watchTrades(api, pair: string) {
@@ -106,12 +134,12 @@ export class ApiService {
   }
 
   async getLastPrice(api, pair: string) {
-    const key = api.id + '.lastPrice.' + pair;
+    const key = api.exchange_id + '.lastPrice.' + pair;
     let value = await this.cacheManager.get(key);
     if (!value) {
       const tickers = await api.fetchTickers();
       value = tickers[pair].last;
-      await this.cacheManager.set(key, value, 10);
+      await this.cacheManager.set(key, value, 1000);
     }
 
     return value;

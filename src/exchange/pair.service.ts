@@ -4,12 +4,14 @@ import {
   elapsedSecondsFrom,
   extractCurrency,
   lock,
+  numberTrim,
   updateModel,
 } from '../helpers/helpers';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Pair } from './entities/pair.entity';
 import { Repository } from 'typeorm';
 import { ApiService } from './api.service';
+import { compareTo, divide, multiply } from '../helpers/bc';
 
 @Injectable()
 export class PairService {
@@ -58,7 +60,7 @@ export class PairService {
     const marketInfo = await this.apiService.getMarketInfo(api, pairName);
     if (!marketInfo) return null;
 
-    const { minAmount, minCost, fee } = marketInfo;
+    let { minAmount, minCost, fee, pricePrecision, amountPrecision } = marketInfo;
     const { bid, ask } = await this.apiService.getActualRates(api, pairName);
     const pair = await this.fetchOrCreate(exchangeId, pairName);
 
@@ -66,6 +68,23 @@ export class PairService {
     if (historicalMinRate > bid) {
       historicalMinRate = bid;
     }
+      
+    if(!minCost || compareTo(minCost, 0) == 0) {
+      minCost = multiply(minAmount, bid);
+      minCost = numberTrim(minCost, pricePrecision);
+    }
+
+    // @todo придумать что-то поумнее
+    // если при обратном рассчете оказались меньше minAmount, на всякий случай добавляем 50%
+    const checkAmount = divide(minCost, bid, amountPrecision);
+    if (compareTo(checkAmount, minAmount)<0) {
+      minAmount = multiply(minAmount, 1.5);
+      minCost = multiply(minCost, 1.5);
+
+      minAmount = numberTrim(minAmount, amountPrecision);
+      minCost = numberTrim(minCost, pricePrecision);
+    }
+
 
     await this.setInfo(pair, {
       buyRate: bid,

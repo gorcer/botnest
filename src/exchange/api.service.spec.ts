@@ -26,6 +26,7 @@ describe('ApiService', () => {
       exchangeClass,
       process.env.EXCHANGE_API_KEY,
       process.env.EXCHANGE_API_SECRET,
+      '',
       true,
     );
   });

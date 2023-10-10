@@ -13,6 +13,7 @@ import { AwaitProfitStrategy } from '../strategy/sellAwaitProfitStrategy/awaitPr
 import { BotNest } from '../bot/botnest.service';
 import { Injectable } from '@nestjs/common';
 import { multiply, subtract } from '../helpers/bc';
+import { AccountService } from '../user/account.service';
 
 
 @Injectable()
@@ -20,14 +21,15 @@ export class DaemonTradeService {
   account: Account;
   minBuyRateMarginToProcess;
   minSellRateMarginToProcess;
-  pairs: Array<string>;
-  api: ApiService;
+  pairs: Array<string>;  
   accountConfig;
+  api;
 
   constructor(
     private log: FileLogService,
     private balance: BalanceService,
     private botnest: BotNest,
+    private apiService: ApiService,    
   ) {}
 
   async trade() {
@@ -107,6 +109,8 @@ export class DaemonTradeService {
     this.account = await this.botnest.setUserAccount(1, {      
       apiKey: process.env.EXCHANGE_API_KEY,
       secret: process.env.EXCHANGE_API_SECRET,      
+      password: process.env.EXCHANGE_API_PASSWORD,
+      exchange
     });
     this.api = await this.botnest.getApiForAccount(this.account.id);
 
@@ -164,7 +168,7 @@ export class DaemonTradeService {
   }
 
   private async checkBalance() {
-    await this.balance.set(this.account.id, await this.api.fetchBalances());
+    await this.balance.set(this.account.id, await this.apiService.fetchBalances(this.api));
 
     for (const pairName of this.pairs) {
       const { currency1 } = extractCurrency(pairName);
@@ -194,7 +198,7 @@ export class DaemonTradeService {
         accountId,
         currency2,
       );
-      const rate = await this.api.getLastPrice(pair);
+      const rate = await this.apiService.getLastPrice(this.api, pair);
 
       this.log.stat(
         currency1,

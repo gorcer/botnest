@@ -234,6 +234,7 @@ export class TradeService {
         'market',
         'buy',
         amount1,
+        price
       );
 
       if (extOrder.id != undefined) {
@@ -249,7 +250,7 @@ export class TradeService {
           extOrderId: extOrder.id,
           expectedRate: price,
           rate: extOrder.price,
-          amount1: extOrder.amount,
+          amount1: extOrder.filled,
           amount2: extOrder.cost,
           fee: feeInCurrency2Cost,
           accountId,
