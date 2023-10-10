@@ -74,7 +74,7 @@ export class PairService {
       minCost = numberTrim(minCost, pricePrecision);
     }
 
-    // @todo придумать что-то поумнее
+    // @todo придумать что-то поумнее с checkLimits(minAmount, minCost, ask),
     // если при обратном рассчете оказались меньше minAmount, на всякий случай добавляем 50%
     const checkAmount = divide(minCost, bid, amountPrecision);
     if (compareTo(checkAmount, minAmount)<0) {
@@ -89,7 +89,7 @@ export class PairService {
     await this.setInfo(pair, {
       buyRate: bid,
       sellRate: ask,
-      minAmount1: checkLimits(minAmount, minCost, ask),
+      minAmount1: checkLimits(minAmount, minCost, ask, amountPrecision),
       minAmount2: minCost,
       historicalMinRate,
       fee,

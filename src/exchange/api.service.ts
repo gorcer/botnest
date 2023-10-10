@@ -68,9 +68,11 @@ export class ApiService {
 
       if (markets.length == 0) return null;
 
-      const { amount: amountPrecision, price: pricePrecision } = markets[0].limits;
+      let { amount: amountPrecision, price: pricePrecision } = markets[0].precision;
       const { amount, cost } = markets[0].limits;
       const { taker, maker } = markets[0];
+     
+      
 
       value = {
         amountPrecision,

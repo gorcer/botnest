@@ -1,11 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import {
-  checkLimits,
-  elapsedSecondsFrom,
-  extractCurrency,
-  lock,
-  updateModel,
-} from '../helpers/helpers';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Exchange } from './entities/exchange.entity';
 import { MoreThan, Repository } from 'typeorm';
