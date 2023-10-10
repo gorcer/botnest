@@ -3,7 +3,7 @@ import { BalanceService } from '../balance/balance.service';
 import { OrderService } from '../order/order.service';
 import { Order, OrderSideEnum } from '../order/entities/order.entity';
 import { UpdateOrderDto } from '../order/dto/update-order.dto';
-import { lock, SEC_IN_YEAR, extractCurrency } from '../helpers/helpers';
+import { lock, SEC_IN_YEAR, extractCurrency, sleep } from '../helpers/helpers';
 import { ApiService } from '../exchange/api.service';
 import { FileLogService } from '../log/filelog.service';
 import { AccountService } from '../user/account.service';
@@ -394,8 +394,13 @@ export class TradeService {
       side: OrderSideEnum.SELL,
     });
     for (const order of orders) {
-      const closedOrder = await this.checkCloseOrder(order);
+      try {
+      const closedOrder = await this.checkCloseOrder(order);      
       if (closedOrder) closedOrders.push(closedOrder);
+      } catch(e) {
+        this.log.error('Check order error...wait 1 sec', e.message, e.stack);
+        await sleep(1);
+      }
     }
 
     return closedOrders;
