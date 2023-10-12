@@ -5,24 +5,27 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { Injectable, Inject } from '@nestjs/common';
 
-class MarketInfoDto { 
-  minAmount: number; 
-  minCost: number; 
-  fee: number; 
-  pricePrecision: number; 
-  amountPrecision: number 
-};
-
-
+class MarketInfoDto {
+  minAmount: number;
+  minCost: number;
+  fee: number;
+  pricePrecision: number;
+  amountPrecision: number;
+}
 
 @Injectable()
 export class ApiService {
   lastTradesFetching;
 
+  constructor(@Inject(CACHE_MANAGER) private cacheManager: Cache) {}
 
-  constructor(@Inject(CACHE_MANAGER) private cacheManager: Cache) { }
-
-  public getApi(exchangeClass, apiKey = '', secret = '', password = '', sandBoxMode = true) {
+  public getApi(
+    exchangeClass,
+    apiKey = '',
+    secret = '',
+    password = '',
+    sandBoxMode = true,
+  ) {
     if (typeof exchangeClass == 'string') {
       exchangeClass = ccxt[exchangeClass];
     }
@@ -31,7 +34,7 @@ export class ApiService {
       apiKey,
       secret,
       password,
-      options: { 'defaultType': 'spot' }
+      options: { defaultType: 'spot' },
     });
     api.setSandboxMode(sandBoxMode);
 
@@ -54,11 +57,7 @@ export class ApiService {
     return { bid, ask };
   }
 
-  public async getMarketInfo(
-    api,
-    pair: string,
-  ): Promise<MarketInfoDto> {
-
+  public async getMarketInfo(api, pair: string): Promise<MarketInfoDto> {
     const key = api.exchange_id + '.market.' + pair;
     let value: MarketInfoDto = await this.cacheManager.get(key);
 
@@ -68,11 +67,10 @@ export class ApiService {
 
       if (markets.length == 0) return null;
 
-      let { amount: amountPrecision, price: pricePrecision } = markets[0].precision;
+      const { amount: amountPrecision, price: pricePrecision } =
+        markets[0].precision;
       const { amount, cost } = markets[0].limits;
       const { taker, maker } = markets[0];
-     
-      
 
       value = {
         amountPrecision,
@@ -119,16 +117,12 @@ export class ApiService {
     return order;
   }
 
-  public async watchTrades(api, pair: string) {
-    return api.watchMyTrades(pair);
-  }
+  // public async watchTrades(api, pair: string) {
+  //   return api.watchMyTrades(pair);
+  // }
 
   public async fetchOrder(api, orderId: number, symbol: string) {
     return api.fetchOrder(String(orderId), symbol);
-  }
-
-  public async fetchTickers(api) {
-    return api.fetchTickers();
   }
 
   public async fetchTrades(api, pair, since) {
@@ -139,8 +133,8 @@ export class ApiService {
     const key = api.exchange_id + '.lastPrice.' + pair;
     let value = await this.cacheManager.get(key);
     if (!value) {
-      const tickers = await api.fetchTickers();
-      value = tickers[pair].last;
+      const ticker = await api.fetchTicker(pair);
+      value = ticker.last;
       await this.cacheManager.set(key, value, 1000);
     }
 

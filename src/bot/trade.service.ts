@@ -234,7 +234,7 @@ export class TradeService {
         'market',
         'buy',
         amount1,
-        price
+        price,
       );
 
       if (extOrder.id != undefined) {
