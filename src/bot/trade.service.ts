@@ -398,7 +398,7 @@ export class TradeService {
       const closedOrder = await this.checkCloseOrder(order);      
       if (closedOrder) closedOrders.push(closedOrder);
       } catch(e) {
-        this.log.error('Check order error...wait 1 sec', e.message, e.stack);
+        this.log.error('Check order '+order.extOrderId+' error...wait 1 sec', e.message, e.stack);
         await sleep(1);
       }
     }

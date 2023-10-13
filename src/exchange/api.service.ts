@@ -121,6 +121,10 @@ export class ApiService {
   //   return api.watchMyTrades(pair);
   // }
 
+  public async fetchOrders(api, symbol: string) {
+    return api.fetchOrders(symbol);
+  }
+
   public async fetchOrder(api, orderId: number, symbol: string) {
     return api.fetchOrder(String(orderId), symbol);
   }

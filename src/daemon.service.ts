@@ -30,6 +30,10 @@ export class DaemonService {
       }
     }
     this.log.info('Ok');
+
+    this.log.info('Check close orders ...');
+    await this.botnest.checkCloseOrders();
+    this.log.info('Ok');
   }
 
   async trade() {
