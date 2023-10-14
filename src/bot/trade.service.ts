@@ -114,7 +114,7 @@ export class TradeService {
       if (!extOrder)
         extOrder = await this.apiService.fetchOrder(
           api,
-          Number(order.extOrderId),
+          order.extOrderId,
           order.pairName,
         );
 

@@ -125,7 +125,7 @@ export class ApiService {
     return api.fetchOrders(symbol);
   }
 
-  public async fetchOrder(api, orderId: number, symbol: string) {
+  public async fetchOrder(api, orderId: string, symbol: string) {
     return api.fetchOrder(String(orderId), symbol);
   }
 
