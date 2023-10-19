@@ -8,6 +8,7 @@ import { FillCells } from './fillCells.entity';
 import { EntityManager } from 'typeorm';
 import { Balance } from '../../balance/entities/balance.entity';
 import { compareTo, divide, multiply, subtract } from '../../helpers/bc';
+import { Account } from '../../user/entities/account.entity';
 
 export class FillCellsStrategy implements BuyStrategyInterface {
   side = OrderSideEnum.BUY;
@@ -50,6 +51,7 @@ export class FillCellsStrategy implements BuyStrategyInterface {
     return this.repository
       .createQueryBuilder('strategy')
       .innerJoin(Pair, 'pair', 'strategy."pairId" = pair.id')
+      .innerJoin(Account, 'account', 'strategy."accountId" = account.id')
       .innerJoin(
         Balance,
         'balance',
@@ -75,6 +77,8 @@ export class FillCellsStrategy implements BuyStrategyInterface {
         `"balance".available > strategy."orderAmount" * "pair"."sellRate"`,
       )
       .andWhere(`"pair"."isActive" = true`)
+      .andWhere(`"account"."is_trading_allowed" = true`)
+      .andWhere(`"account"."isActive" = true`)
       .andWhere(`"strategy"."cellSize" > 0`)
       .andWhere(`"strategy"."isActive" = true`)
       .select(
@@ -89,3 +93,4 @@ export class FillCellsStrategy implements BuyStrategyInterface {
       .getRawMany();
   }
 }
+

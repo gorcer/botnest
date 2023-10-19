@@ -2,6 +2,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
@@ -16,6 +17,7 @@ export class Account {
   @CreateDateColumn()
   createdAt: Date;
 
+  @Index()
   @Column('int')
   userId: number;
 
@@ -33,6 +35,17 @@ export class Account {
 
   @Column({ type: 'boolean', default: true })
   isActive: boolean;
+
+  /** When need hide account from user (system account) */
+  @Index()
+  @Column({ type: 'boolean', default: true })
+  is_visible: boolean;
+
+  /** When you needs to restrict user for trading */
+  @Index()
+  @Column({ type: 'boolean', default: true })
+  is_trading_allowed: boolean;
+
 
   @Column({ type: Date, nullable: true })
   deleted_at: Date;

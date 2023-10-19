@@ -6,7 +6,11 @@ export enum OperationType {
     BUY = "buy",
     SELL = "sell",
     BUY_FEE = "buy_fee",
-    SELL_FEE = "sell_fee"
+    SELL_FEE = "sell_fee",
+    BONUS = "bonus",
+    TRADE_FEE = 'trade_fee',
+    TOPUP = 'topup',
+    WITHDRAW = 'withdraw'
 }
 
 @Entity()

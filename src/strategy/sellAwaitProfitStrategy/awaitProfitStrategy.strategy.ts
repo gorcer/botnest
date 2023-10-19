@@ -8,6 +8,7 @@ import { RequestSellInfoDto } from '../dto/request-sell-info.dto';
 import { AwaitProfit } from './awaitProfit.entity';
 import { SellStrategyInterface } from '../interfaces/sellStrategy.interface';
 import { EntityManager } from 'typeorm';
+import { Account } from '../../user/entities/account.entity';
 
 export class AwaitProfitStrategy implements SellStrategyInterface {
   side = OrderSideEnum.SELL;
@@ -27,6 +28,7 @@ export class AwaitProfitStrategy implements SellStrategyInterface {
       .createQueryBuilder('strategy')
       .innerJoin(Order, 'order', 'strategy."accountId" = "order"."accountId"')
       .innerJoin(Pair, 'pair', 'pair.id = "order"."pairId"')
+      .innerJoin(Account, 'account', 'strategy."accountId" = account.id')
       .andWhere(
         `
       100*((("pair"."buyRate" * "order".amount1 * (1-pair.fee)) / ("order".amount2 + "order".fee))-1) >= 
@@ -40,6 +42,8 @@ export class AwaitProfitStrategy implements SellStrategyInterface {
         end        
         `,
       )
+      .andWhere(`"account"."is_trading_allowed" = true`)
+      .andWhere(`"account"."isActive" = true`)
       .andWhere(`"order".side = :side`, { side: OrderSideEnum.BUY })
       .andWhere(`"order".rate < "pair"."buyRate"`)
       .andWhere(`"order"."createdAtSec" < ${now}+1`)
