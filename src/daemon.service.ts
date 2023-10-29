@@ -1,9 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { BotNest } from './bot/botnest.service';
 import { FillCellsStrategy } from './strategy/buyFillCellsStrategy/fillCellsStrategy.strategy';
 import { AwaitProfitStrategy } from './strategy/sellAwaitProfitStrategy/awaitProfitStrategy.strategy';
 import { SEC_IN_HOUR, elapsedSecondsFrom, sleep } from './helpers/helpers';
 import { FileLogService } from './log/filelog.service';
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
+import { BuyOrderCreatedEvent } from './bot/events/buyorder-created.event';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 
 @Injectable()
 export class DaemonService {
@@ -11,7 +15,35 @@ export class DaemonService {
   minSellRateMarginToProcess;
   pairs: Array<string>;
 
-  constructor(private botnest: BotNest, private log: FileLogService) {}
+  constructor(
+    private botnest: BotNest,
+    private log: FileLogService,    
+    private eventEmitter: EventEmitter2,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache
+  ) { 
+
+
+    this.handleBuyOrderCreatedEvent = this.handleBuyOrderCreatedEvent.bind(this);
+    
+    const checkBalance = async ({accountId})=>{
+      const key = accountId + '.checkBalance';
+      const isChecked: Boolean = await this.cacheManager.get(key);
+      if (isChecked)
+        return;
+      
+      await this.cacheManager.set(key, true, 10*60);
+
+      try {
+      this.botnest.checkBalance(accountId);
+      } catch(e){
+        this.log.error('Check balance error...', e.message, e.stack);
+      }
+    };
+
+    this.eventEmitter.on('buyOrder.created', checkBalance);
+    this.eventEmitter.on('sellOrder.created', checkBalance);
+
+  }
 
   public async init() {
     this.minBuyRateMarginToProcess = process.env.DAEMON_MIN_BUY_RATE_MARGIN;
@@ -33,8 +65,14 @@ export class DaemonService {
 
     this.log.info('Check close orders ...');
     await this.botnest.checkCloseOrders();
-    this.log.info('Ok');
+    this.log.info('Ok');   
   }
+
+
+  handleBuyOrderCreatedEvent({ accountId }) {
+    this.botnest.checkBalance(accountId);
+  }
+
 
   async trade() {
     let lastTradesUpdate = Date.now() / 1000;

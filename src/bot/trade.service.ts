@@ -13,6 +13,9 @@ import { StrategyService } from '../strategy/strategy.service';
 import { BuyStrategyInterface } from '../strategy/interfaces/buyStrategy.interface';
 import { SellStrategyInterface } from '../strategy/interfaces/sellStrategy.interface';
 import { add, compareTo, divide, multiply, subtract } from '../helpers/bc';
+import {EventEmitter2} from '@nestjs/event-emitter';
+import { BuyOrderCreatedEvent } from './events/buyorder-created.event';
+
 
 @Injectable()
 export class TradeService {
@@ -27,6 +30,8 @@ export class TradeService {
     private accounts: AccountService,
     private strategies: StrategyService,
     private apiService: ApiService,
+
+    private eventEmitter: EventEmitter2
   ) {}
 
   private api(accountId: number): Promise<ApiService> {
@@ -290,6 +295,14 @@ export class TradeService {
           order.amount2,
           extOrder,
         );
+        
+        this.eventEmitter.emit(
+          'buyOrder.created',
+          {
+            accountId
+          }
+        );
+
 
         return { extOrder, order };
       }
@@ -378,6 +391,13 @@ export class TradeService {
         await this.orders.update(orderInfo.id, {
           prefilled: add(orderInfo.prefilled, extOrder.amount),
         });
+
+        this.eventEmitter.emit(
+          'sellOrder.created',
+          {
+            accountId: orderInfo.accountId
+          }
+        );
       }
     });
 

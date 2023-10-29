@@ -28,7 +28,7 @@ export class BotNest {
     private balance: BalanceService,
     private exchange: ExchangeService,
     private apiService: ApiService,
-  ) {}
+  ) { }
 
   public async fetchOrCreateExchange(title: string, test_mode: boolean) {
     return await this.exchange.fetchOrCreate(title, test_mode);
@@ -38,25 +38,27 @@ export class BotNest {
     return await this.exchange.getAllActive();
   }
 
-  public async checkBalance(accountId: number) {
+  public async checkBalance(accountId: number, fullCheck = false) {
     const api = await this.getApiForAccount(accountId);
 
     await this.balance.set(accountId, await this.apiService.fetchBalances(api));
 
-    const balances = await this.balance.loadBalances(accountId);
+    if (fullCheck) {
+      const balances = await this.balance.loadBalances(accountId);
 
-    for (const currency of Object.keys(balances)) {
-      const ordersSum = await this.getActiveOrdersSum(
-        accountId,
-        currency,
-        'amount1',
-      );
+      for (const currency of Object.keys(balances)) {
+        const ordersSum = await this.getActiveOrdersSum(
+          accountId,
+          currency,
+          'amount1',
+        );
 
-      const balance = await this.balance.getBalance(accountId, currency);
-      if (balance) {
-        balance.inOrders = ordersSum ?? 0;
-        balance.available = subtract(balance.amount, balance.inOrders);
-        await this.balance.saveBalance(balance);
+        const balance = await this.balance.getBalance(accountId, currency);
+        if (balance) {
+          balance.inOrders = ordersSum ?? 0;
+          balance.available = subtract(balance.amount, balance.inOrders);
+          await this.balance.saveBalance(balance);
+        }
       }
     }
   }

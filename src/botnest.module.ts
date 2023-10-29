@@ -5,10 +5,12 @@ import { ConfigModule } from '@nestjs/config';
 import { FileLogService } from './log/filelog.service';
 import { Entities } from './all.entities';
 import { DaemonService } from './daemon.service';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { CacheModule } from '@nestjs/cache-manager';
 
 @Module({
-  imports: [
+  imports: [    
+    CacheModule.register(),
     ConfigModule.forRoot(),
     TypeOrmModule.forRoot({
       type: 'postgres',

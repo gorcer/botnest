@@ -105,6 +105,9 @@ export class Order {
   profit_in_usd: number;
 
   @Column({ type: 'decimal', default: 0 })
+  amount2_in_usd: number;
+
+  @Column({ type: 'decimal', default: 0 })
   anualProfitPc: number;
 
   // @BeforeInsert()

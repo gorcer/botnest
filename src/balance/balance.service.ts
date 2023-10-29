@@ -180,6 +180,7 @@ export class BalanceService {
       sourceId,
       operationType,
       multiply(-1, amount),
+      inOrders
     );
   }
 }
