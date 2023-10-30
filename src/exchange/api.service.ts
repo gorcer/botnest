@@ -80,7 +80,7 @@ export class ApiService {
         fee: Math.max(taker, maker),
       };
 
-      await this.cacheManager.set(key, value, 60*60);
+      await this.cacheManager.set(key, value, 60 * 60 * 1000);
     }
 
     return value;
@@ -91,7 +91,7 @@ export class ApiService {
     // console.log(markets[0].limits, markets[0]);
 
     const response = await api.fetchBalance();
-    const result = response.total;    
+    const result = response.total;
 
     return result;
   }

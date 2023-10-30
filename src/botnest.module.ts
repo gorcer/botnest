@@ -7,9 +7,10 @@ import { Entities } from './all.entities';
 import { DaemonService } from './daemon.service';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { CacheModule } from '@nestjs/cache-manager';
+import { StrategyModule } from './strategy/strategy.module';
 
 @Module({
-  imports: [    
+  imports: [
     CacheModule.register(),
     ConfigModule.forRoot(),
     TypeOrmModule.forRoot({
@@ -24,6 +25,7 @@ import { CacheModule } from '@nestjs/cache-manager';
       logging: process.env.DB_LOGGING == 'true',
     }),
     BotModule,
+    StrategyModule,
   ],
   controllers: [],
   providers: [FileLogService, DaemonService],

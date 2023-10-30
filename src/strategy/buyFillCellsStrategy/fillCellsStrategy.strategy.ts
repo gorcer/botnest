@@ -87,10 +87,10 @@ export class FillCellsStrategy implements BuyStrategyInterface {
                 "pair"."sellRate" as "rate",
                 GREATEST(cast(strategy."orderAmount" as DECIMAL), "pair"."minAmount1") as amount1,
                 "pair".id as "pairId",
-                "pair".name as "pairName"
+                "pair".name as "pairName",
+                "strategy".id as "strategyableId"
                 `,
       )
       .getRawMany();
   }
 }
-

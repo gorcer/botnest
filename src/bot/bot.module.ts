@@ -8,11 +8,10 @@ import { StrategyModule } from '../strategy/strategy.module';
 import { UserModule } from '../user/user.module';
 import { BotNest } from './botnest.service';
 import { CacheModule } from '@nestjs/cache-manager';
-import { BuyOrderCreatedListener } from './listeners/buyorder-created.listener';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
-  imports: [    
+  imports: [
     EventEmitterModule.forRoot(),
     StrategyModule,
     ExchangeModule,
@@ -20,9 +19,10 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
     BalanceModule,
     UserModule,
     CacheModule.register(),
+    StrategyModule,
   ],
   controllers: [],
-  providers: [FileLogService, TradeService, BotNest, BuyOrderCreatedListener],
+  providers: [FileLogService, TradeService, BotNest],
   exports: [BotNest],
 })
 export class BotModule {}

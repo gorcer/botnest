@@ -4,10 +4,10 @@ import { FillCellsStrategy } from './strategy/buyFillCellsStrategy/fillCellsStra
 import { AwaitProfitStrategy } from './strategy/sellAwaitProfitStrategy/awaitProfitStrategy.strategy';
 import { SEC_IN_HOUR, elapsedSecondsFrom, sleep } from './helpers/helpers';
 import { FileLogService } from './log/filelog.service';
-import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
-import { BuyOrderCreatedEvent } from './bot/events/buyorder-created.event';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
+import { FillCellsStrategyService } from './strategy/buyFillCellsStrategy/fillCellsStrategy.service';
 
 @Injectable()
 export class DaemonService {
@@ -17,32 +17,45 @@ export class DaemonService {
 
   constructor(
     private botnest: BotNest,
-    private log: FileLogService,    
+    private log: FileLogService,
     private eventEmitter: EventEmitter2,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache
-  ) { 
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private fillCellsService: FillCellsStrategyService,
+  ) {
+    this.checkBalance = this.checkBalance.bind(this);
+    this.recalcCellSize = this.recalcCellSize.bind(this);
 
+    this.eventEmitter.on('buyOrder.created', this.recalcCellSize);
+    this.eventEmitter.on('buyOrder.created', this.checkBalance);
+    this.eventEmitter.on('sellOrder.created', this.checkBalance);
+  }
 
-    this.handleBuyOrderCreatedEvent = this.handleBuyOrderCreatedEvent.bind(this);
-    
-    const checkBalance = async ({accountId})=>{
-      const key = accountId + '.checkBalance';
-      const isChecked: Boolean = await this.cacheManager.get(key);
-      if (isChecked)
-        return;
-      
-      await this.cacheManager.set(key, true, 10*60);
+  async checkBalance({ accountId }) {
+    const key = accountId + '.checkBalance';
+    const isChecked: boolean = await this.cacheManager.get(key);
+    if (isChecked) return;
+    await this.cacheManager.set(key, true, 10 * 60 * 1000);
 
-      try {
+    try {
       this.botnest.checkBalance(accountId);
-      } catch(e){
-        this.log.error('Check balance error...', e.message, e.stack);
+    } catch (e) {
+      this.log.error('Check balance error...', e.message, e.stack);
+    }
+  }
+
+  async recalcCellSize({ strategyableId }) {
+    const key = strategyableId + '.recalcCellSize';
+    const isChecked: boolean = await this.cacheManager.get(key);
+    if (isChecked) return;
+    await this.cacheManager.set(key, true, 10 * 60 * 1000);
+
+    try {
+      if (strategyableId) {
+        this.fillCellsService.recalcCellSize(strategyableId);
       }
-    };
-
-    this.eventEmitter.on('buyOrder.created', checkBalance);
-    this.eventEmitter.on('sellOrder.created', checkBalance);
-
+    } catch (e) {
+      this.log.error('recalcCellSize error...', e.message, e.stack);
+    }
   }
 
   public async init() {
@@ -65,14 +78,8 @@ export class DaemonService {
 
     this.log.info('Check close orders ...');
     await this.botnest.checkCloseOrders();
-    this.log.info('Ok');   
+    this.log.info('Ok');
   }
-
-
-  handleBuyOrderCreatedEvent({ accountId }) {
-    this.botnest.checkBalance(accountId);
-  }
-
 
   async trade() {
     let lastTradesUpdate = Date.now() / 1000;

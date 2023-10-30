@@ -137,7 +137,7 @@ export class BalanceService {
     sourceId: number,
     operationType: OperationType,
     amount: number,
-    inOrders: boolean = false,
+    inOrders = false,
   ) {
     const balance = await this.getBalance(accountId, currency);
     if (!balance) {
@@ -172,7 +172,7 @@ export class BalanceService {
     sourceId: number,
     operationType: OperationType,
     amount: number,
-    inOrders: boolean = false,
+    inOrders = false,
   ) {
     return this.income(
       accountId,
@@ -180,7 +180,7 @@ export class BalanceService {
       sourceId,
       operationType,
       multiply(-1, amount),
-      inOrders
+      inOrders,
     );
   }
 }

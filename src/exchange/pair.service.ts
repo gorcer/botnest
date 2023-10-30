@@ -29,6 +29,10 @@ export class PairService {
     this.FETCH_TIMEOUT = Number(process.env.EXCHANGE_RATES_FETCH_TIMEOUT);
   }
 
+  public get(id: number) {
+    return this.pairRepository.findOneBy({ id });
+  }
+
   public async fetchOrCreate(
     exchange_id: number,
     pairName: string,
@@ -60,7 +64,8 @@ export class PairService {
     const marketInfo = await this.apiService.getMarketInfo(api, pairName);
     if (!marketInfo) return null;
 
-    let { minAmount, minCost, fee, pricePrecision, amountPrecision } = marketInfo;
+    let { minAmount, minCost, fee, pricePrecision, amountPrecision } =
+      marketInfo;
     const { bid, ask } = await this.apiService.getActualRates(api, pairName);
     const pair = await this.fetchOrCreate(exchangeId, pairName);
 
@@ -68,8 +73,8 @@ export class PairService {
     if (historicalMinRate > bid) {
       historicalMinRate = bid;
     }
-      
-    if(!minCost || compareTo(minCost, 0) == 0) {
+
+    if (!minCost || compareTo(minCost, 0) == 0) {
       minCost = multiply(minAmount, bid);
       minCost = numberTrim(minCost, pricePrecision);
     }
@@ -77,14 +82,13 @@ export class PairService {
     // @todo придумать что-то поумнее с checkLimits(minAmount, minCost, ask),
     // если при обратном рассчете оказались меньше minAmount, на всякий случай добавляем 50%
     const checkAmount = divide(minCost, bid, amountPrecision);
-    if (compareTo(checkAmount, minAmount)<0) {
+    if (compareTo(checkAmount, minAmount) < 0) {
       minAmount = multiply(minAmount, 1.5);
       minCost = multiply(minCost, 1.5);
 
       minAmount = numberTrim(minAmount, amountPrecision);
       minCost = numberTrim(minCost, pricePrecision);
     }
-
 
     await this.setInfo(pair, {
       buyRate: bid,

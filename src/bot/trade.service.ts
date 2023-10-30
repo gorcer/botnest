@@ -13,9 +13,7 @@ import { StrategyService } from '../strategy/strategy.service';
 import { BuyStrategyInterface } from '../strategy/interfaces/buyStrategy.interface';
 import { SellStrategyInterface } from '../strategy/interfaces/sellStrategy.interface';
 import { add, compareTo, divide, multiply, subtract } from '../helpers/bc';
-import {EventEmitter2} from '@nestjs/event-emitter';
-import { BuyOrderCreatedEvent } from './events/buyorder-created.event';
-
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class TradeService {
@@ -31,7 +29,7 @@ export class TradeService {
     private strategies: StrategyService,
     private apiService: ApiService,
 
-    private eventEmitter: EventEmitter2
+    private eventEmitter: EventEmitter2,
   ) {}
 
   private api(accountId: number): Promise<ApiService> {
@@ -59,13 +57,7 @@ export class TradeService {
       );
       for (const account of accounts) {
         result.push(
-          this.createBuyOrder(
-            account.accountId,
-            account.pairId,
-            account.pairName,
-            account.rate,
-            account.amount1,
-          ).then((order) => {
+          this.createBuyOrder(account).then((order) => {
             orders.push(order);
           }),
         );
@@ -220,13 +212,8 @@ export class TradeService {
     return { feeCost, feeInCurrency2Cost, feeCurrency };
   }
 
-  public async createBuyOrder(
-    accountId: number,
-    pairId: number,
-    pairName: string,
-    price: number,
-    amount1: number,
-  ) {
+  public async createBuyOrder(orderInfo) {
+    const { accountId, pairId, pairName, rate: price, amount1 } = orderInfo;
     const api = await this.api(accountId);
     const { currency1, currency2 } = extractCurrency(pairName);
 
@@ -295,14 +282,8 @@ export class TradeService {
           order.amount2,
           extOrder,
         );
-        
-        this.eventEmitter.emit(
-          'buyOrder.created',
-          {
-            accountId
-          }
-        );
 
+        this.eventEmitter.emit('buyOrder.created', orderInfo);
 
         return { extOrder, order };
       }
@@ -392,12 +373,7 @@ export class TradeService {
           prefilled: add(orderInfo.prefilled, extOrder.amount),
         });
 
-        this.eventEmitter.emit(
-          'sellOrder.created',
-          {
-            accountId: orderInfo.accountId
-          }
-        );
+        this.eventEmitter.emit('sellOrder.created', orderInfo);
       }
     });
 
@@ -415,10 +391,14 @@ export class TradeService {
     });
     for (const order of orders) {
       try {
-      const closedOrder = await this.checkCloseOrder(order);      
-      if (closedOrder) closedOrders.push(closedOrder);
-      } catch(e) {
-        this.log.error('Check order '+order.extOrderId+' error...wait 1 sec', e.message, e.stack);
+        const closedOrder = await this.checkCloseOrder(order);
+        if (closedOrder) closedOrders.push(closedOrder);
+      } catch (e) {
+        this.log.error(
+          'Check order ' + order.extOrderId + ' error...wait 1 sec',
+          e.message,
+          e.stack,
+        );
         await sleep(1);
       }
     }
