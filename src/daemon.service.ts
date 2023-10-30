@@ -25,9 +25,10 @@ export class DaemonService {
     this.checkBalance = this.checkBalance.bind(this);
     this.recalcCellSize = this.recalcCellSize.bind(this);
 
-    this.eventEmitter.on('buyOrder.created', this.recalcCellSize);
+    
     this.eventEmitter.on('buyOrder.created', this.checkBalance);
     this.eventEmitter.on('sellOrder.created', this.checkBalance);
+    this.eventEmitter.on('buyOrder.created', this.recalcCellSize);
   }
 
   async checkBalance({ accountId }) {
