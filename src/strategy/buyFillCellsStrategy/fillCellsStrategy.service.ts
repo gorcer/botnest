@@ -6,6 +6,7 @@ import { FillCellsStrategy } from './fillCellsStrategy.strategy';
 import { PairService } from '../../exchange/pair.service';
 import { BalanceService } from '../../balance/balance.service';
 import { extractCurrency } from '../../helpers/helpers';
+import { add, multiply } from '../../helpers/bc';
 
 @Injectable()
 export class FillCellsStrategyService {
@@ -37,13 +38,22 @@ export class FillCellsStrategyService {
     const pair = await this.pairService.get(obj.pairId);
     if (!pair) return;
 
-    const { currency2 } = extractCurrency(pair.name);
-    const balance = await this.balanceService.getBalance(
+    const { currency1, currency2 } = extractCurrency(pair.name);
+    const balance1 = await this.balanceService.getBalance(
+      obj.accountId,
+      currency1,
+    );
+    const balance2 = await this.balanceService.getBalance(
       obj.accountId,
       currency2,
     );
+    const balance1InCurrency2Amount = multiply(
+      balance1.inOrders,
+      pair.sellRate,
+    );
+
     obj.cellSize = FillCellsStrategy.calculateCellSize({
-      balance,
+      totalBalance: add(balance1InCurrency2Amount, balance2.amount),
       pair,
       orderAmount: obj.orderAmount,
       risk: obj.risk,

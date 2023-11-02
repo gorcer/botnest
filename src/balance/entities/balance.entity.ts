@@ -1,25 +1,25 @@
-import { Column, Double, Entity, Index, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Double, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity()
 export class Balance {
-    @PrimaryGeneratedColumn()
-    id: number;
+  @PrimaryGeneratedColumn()
+  id: number;
 
-    @Index()
-    @Column({type: "int", default: 1})
-    accountId: number;    
-    
-    @Index()
-    @Column("varchar")
-    currency: string;    
+  @Index()
+  @Column({ type: 'int', default: 1 })
+  accountId: number;
 
-    @Column("decimal")
-    amount: number;
+  @Index()
+  @Column('varchar')
+  currency: string;
 
-    @Column({type:"decimal", default:0})
-    inOrders: number;
+  @Column('decimal')
+  amount: number;
 
-    @Index()
-    @Column({type:"decimal", default:0})
-    available: number;
+  @Column({ type: 'decimal', default: 0 })
+  inOrders: number;
+
+  @Index()
+  @Column({ type: 'decimal', default: 0 })
+  available: number;
 }

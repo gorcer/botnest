@@ -36,6 +36,7 @@ export class BalanceService {
       let operationAmount;
 
       for (const [currency, amount] of Object.entries(balances)) {
+        operationType=null;
         let balance = await this.getBalance(accountId, currency);
         if (!balance) {
           if (compareTo(amount, 0) > 0) {
@@ -67,9 +68,8 @@ export class BalanceService {
         }
 
         if (balance) {
-          await this.balanceRepository.save(balance);
-
           if (operationType) {
+            await this.balanceRepository.save(balance);
             this.balanceLogRepository.save(
               this.balanceLogRepository.create({
                 accountId: balance.accountId,

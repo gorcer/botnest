@@ -31,6 +31,9 @@ export class Exchange {
   @Column({ type: 'varchar', nullable: true })
   auth_attributes: string;
 
+  @Column({ type: 'varchar', nullable: true })
+  register_link: string;
+
   @OneToMany(() => Account, (account) => account.exchange)
   @JoinColumn({ name: 'exchange_id' })
   accounts: Account[];

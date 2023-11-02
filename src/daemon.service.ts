@@ -25,7 +25,6 @@ export class DaemonService {
     this.checkBalance = this.checkBalance.bind(this);
     this.recalcCellSize = this.recalcCellSize.bind(this);
 
-    
     this.eventEmitter.on('buyOrder.created', this.checkBalance);
     this.eventEmitter.on('sellOrder.created', this.checkBalance);
     this.eventEmitter.on('buyOrder.created', this.recalcCellSize);
@@ -38,7 +37,7 @@ export class DaemonService {
     await this.cacheManager.set(key, true, 10 * 60 * 1000);
 
     try {
-      this.botnest.checkBalance(accountId);
+      await this.botnest.checkBalance(accountId);
     } catch (e) {
       this.log.error('Check balance error...', e.message, e.stack);
     }
@@ -52,7 +51,7 @@ export class DaemonService {
 
     try {
       if (strategyableId) {
-        this.fillCellsService.recalcCellSize(strategyableId);
+        await this.fillCellsService.recalcCellSize(strategyableId);
       }
     } catch (e) {
       this.log.error('recalcCellSize error...', e.message, e.stack);
@@ -60,6 +59,7 @@ export class DaemonService {
   }
 
   public async init() {
+    // await this.recalcCellSize({ strategyableId: 3 });
     this.minBuyRateMarginToProcess = process.env.DAEMON_MIN_BUY_RATE_MARGIN;
     this.minSellRateMarginToProcess = process.env.DAEMON_MIN_SELL_RATE_MARGIN;
     this.pairs = process.env.PAIRS.replace(' ', '').split(',');

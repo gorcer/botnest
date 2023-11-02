@@ -68,9 +68,7 @@ describe('AccountsReadyToBuy', () => {
   it('cell size', async () => {
     const cellSize = FillCellsStrategy.calculateCellSize({
       orderAmount: 0.0001,
-      balance: {
-        amount: 1000,
-      },
+      totalBalance: 1000,
       pair: {
         id: 1,
         historicalMinRate: 10000,

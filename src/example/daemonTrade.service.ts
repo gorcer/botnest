@@ -2,7 +2,7 @@ import { FileLogService } from '../log/filelog.service';
 import {
   SEC_IN_HOUR,
   elapsedSecondsFrom,
-  sleep,  
+  sleep,
   extractCurrency,
 } from '../helpers/helpers';
 import { BalanceService } from '../balance/balance.service';
@@ -15,13 +15,12 @@ import { Injectable } from '@nestjs/common';
 import { multiply, subtract } from '../helpers/bc';
 import { AccountService } from '../user/account.service';
 
-
 @Injectable()
 export class DaemonTradeService {
   account: Account;
   minBuyRateMarginToProcess;
   minSellRateMarginToProcess;
-  pairs: Array<string>;  
+  pairs: Array<string>;
   accountConfig;
   api;
 
@@ -29,7 +28,7 @@ export class DaemonTradeService {
     private log: FileLogService,
     private balance: BalanceService,
     private botnest: BotNest,
-    private apiService: ApiService,    
+    private apiService: ApiService,
   ) {}
 
   async trade() {
@@ -98,19 +97,21 @@ export class DaemonTradeService {
     this.minBuyRateMarginToProcess = process.env.DAEMON_MIN_BUY_RATE_MARGIN;
     this.minSellRateMarginToProcess = process.env.DAEMON_MIN_SELL_RATE_MARGIN;
 
-    const exchange = await this.botnest.fetchOrCreateExchange(process.env.EXCHANGE_NAME, process.env.TEST_MODE == 'true');
-    
+    const exchange = await this.botnest.fetchOrCreateExchange(
+      process.env.EXCHANGE_NAME,
+      process.env.TEST_MODE == 'true',
+    );
 
     this.pairs = process.env.PAIRS.replace(' ', '').split(',');
 
     this.botnest.addStrategy(FillCellsStrategy);
     this.botnest.addStrategy(AwaitProfitStrategy);
 
-    this.account = await this.botnest.setUserAccount(1, {      
+    this.account = await this.botnest.setUserAccount(1, {
       apiKey: process.env.EXCHANGE_API_KEY,
-      secret: process.env.EXCHANGE_API_SECRET,      
+      secret: process.env.EXCHANGE_API_SECRET,
       password: process.env.EXCHANGE_API_PASSWORD,
-      exchange
+      exchange,
     });
     this.api = await this.botnest.getApiForAccount(this.account.id);
 
@@ -123,7 +124,16 @@ export class DaemonTradeService {
       const pair = await this.botnest.actualizePair(exchange, pairName);
 
       const { currency2 } = extractCurrency(pairName);
-      const balance = await this.balance.getBalance(this.account.id, currency2);
+      // const balance1 = await this.balance.getBalance(
+      //   this.account.id,
+      //   currency1,
+      // );
+      const balance2 = await this.balance.getBalance(
+        this.account.id,
+        currency2,
+      );
+
+      const totalBalance = balance2.amount;
 
       await this.botnest.setStrategyForAccount(
         {
@@ -136,7 +146,7 @@ export class DaemonTradeService {
           risk: process.env.STRATEGY_BUY_RISK,
           pairId: pair.id,
           cellSize: FillCellsStrategy.calculateCellSize({
-            balance,
+            totalBalance,
             pair,
             orderAmount: Number(process.env.STRATEGY_BUY_ORDER_AMOUNT),
             risk: process.env.STRATEGY_BUY_RISK,
@@ -168,7 +178,10 @@ export class DaemonTradeService {
   }
 
   private async checkBalance() {
-    await this.balance.set(this.account.id, await this.apiService.fetchBalances(this.api));
+    await this.balance.set(
+      this.account.id,
+      await this.apiService.fetchBalances(this.api),
+    );
 
     for (const pairName of this.pairs) {
       const { currency1 } = extractCurrency(pairName);

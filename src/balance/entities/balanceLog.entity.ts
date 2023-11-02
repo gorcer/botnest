@@ -1,45 +1,50 @@
-import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from "typeorm";
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 
 export enum OperationType {
-    INIT = "init",
-    ACTUALIZE = "actualize",
-    BUY = "buy",
-    SELL = "sell",
-    BUY_FEE = "buy_fee",
-    SELL_FEE = "sell_fee",
-    BONUS = "bonus",
-    TRADE_FEE = 'trade_fee',
-    TOPUP = 'topup',
-    WITHDRAW = 'withdraw'
+  INIT = 'init',
+  ACTUALIZE = 'actualize',
+  BUY = 'buy',
+  SELL = 'sell',
+  BUY_FEE = 'buy_fee',
+  SELL_FEE = 'sell_fee',
+  BONUS = 'bonus',
+  TRADE_FEE = 'trade_fee',
+  TOPUP = 'topup',
+  WITHDRAW = 'withdraw',
 }
 
 @Entity()
 export class BalanceLog {
-    @PrimaryGeneratedColumn()
-    id: number;
-    
-    @CreateDateColumn()
-    createdAt: Date;
+  @PrimaryGeneratedColumn()
+  id: number;
 
-    @Column({type: "int"})
-    accountId: number;    
+  @CreateDateColumn()
+  createdAt: Date;
 
-    @Column({type: "int"})
-    balanceId: number;    
-    
-    @Column({type: "int", nullable: true})
-    sourceId: number;    
-    
-    @Column({
-        type: "enum",
-        enum: OperationType   
-    })
-    operationType: OperationType 
+  @Column({ type: 'int' })
+  accountId: number;
 
-    @Column("decimal")
-    amount: number;
+  @Column({ type: 'int' })
+  balanceId: number;
 
-    @Column("decimal")
-    total: number;
+  @Column({ type: 'int', nullable: true })
+  sourceId: number;
 
+  @Column({
+    type: 'enum',
+    enum: OperationType,
+  })
+  operationType: OperationType;
+
+  @Column('decimal')
+  amount: number;
+
+  @Column('decimal')
+  total: number;
 }

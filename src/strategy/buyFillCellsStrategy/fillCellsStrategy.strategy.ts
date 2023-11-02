@@ -19,8 +19,8 @@ export class FillCellsStrategy implements BuyStrategyInterface {
     this.repository = this.entityManager.getRepository(FillCellsStrategy.model);
   }
 
-  static calculateCellSize({ balance, pair, orderAmount, risk }): number {
-    if (!balance) {
+  static calculateCellSize({ totalBalance, pair, orderAmount, risk }): number {
+    if (!totalBalance) {
       return 0;
     }
 
@@ -28,7 +28,6 @@ export class FillCellsStrategy implements BuyStrategyInterface {
       orderAmount = pair.minAmount1;
     }
 
-    const totalBalance = balance.amount;
     const diffRate = subtract(pair.sellRate, pair.historicalMinRate);
     const maxOrderCnt = Math.floor(
       divide(totalBalance, multiply(orderAmount, pair.sellRate)),
