@@ -123,6 +123,8 @@ export class TradeService {
           isActive: false,
           filled: extOrder.filled,
           fee: feeInCurrency2Cost,
+          amount2: extOrder.cost,
+          rate: extOrder.average
         });
 
         await this.balance.income(
@@ -342,7 +344,7 @@ export class TradeService {
           expectedRate: price,
           rate: extOrder.price,
           amount1: extOrder.amount,
-          amount2: multiply(extOrder.amount, extOrder.price),
+          amount2: extOrder.cost || multiply(extOrder.amount, extOrder.average),
           parentId: orderInfo.id,
           side: OrderSideEnum.SELL,
           accountId: orderInfo.accountId,
