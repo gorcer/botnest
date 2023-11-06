@@ -256,7 +256,7 @@ export class TradeService {
           currency1,
           order.id,
           OperationType.BUY,
-          extOrder.amount,
+          extOrder.filled,
           true,
         );
         await this.balance.outcome(
