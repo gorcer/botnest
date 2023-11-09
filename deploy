@@ -12,7 +12,7 @@ elif [ $1 == "prod" ]
                 rsync -azv --no-perms --no-owner --no-group --force --delete --progress --exclude-from=rsync_exclude.txt -e "ssh" ./ df:/var/www/botnest
                 ssh df 'cd /var/www/botnest && npm i'
                 ssh df 'cd /var/www/botnest && forever stop ./dist/console.js'
-                ssh df 'cd /var/www/botnest && forever start -o ./_log/forever_out.log -e ./_log/forever_err.log ./dist/console.js daemon'
+                ssh df 'export TZ=Asia\Vladivostok && cd /var/www/botnest && forever start -o ./_log/forever_out.log -e ./_log/forever_err.log ./dist/console.js daemon'
         else
             echo "Error. Please make sure youve indicated correct parameters";
         fi

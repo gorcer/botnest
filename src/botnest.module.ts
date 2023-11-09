@@ -22,7 +22,7 @@ import { StrategyModule } from './strategy/strategy.module';
       database: process.env.DB_NAME,
       entities: Entities,
       synchronize: true,
-      logging: process.env.DB_LOGGING == 'true',
+      logging: process.env.DB_LOGGING == 'true',      
     }),
     BotModule,
     StrategyModule,

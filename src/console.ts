@@ -16,6 +16,14 @@ async function bootstrap() {
         await bot.trade();
       }
       break;
+    case 'test':
+      {
+        process.env.TZ = 'Asia/Vladivostok';
+        const date = new Date();
+
+        console.log( date );
+      }
+      break;
   }
   await app.close();
   process.exit(0);

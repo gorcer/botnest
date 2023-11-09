@@ -22,9 +22,9 @@ export class Pair {
   createdAt: Date;
 
   @UpdateDateColumn({
-    type: 'timestamp',
-    default: () => 'CURRENT_TIMESTAMP(6)',
-    onUpdate: 'CURRENT_TIMESTAMP(6)',
+    type: 'timestamptz',
+    default: () => 'now()',
+    onUpdate: 'now()',
   })
   updatedAt: Date;
 
