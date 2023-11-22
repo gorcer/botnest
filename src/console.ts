@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { DaemonService } from './daemon.service';
 import { BotnestModule } from './botnest.module';
+import { BotNest } from './bot/botnest.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(BotnestModule);
@@ -16,9 +17,16 @@ async function bootstrap() {
         await bot.trade();
       }
       break;
+    case 'checkBalance':
+      {
+
+        // const botNest = await app.resolve(BotNest);
+        
+      }
+      break;
     case 'test':
       {
-        process.env.TZ = 'Asia/Vladivostok';
+        process.env.TZ = 'Europe/Moscow';
         const date = new Date();
 
         console.log( date );

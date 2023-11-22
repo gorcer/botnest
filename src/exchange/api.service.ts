@@ -3,7 +3,8 @@ import { BalancesDto } from '../balance/dto/balances.dto';
 import { pro as ccxt } from 'ccxt';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, ConsoleLogger } from '@nestjs/common';
+import { extractCurrency } from '../helpers/helpers';
 
 class MarketInfoDto {
   minAmount: number;
@@ -16,8 +17,16 @@ class MarketInfoDto {
 @Injectable()
 export class ApiService {
   lastTradesFetching;
+  availableCurrencies=[];
 
-  constructor(@Inject(CACHE_MANAGER) private cacheManager: Cache) {}
+  constructor(@Inject(CACHE_MANAGER) private cacheManager: Cache) {
+    const pairs = process.env.PAIRS.replace(' ', '').split(',');
+    for(const pair of pairs) {
+      const {currency1, currency2} = extractCurrency(pair);
+      this.availableCurrencies.push(currency1);
+      this.availableCurrencies.push(currency2);
+    }
+  }
 
   public getApi(
     exchangeClass,
@@ -91,7 +100,14 @@ export class ApiService {
     // console.log(markets[0].limits, markets[0]);
 
     const response = await api.fetchBalance();
-    const result = response.total;
+
+    const result ={};
+    for (const [currency, value] of Object.entries(response.free)) {
+      if (this.availableCurrencies.includes(currency)) {
+        result[currency] = value;
+      }
+    }
+
 
     return result;
   }

@@ -36,3 +36,4 @@ tests/
 .env
 _log
 .test.env
+dist/

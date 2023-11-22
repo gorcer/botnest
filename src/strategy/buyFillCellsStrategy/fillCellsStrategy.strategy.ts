@@ -24,13 +24,13 @@ export class FillCellsStrategy implements BuyStrategyInterface {
       return 0;
     }
 
-    if (compareTo(pair.minAmount1, orderAmount) > 0) {
-      orderAmount = pair.minAmount1;
+    if (compareTo(pair.minAmount2, orderAmount) > 0) {
+      orderAmount = pair.minAmount2;
     }
 
     const diffRate = subtract(pair.sellRate, pair.historicalMinRate);
     const maxOrderCnt = Math.floor(
-      divide(totalBalance, multiply(orderAmount, pair.sellRate)),
+      divide(totalBalance, orderAmount),
     );
     let cellSize = divide(diffRate, maxOrderCnt);
     if (risk != undefined) {
@@ -73,7 +73,7 @@ export class FillCellsStrategy implements BuyStrategyInterface {
       )
       .andWhere(`"balance".available > "pair"."minAmount2"`)
       .andWhere(
-        `"balance".available > strategy."orderAmount" * "pair"."sellRate"`,
+        `"balance".available > strategy."orderAmount"`,
       )
       .andWhere(`"pair"."isActive" = true`)
       .andWhere(`"account"."is_trading_allowed" = true`)
@@ -81,13 +81,12 @@ export class FillCellsStrategy implements BuyStrategyInterface {
       .andWhere(`"strategy"."cellSize" > 0`)
       .andWhere(`"strategy"."isActive" = true`)
       .select(
-        `
+        `       distinct
                 "balance"."accountId",
                 "pair"."sellRate" as "rate",
-                GREATEST(cast(strategy."orderAmount" as DECIMAL), "pair"."minAmount1") as amount1,
+                GREATEST(cast(strategy."orderAmount" as DECIMAL), "pair"."minAmount2") as amount2,
                 "pair".id as "pairId",
-                "pair".name as "pairName",
-                "strategy".id as "strategyableId"
+                "pair".name as "pairName"
                 `,
       )
       .getRawMany();

@@ -9,6 +9,7 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { FillCellsStrategyService } from './strategy/buyFillCellsStrategy/fillCellsStrategy.service';
 
+
 @Injectable()
 export class DaemonService {
   minBuyRateMarginToProcess;
@@ -22,6 +23,7 @@ export class DaemonService {
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private fillCellsService: FillCellsStrategyService,
   ) {
+
     this.checkBalance = this.checkBalance.bind(this);
     this.recalcCellSize = this.recalcCellSize.bind(this);
 
@@ -31,27 +33,29 @@ export class DaemonService {
   }
 
   async checkBalance({ accountId }) {
-    const key = accountId + '.checkBalance';
-    const isChecked: boolean = await this.cacheManager.get(key);
-    if (isChecked) return;
-    await this.cacheManager.set(key, true, 10 * 60 * 1000);
+    // const key = accountId + '.checkBalance';
+    // const isChecked: boolean = await this.cacheManager.get(key);
+    // if (isChecked && false) return;
+    // await this.cacheManager.set(key, true, 10 * 60 * 1000);
 
-    try {
-      await this.botnest.checkBalance(accountId);
-    } catch (e) {
-      this.log.error('Check balance error...', e.message, e.stack);
-    }
+    setTimeout(async () => {
+      try {
+        await this.botnest.checkBalance(accountId);
+      } catch (e) {
+        this.log.error('Check balance error...', e.message, e.stack);
+      }
+    }, 1500);
   }
 
-  async recalcCellSize({ strategyableId }) {
-    const key = strategyableId + '.recalcCellSize';
+  async recalcCellSize({ accountId }) {
+    const key = accountId + '.recalcCellSize';
     const isChecked: boolean = await this.cacheManager.get(key);
     if (isChecked) return;
     await this.cacheManager.set(key, true, 10 * 60 * 1000);
 
     try {
-      if (strategyableId) {
-        await this.fillCellsService.recalcCellSize(strategyableId);
+      if (accountId) {
+        await this.fillCellsService.recalcCellSize(accountId);
       }
     } catch (e) {
       this.log.error('recalcCellSize error...', e.message, e.stack);
@@ -59,6 +63,8 @@ export class DaemonService {
   }
 
   public async init() {
+    
+
     // await this.recalcCellSize({ strategyableId: 3 });
     this.minBuyRateMarginToProcess = process.env.DAEMON_MIN_BUY_RATE_MARGIN;
     this.minSellRateMarginToProcess = process.env.DAEMON_MIN_SELL_RATE_MARGIN;
@@ -80,9 +86,12 @@ export class DaemonService {
     this.log.info('Check close orders ...');
     await this.botnest.checkCloseOrders();
     this.log.info('Ok');
+
+    // await this.botnest.checkBalance(2);
   }
 
-  async trade() {
+  async trade() {    
+    
     let lastTradesUpdate = Date.now() / 1000;
 
     while (true) {

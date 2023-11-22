@@ -54,6 +54,7 @@
     "fs": "^0.0.1-security",
     "graphql": "^16.7.1",
     "js-big-decimal": "^1.4.1",
+    "lodash": "^4.17.21",
     "nest-commander": "^3.11.0",
     "node-fetch": "^3.3.2",
     "pg": "^8.11.1",

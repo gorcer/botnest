@@ -13,7 +13,7 @@ export class Balance {
   @Column('varchar')
   currency: string;
 
-  @Column('decimal')
+  @Column({ type: 'decimal', default: 0 })
   amount: number;
 
   @Column({ type: 'decimal', default: 0 })

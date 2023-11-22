@@ -6,5 +6,4 @@ export class RequestSellInfoDto {
   accountId: number;
   pairId: number;
   rate: number;
-  strategyableId: number;
 }

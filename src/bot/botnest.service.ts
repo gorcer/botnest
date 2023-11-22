@@ -44,7 +44,7 @@ export class BotNest {
     await this.balance.set(accountId, await this.apiService.fetchBalances(api));
 
     if (fullCheck) {
-      const balances = await this.balance.loadBalances(accountId);
+      const balances = await this.balance.getBalances(accountId);
 
       for (const currency of Object.keys(balances)) {
         const ordersSum = await this.getActiveOrdersSum(

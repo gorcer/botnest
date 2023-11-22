@@ -14,6 +14,7 @@ import { BuyStrategyInterface } from '../strategy/interfaces/buyStrategy.interfa
 import { SellStrategyInterface } from '../strategy/interfaces/sellStrategy.interface';
 import { add, compareTo, divide, multiply, subtract } from '../helpers/bc';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { TradeCheckService } from './tradeCheck.service';
 
 @Injectable()
 export class TradeService {
@@ -30,6 +31,7 @@ export class TradeService {
     private apiService: ApiService,
 
     private eventEmitter: EventEmitter2,
+    private tradeCheck: TradeCheckService,
   ) {}
 
   private api(accountId: number): Promise<ApiService> {
@@ -121,10 +123,11 @@ export class TradeService {
 
         await this.orders.update(order.id, {
           isActive: false,
+          amount1: extOrder.filled,
           filled: extOrder.filled,
           fee: feeInCurrency2Cost,
           amount2: extOrder.cost,
-          rate: extOrder.average
+          rate: extOrder.average,
         });
 
         await this.balance.income(
@@ -177,7 +180,7 @@ export class TradeService {
               15,
             );
 
-          updateOrderDto.closedAt = new Date();
+          updateOrderDto.closedAt = ()=>"now()";
 
           this.log.info(
             'Order closed',
@@ -215,12 +218,12 @@ export class TradeService {
   }
 
   public async createBuyOrder(orderInfo) {
-    const { accountId, pairId, pairName, rate: price, amount1 } = orderInfo;
+    const { accountId, pairName, rate: price, amount2 } = orderInfo;
     const api = await this.api(accountId);
-    const { currency1, currency2 } = extractCurrency(pairName);
+    const amount1 = divide(amount2, price);
 
     return await lock.acquire('Balance' + accountId, async () => {
-      this.log.info('Try to buy', price, amount1, multiply(amount1, price));
+      this.log.info('Try to buy', price, amount1, amount2);
 
       const extOrder = await this.apiService.createOrder(
         api,
@@ -232,24 +235,30 @@ export class TradeService {
       );
 
       if (extOrder.id != undefined) {
+        this.tradeCheck.open(extOrder.id, { orderInfo, extOrder });
+
+        const { currency1, currency2 } = extractCurrency(pairName);
+
         const { feeCost, feeInCurrency2Cost, feeCurrency } =
           await this.extractFee(api, extOrder.fees, currency2);
 
-        // store in db
         const order = await this.orders.create({
-          pairId,
-          pairName,
+          side: OrderSideEnum.BUY,
+          pairId: orderInfo.pairId,
+          pairName: orderInfo.pairName,
           currency1,
           currency2,
           extOrderId: extOrder.id,
           expectedRate: price,
           rate: extOrder.price,
           amount1: extOrder.filled,
-          amount2: extOrder.cost,
+          amount2: extOrder.cost || multiply(extOrder.amount, extOrder.average),
           fee: feeInCurrency2Cost,
-          accountId,
-          createdAtSec: Math.floor(Date.now() / 1000),
+          accountId: orderInfo.accountId,
+          createdAtSec: Math.round(extOrder.timestamp / 1000),
         });
+
+        this.tradeCheck.close(extOrder.id);
 
         await this.balance.income(
           accountId,
@@ -344,11 +353,11 @@ export class TradeService {
           expectedRate: price,
           rate: extOrder.price,
           amount1: extOrder.amount,
-          amount2: extOrder.cost || multiply(extOrder.amount, extOrder.average),
+          amount2: extOrder.cost || multiply(extOrder.amount, extOrder.price),
           parentId: orderInfo.id,
           side: OrderSideEnum.SELL,
           accountId: orderInfo.accountId,
-          createdAtSec: Math.floor(Date.now() / 1000),
+          createdAtSec: Math.round(extOrder.timestamp / 1000),
         });
         this.log.info(
           'New close order',

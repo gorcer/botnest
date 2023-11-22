@@ -1,8 +1,7 @@
 export class RequestBuyInfoDto {
   accountId: number;
   rate: number;
-  amount1: number;
+  amount2: number;
   pairId: number;
   pairName: string;
-  strategyableId: number;
 }

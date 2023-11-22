@@ -24,7 +24,10 @@ export class BalanceLog {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @CreateDateColumn()
+  @CreateDateColumn({
+    type: 'timestamp',
+    default: () => 'now()',
+  })
   createdAt: Date;
 
   @Column({ type: 'int' })

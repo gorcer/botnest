@@ -24,6 +24,9 @@ export class Account {
   @Column({ type: 'decimal', default: 0 })
   profit: number;
 
+  @Column({ type: 'decimal', default: 0 })
+  annualProfitPc: number;
+
   @Column({ type: 'varchar', nullable: true })
   apiKey: string;
 
@@ -33,6 +36,7 @@ export class Account {
   @Column({ type: 'varchar', nullable: true })
   password: string;
 
+  @Index()
   @Column({ type: 'boolean', default: true })
   isActive: boolean;
 
@@ -46,7 +50,7 @@ export class Account {
   @Column({ type: 'boolean', default: true })
   is_trading_allowed: boolean;
 
-
+  @Index()
   @Column({ type: Date, nullable: true })
   deleted_at: Date;
 

@@ -116,7 +116,7 @@ export class DaemonTradeService {
     this.api = await this.botnest.getApiForAccount(this.account.id);
 
     // тут нужно загрузить в базу текущий баланс и в текущую переменную
-    await this.balance.loadBalances(this.account.id);
+    // await this.balance.loadBalances(this.account.id);
     await this.checkBalance();
 
     // актуализируем пары и стратегии

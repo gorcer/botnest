@@ -9,6 +9,7 @@ import { AwaitProfit } from './awaitProfit.entity';
 import { SellStrategyInterface } from '../interfaces/sellStrategy.interface';
 import { EntityManager } from 'typeorm';
 import { Account } from '../../user/entities/account.entity';
+import { Balance } from '../../balance/entities/balance.entity';
 
 export class AwaitProfitStrategy implements SellStrategyInterface {
   side = OrderSideEnum.SELL;
@@ -29,6 +30,11 @@ export class AwaitProfitStrategy implements SellStrategyInterface {
       .innerJoin(Order, 'order', 'strategy."accountId" = "order"."accountId"')
       .innerJoin(Pair, 'pair', 'pair.id = "order"."pairId"')
       .innerJoin(Account, 'account', 'strategy."accountId" = account.id')
+      .innerJoin(
+        Balance,
+        'balance',
+        'strategy."accountId" = balance."accountId" and balance.currency = pair.currency1',
+      )
       .andWhere(
         `
       100*((("pair"."buyRate" * "order".amount1 * (1-pair.fee)) / ("order".amount2 + "order".fee))-1) >= 
@@ -42,6 +48,7 @@ export class AwaitProfitStrategy implements SellStrategyInterface {
         end        
         `,
       )
+      .andWhere(`"balance".amount >= order.amount1`)
       .andWhere(`"account"."is_trading_allowed" = true`)
       .andWhere(`"account"."isActive" = true`)
       .andWhere(`"order".side = :side`, { side: OrderSideEnum.BUY })
@@ -55,14 +62,14 @@ export class AwaitProfitStrategy implements SellStrategyInterface {
       .andWhere('"order"."prefilled" < "order"."amount1"')
       .select(
         `
+          distinct
           "order"."pairName",
           "order"."id",
           "order"."prefilled",
           "order"."accountId",
           "order"."amount1" - "order"."prefilled" as "needSell",
           "pair".id as "pairId",
-          "pair"."buyRate" as "rate",
-          "strategy".id as "strategyableId"
+          "pair"."buyRate" as "rate"
       `,
       )
       .getRawMany();

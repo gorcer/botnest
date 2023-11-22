@@ -7,15 +7,10 @@ import { lock } from '../helpers/helpers';
 import { FileLogService } from '../log/filelog.service';
 import { BalanceLog, OperationType } from './entities/balanceLog.entity';
 const { compareTo, multiply, add, subtract } = require('js-big-decimal');
+import * as _ from 'lodash';
 
 @Injectable()
 export class BalanceService {
-  balances:
-    | {
-        (account_id: number): Balance;
-      }
-    | {} = {};
-
   constructor(
     @InjectRepository(Balance)
     private balanceRepository: Repository<Balance>,
@@ -27,17 +22,18 @@ export class BalanceService {
   ) {}
 
   public async set(accountId: number, balances: BalancesDto) {
-    if (!this.balances[accountId]) {
-      this.balances[accountId] = {};
-    }
-
     return await lock.acquire('Balance', async () => {
       let operationType: OperationType;
       let operationAmount;
 
+      let existedBalances = await this.balanceRepository.find({
+        where: { accountId },
+      });
+      existedBalances = _.keyBy(existedBalances, 'currency');
+
       for (const [currency, amount] of Object.entries(balances)) {
-        operationType=null;
-        let balance = await this.getBalance(accountId, currency);
+        operationType = null;
+        let balance = existedBalances[currency];
         if (!balance) {
           if (compareTo(amount, 0) > 0) {
             balance = this.balanceRepository.create({
@@ -48,7 +44,6 @@ export class BalanceService {
             });
             operationType = OperationType.INIT;
             operationAmount = amount;
-            this.balances[accountId][currency] = balance;
           }
         } else {
           if (compareTo(balance.amount, amount) != 0) {
@@ -85,28 +80,19 @@ export class BalanceService {
     });
   }
 
-  public async loadBalances(accountId: number) {
-    const balances = await this.balanceRepository.find({
-      where: { accountId },
-    });
-    for (const balance of balances) {
-      if (!this.balances[accountId]) this.balances[accountId] = {};
-
-      this.balances[accountId][balance.currency] = balance;
-    }
-    return this.balances[accountId];
-  }
-
   public async getBalance(
     accountId: number,
     currency: string,
   ): Promise<Balance> {
-    await this.checkBalances(accountId);
-    if (this.balances[accountId]?.[currency] != undefined) {
-      return this.balances[accountId][currency];
-    } else {
-      return null;
-    }
+    return this.balanceRepository.findOne({
+      where: { accountId, currency },
+    });
+  }
+
+  public async getBalances(accountId: number): Promise<Balance[]> {
+    return this.balanceRepository.find({
+      where: { accountId },
+    });
   }
 
   public async getBalanceAmount(accountId: number, currency: string) {
@@ -115,15 +101,6 @@ export class BalanceService {
       return balance.amount;
     } else {
       return 0;
-    }
-  }
-
-  private async checkBalances(accountId) {
-    if (
-      !this.balances[accountId] ||
-      Object.keys(this.balances[accountId]).length == 0
-    ) {
-      return this.loadBalances(accountId);
     }
   }
 

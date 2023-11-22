@@ -30,12 +30,12 @@ export class Order {
   id: number;
 
   @CreateDateColumn({
-    type: 'timestamptz',
+    type: 'timestamp',
     default: () => 'now()',
   })
   createdAt: Date;
 
-  @Column({ type: 'timestamptz', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   closedAt: Date;
 
   @Column('int')
