@@ -1,9 +1,27 @@
-import { Column, Double, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Double,
+  Entity,
+  Index,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity()
 export class Balance {
   @PrimaryGeneratedColumn()
   id: number;
+
+  @CreateDateColumn()
+  created_at: Date;
+
+  @UpdateDateColumn({
+    type: 'timestamp',
+    default: () => 'now()',
+    onUpdate: 'now()',
+  })
+  updated_at: Date;
 
   @Index()
   @Column({ type: 'int', default: 1 })

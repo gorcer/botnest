@@ -9,7 +9,6 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { FillCellsStrategyService } from './strategy/buyFillCellsStrategy/fillCellsStrategy.service';
 
-
 @Injectable()
 export class DaemonService {
   minBuyRateMarginToProcess;
@@ -23,7 +22,6 @@ export class DaemonService {
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private fillCellsService: FillCellsStrategyService,
   ) {
-
     this.checkBalance = this.checkBalance.bind(this);
     this.recalcCellSize = this.recalcCellSize.bind(this);
 
@@ -44,7 +42,7 @@ export class DaemonService {
       } catch (e) {
         this.log.error('Check balance error...', e.message, e.stack);
       }
-    }, 1500);
+    });
   }
 
   async recalcCellSize({ accountId }) {
@@ -63,8 +61,6 @@ export class DaemonService {
   }
 
   public async init() {
-    
-
     // await this.recalcCellSize({ strategyableId: 3 });
     this.minBuyRateMarginToProcess = process.env.DAEMON_MIN_BUY_RATE_MARGIN;
     this.minSellRateMarginToProcess = process.env.DAEMON_MIN_SELL_RATE_MARGIN;
@@ -78,7 +74,11 @@ export class DaemonService {
     const exchanges = await this.botnest.getExchanges();
     for (const exchange of exchanges) {
       for (const pairName of this.pairs) {
-        await this.botnest.actualizePair(exchange, pairName);
+        try {
+          await this.botnest.actualizePair(exchange, pairName);
+        } catch (e) {
+          this.log.error('Actualize pairs error ', e.message);
+        }
       }
     }
     this.log.info('Ok');
@@ -90,8 +90,7 @@ export class DaemonService {
     // await this.botnest.checkBalance(2);
   }
 
-  async trade() {    
-    
+  async trade() {
     let lastTradesUpdate = Date.now() / 1000;
 
     while (true) {

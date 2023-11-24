@@ -13,7 +13,7 @@ elif [ $1 == "prod" ]
                 ssh df 'cd /var/www/botnest && npm i'
                 ssh df 'cd /var/www/botnest && forever stop ./dist/console.js'
                 ssh df 'sudo -u postgres pg_dump hexonomica > /home/hexonomica.sql'
-                ssh df 'export TZ=Asia\Vladivostok && cd /var/www/botnest && forever start -o ./_log/forever_out.log -e ./_log/forever_err.log ./dist/console.js daemon'
+                ssh df 'export TZ=Europe\Moscow && cd /var/www/botnest && forever start -o ./_log/forever_out.log -e ./_log/forever_err.log ./dist/console.js daemon'
         else
             echo "Error. Please make sure youve indicated correct parameters";
         fi

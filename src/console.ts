@@ -11,7 +11,6 @@ async function bootstrap() {
   switch (command) {
     case 'daemon':
       {
-
         const bot = await app.resolve(DaemonService);
         await bot.init();
         await bot.trade();
@@ -19,9 +18,10 @@ async function bootstrap() {
       break;
     case 'checkBalance':
       {
-
-        // const botNest = await app.resolve(BotNest);
-        
+        const accountId = Number(process.argv[3]);
+        const botNest = await app.resolve(BotNest);
+        const result = await botNest.checkBalance(accountId);
+        console.log(result);
       }
       break;
     case 'test':
@@ -29,7 +29,7 @@ async function bootstrap() {
         process.env.TZ = 'Europe/Moscow';
         const date = new Date();
 
-        console.log( date );
+        console.log(date);
       }
       break;
   }

@@ -12,17 +12,19 @@ class MarketInfoDto {
   fee: number;
   pricePrecision: number;
   amountPrecision: number;
+  basePrecision: number;
+  quotePrecision: number;
 }
 
 @Injectable()
 export class ApiService {
   lastTradesFetching;
-  availableCurrencies=[];
+  availableCurrencies = [];
 
   constructor(@Inject(CACHE_MANAGER) private cacheManager: Cache) {
     const pairs = process.env.PAIRS.replace(' ', '').split(',');
-    for(const pair of pairs) {
-      const {currency1, currency2} = extractCurrency(pair);
+    for (const pair of pairs) {
+      const { currency1, currency2 } = extractCurrency(pair);
       this.availableCurrencies.push(currency1);
       this.availableCurrencies.push(currency2);
     }
@@ -57,7 +59,7 @@ export class ApiService {
     const orderBook = await api.fetchOrderBook(pair, 5);
 
     if (orderBook.bids[0] == undefined || orderBook.asks[0] == undefined) {
-      throw new Error('Can`t fetch rates');
+      throw new Error('Can`t fetch rates for pair ' + pair);
     }
 
     const bid = orderBook.bids[0][0];
@@ -76,14 +78,20 @@ export class ApiService {
 
       if (markets.length == 0) return null;
 
-      const { amount: amountPrecision, price: pricePrecision } =
-        markets[0].precision;
+      const {
+        amount: amountPrecision,
+        price: pricePrecision,
+        base: basePrecision,
+        quote: quotePrecision,
+      } = markets[0].precision;
       const { amount, cost } = markets[0].limits;
       const { taker, maker } = markets[0];
 
       value = {
         amountPrecision,
         pricePrecision,
+        basePrecision,
+        quotePrecision,
         minAmount: amount?.min,
         minCost: cost?.min,
         fee: Math.max(taker, maker),
@@ -101,13 +109,12 @@ export class ApiService {
 
     const response = await api.fetchBalance();
 
-    const result ={};
+    const result = {};
     for (const [currency, value] of Object.entries(response.free)) {
       if (this.availableCurrencies.includes(currency)) {
-        result[currency] = value;
+        result[currency] = api.currencyToPrecision(currency, value);
       }
     }
-
 
     return result;
   }

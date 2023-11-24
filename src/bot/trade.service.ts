@@ -32,9 +32,9 @@ export class TradeService {
 
     private eventEmitter: EventEmitter2,
     private tradeCheck: TradeCheckService,
-  ) {}
+  ) { }
 
-  private api(accountId: number): Promise<ApiService> {
+  private api(accountId: number) {
     return this.accounts.getApiForAccount(accountId);
   }
 
@@ -81,11 +81,11 @@ export class TradeService {
 
       this.log.info(
         strategy.constructor.name +
-          ': Ok...' +
-          orderInfos.length +
-          ' orders ..' +
-          (Date.now() - tm) / 1000 +
-          ' sec',
+        ': Ok...' +
+        orderInfos.length +
+        ' orders ..' +
+        (Date.now() - tm) / 1000 +
+        ' sec',
       );
 
       for (const orderInfo of orderInfos) {
@@ -123,10 +123,10 @@ export class TradeService {
 
         await this.orders.update(order.id, {
           isActive: false,
-          amount1: extOrder.filled,
+          amount1: api.amountToPrecision(order.pairName, extOrder.filled),
           filled: extOrder.filled,
           fee: feeInCurrency2Cost,
-          amount2: extOrder.cost,
+          amount2: api.costToPrecision(order.pairName, extOrder.cost),
           rate: extOrder.average,
         });
 
@@ -135,7 +135,7 @@ export class TradeService {
           currency2,
           order.id,
           OperationType.SELL,
-          order.amount2,
+          api.costToPrecision(order.pairName, order.amount2),
         );
         if (feeCost && feeCurrency) {
           await this.balance.outcome(
@@ -143,7 +143,7 @@ export class TradeService {
             feeCurrency,
             order.id,
             OperationType.SELL_FEE,
-            feeCost,
+            api.currencyToPrecision(feeCurrency, feeCost),
           );
         }
 
@@ -180,7 +180,7 @@ export class TradeService {
               15,
             );
 
-          updateOrderDto.closedAt = ()=>"now()";
+          updateOrderDto.closedAt = () => "now()";
 
           this.log.info(
             'Order closed',
@@ -242,6 +242,8 @@ export class TradeService {
         const { feeCost, feeInCurrency2Cost, feeCurrency } =
           await this.extractFee(api, extOrder.fees, currency2);
 
+        const amount2test = api.costToPrecision(pairName, extOrder.cost || multiply(extOrder.amount, extOrder.average));
+
         const order = await this.orders.create({
           side: OrderSideEnum.BUY,
           pairId: orderInfo.pairId,
@@ -251,8 +253,8 @@ export class TradeService {
           extOrderId: extOrder.id,
           expectedRate: price,
           rate: extOrder.price,
-          amount1: extOrder.filled,
-          amount2: extOrder.cost || multiply(extOrder.amount, extOrder.average),
+          amount1: api.amountToPrecision(pairName, extOrder.filled),
+          amount2: api.costToPrecision(pairName, extOrder.cost || multiply(extOrder.amount, extOrder.average)),
           fee: feeInCurrency2Cost,
           accountId: orderInfo.accountId,
           createdAtSec: Math.round(extOrder.timestamp / 1000),
@@ -265,7 +267,7 @@ export class TradeService {
           currency1,
           order.id,
           OperationType.BUY,
-          extOrder.filled,
+          order.amount1,
           true,
         );
         await this.balance.outcome(
@@ -273,7 +275,7 @@ export class TradeService {
           currency2,
           order.id,
           OperationType.BUY,
-          extOrder.cost,
+          order.amount2,
         );
         if (feeCost && feeCurrency) {
           await this.balance.outcome(
@@ -281,7 +283,7 @@ export class TradeService {
             feeCurrency,
             order.id,
             OperationType.BUY_FEE,
-            feeCost,
+            api.currencyToPrecision(feeCurrency, feeCost),
           );
         }
 
@@ -352,8 +354,8 @@ export class TradeService {
           extOrderId: extOrder.id,
           expectedRate: price,
           rate: extOrder.price,
-          amount1: extOrder.amount,
-          amount2: extOrder.cost || multiply(extOrder.amount, extOrder.price),
+          amount1: api.amountToPrecision(pairName, extOrder.amount),
+          amount2: api.costToPrecision(pairName, extOrder.cost || multiply(extOrder.amount, extOrder.price)),
           parentId: orderInfo.id,
           side: OrderSideEnum.SELL,
           accountId: orderInfo.accountId,

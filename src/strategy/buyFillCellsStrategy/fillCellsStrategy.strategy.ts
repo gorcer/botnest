@@ -29,9 +29,7 @@ export class FillCellsStrategy implements BuyStrategyInterface {
     }
 
     const diffRate = subtract(pair.sellRate, pair.historicalMinRate);
-    const maxOrderCnt = Math.floor(
-      divide(totalBalance, orderAmount),
-    );
+    const maxOrderCnt = Math.floor(divide(totalBalance, orderAmount));
     let cellSize = divide(diffRate, maxOrderCnt);
     if (risk != undefined) {
       if (risk > 99) risk = 99;
@@ -72,9 +70,7 @@ export class FillCellsStrategy implements BuyStrategyInterface {
         `pair.updatedAt > CURRENT_TIMESTAMP - interval '${waitSeconds} seconds'`,
       )
       .andWhere(`"balance".available > "pair"."minAmount2"`)
-      .andWhere(
-        `"balance".available > strategy."orderAmount"`,
-      )
+      .andWhere(`"balance".available > strategy."orderAmount"`)
       .andWhere(`"pair"."isActive" = true`)
       .andWhere(`"account"."is_trading_allowed" = true`)
       .andWhere(`"account"."isActive" = true`)

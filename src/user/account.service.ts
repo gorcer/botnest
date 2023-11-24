@@ -38,7 +38,7 @@ export class AccountService {
     return this.accounts[account.id];
   }
 
-  async getApiForAccount(accountId: number): Promise<ApiService> {
+  async getApiForAccount(accountId: number) {
     if (!this.exchanges[accountId]) {
       if (!this.accounts[accountId]) {
         this.accounts[accountId] = await this.repository.findOne({

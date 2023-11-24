@@ -13,6 +13,7 @@ import { BalanceService } from '../balance/balance.service';
 import { subtract } from '../helpers/bc';
 import { ExchangeService } from '../exchange/exchange.service';
 import { Exchange } from '../exchange/entities/exchange.entity';
+import { BalancesDto } from '../balance/dto/balances.dto';
 
 @Injectable()
 export class BotNest {
@@ -28,7 +29,7 @@ export class BotNest {
     private balance: BalanceService,
     private exchange: ExchangeService,
     private apiService: ApiService,
-  ) { }
+  ) {}
 
   public async fetchOrCreateExchange(title: string, test_mode: boolean) {
     return await this.exchange.fetchOrCreate(title, test_mode);
@@ -38,10 +39,14 @@ export class BotNest {
     return await this.exchange.getAllActive();
   }
 
-  public async checkBalance(accountId: number, fullCheck = false) {
+  public async checkBalance(
+    accountId: number,
+    fullCheck = false,
+  ): Promise<BalancesDto> {
     const api = await this.getApiForAccount(accountId);
 
-    await this.balance.set(accountId, await this.apiService.fetchBalances(api));
+    const exBalances = await this.apiService.fetchBalances(api);
+    await this.balance.set(accountId, exBalances);
 
     if (fullCheck) {
       const balances = await this.balance.getBalances(accountId);
@@ -61,6 +66,8 @@ export class BotNest {
         }
       }
     }
+
+    return exBalances;
   }
 
   public async addStrategy(strategyModel) {
