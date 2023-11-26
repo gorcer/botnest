@@ -65,7 +65,7 @@ export class BalanceService {
         if (balance) {
           if (operationType) {
             await this.balanceRepository.save(balance);
-            this.balanceLogRepository.save(
+            await this.balanceLogRepository.save(
               this.balanceLogRepository.create({
                 accountId: balance.accountId,
                 balanceId: balance.id,
@@ -143,7 +143,7 @@ export class BalanceService {
     return balance;
   }
 
-  public async outcome(
+  public outcome(
     accountId: number,
     currency: string,
     sourceId: number,

@@ -22,7 +22,7 @@ describe('ApiService', () => {
     }).compile();
     apiService = module.get<ApiService>(ApiService);
     const exchangeClass = ccxt[process.env.EXCHANGE_NAME];
-    api = apiService.getApi(
+    api = await apiService.getApi(
       exchangeClass,
       process.env.EXCHANGE_API_KEY,
       process.env.EXCHANGE_API_SECRET,

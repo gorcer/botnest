@@ -30,7 +30,7 @@ export class ApiService {
     }
   }
 
-  public getApi(
+  public async getApi(
     exchangeClass,
     apiKey = '',
     secret = '',
@@ -48,6 +48,8 @@ export class ApiService {
       options: { defaultType: 'spot' },
     });
     api.setSandboxMode(sandBoxMode);
+
+    await api.loadMarkets();
 
     return api;
   }
@@ -126,8 +128,15 @@ export class ApiService {
     side: OrderSide,
     amount: number,
     price?: number,
-  ) {
-    let order = await api.createOrder(symbol, type, side, amount, price);
+  ) {   
+
+    let order = await api.createOrder(
+      symbol,
+      type,
+      side,
+      api.amountToPrecision(symbol, amount),
+      api.priceToPrecision(symbol, price),
+    );
 
     if (typeof order.amount == 'undefined') {
       order = await this.fetchOrder(api, order.id, symbol);

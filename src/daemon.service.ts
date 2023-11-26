@@ -2,12 +2,13 @@ import { Inject, Injectable } from '@nestjs/common';
 import { BotNest } from './bot/botnest.service';
 import { FillCellsStrategy } from './strategy/buyFillCellsStrategy/fillCellsStrategy.strategy';
 import { AwaitProfitStrategy } from './strategy/sellAwaitProfitStrategy/awaitProfitStrategy.strategy';
-import { SEC_IN_HOUR, elapsedSecondsFrom, sleep } from './helpers/helpers';
+import { SEC_IN_HOUR, elapsedSecondsFrom, sleep, lock } from './helpers/helpers';
 import { FileLogService } from './log/filelog.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { FillCellsStrategyService } from './strategy/buyFillCellsStrategy/fillCellsStrategy.service';
+import * as _ from 'lodash';
 
 @Injectable()
 export class DaemonService {
@@ -25,8 +26,9 @@ export class DaemonService {
     this.checkBalance = this.checkBalance.bind(this);
     this.recalcCellSize = this.recalcCellSize.bind(this);
 
-    this.eventEmitter.on('buyOrder.created', this.checkBalance);
-    this.eventEmitter.on('sellOrder.created', this.checkBalance);
+    // не нужно каждый раз чекать баланс, так как между closeOrder and checkCloseOrder может случиться актуализация, потом check сломает баланс и выравнится баланс только после следующего заказа
+    // this.eventEmitter.on('buyOrder.created', this.checkBalance);
+    // this.eventEmitter.on('sellOrder.created', this.checkBalance);
     this.eventEmitter.on('buyOrder.created', this.recalcCellSize);
   }
 
@@ -36,13 +38,17 @@ export class DaemonService {
     // if (isChecked && false) return;
     // await this.cacheManager.set(key, true, 10 * 60 * 1000);
 
-    setTimeout(async () => {
-      try {
+    // setTimeout(async () => {
+    try {
+
+      await lock.acquire('Balance' + accountId, async () => {
         await this.botnest.checkBalance(accountId);
-      } catch (e) {
-        this.log.error('Check balance error...', e.message, e.stack);
-      }
-    });
+      });
+
+    } catch (e) {
+      this.log.error('Check balance error...', e.message, e.stack);
+    }
+    // });
   }
 
   async recalcCellSize({ accountId }) {
@@ -116,7 +122,14 @@ export class DaemonService {
         }
 
         if (elapsedSecondsFrom(SEC_IN_HOUR / 4, lastTradesUpdate)) {
-          this.botnest.checkCloseOrders(); // no wait
+          this.botnest.checkCloseOrders().then((orders) => {
+            if (orders.length > 0) {
+              const accountIds = _.uniq(_.map(orders, 'accountId'));
+              accountIds.forEach(async (accountId) => {
+                await this.checkBalance({accountId});
+              });
+            }
+          }); // no wait
           lastTradesUpdate = Date.now() / 1000;
         }
 

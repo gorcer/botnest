@@ -55,7 +55,7 @@ export class AccountService {
         throw new Error('Unknown account ' + accountId);
       }
 
-      this.exchanges[accountId] = this.apiService.getApi(
+      this.exchanges[accountId] = await this.apiService.getApi(
         account.exchangeClass || account.exchange.exchange_name,
         account.apiKey,
         account.secret,

@@ -14,17 +14,17 @@ export class ExchangeService {
     private exchangeRepository: Repository<Exchange>,
   ) {}
 
-  public getApiForExchange(exchange: Exchange) {
+  public async getApiForExchange(exchange: Exchange) {
     this.apis[exchange.id] =
       this.apis[exchange.id] ||
-      this.apiService.getApi(
+      (await this.apiService.getApi(
         exchange.exchange_name,
         '',
         '',
         '',
         exchange.test_mode,
-      );
-      this.apis[exchange.id].exchange_id = exchange.id;
+      ));
+    this.apis[exchange.id].exchange_id = exchange.id;
     return this.apis[exchange.id];
   }
 

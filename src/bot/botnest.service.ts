@@ -84,7 +84,7 @@ export class BotNest {
   }
 
   async actualizePair(exchange: Exchange, pairName: string) {
-    const api = this.getApiForExchange(exchange);
+    const api = await this.getApiForExchange(exchange);
     return await this.pairs.actualize(api, pairName, exchange.id);
   }
 
@@ -134,8 +134,8 @@ export class BotNest {
     return this.orders.getActiveOrdersSum(accountId, currency1, attribute);
   }
 
-  public getApiForExchange(exchange: Exchange) {
-    return this.exchange.getApiForExchange(exchange);
+  public async getApiForExchange(exchange: Exchange) {
+    return await this.exchange.getApiForExchange(exchange);
   }
 
   public async checkRates(
@@ -156,7 +156,7 @@ export class BotNest {
       if (!this.lastRates[exchange.id]) {
         this.lastRates[exchange.id] = {};
       }
-      const api = this.exchange.getApiForExchange(exchange);
+      const api = await this.exchange.getApiForExchange(exchange);
 
       for (const pair of exchange.pairs) {
         const pairName = pair.name;

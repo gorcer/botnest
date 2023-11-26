@@ -32,7 +32,7 @@ export class TradeService {
 
     private eventEmitter: EventEmitter2,
     private tradeCheck: TradeCheckService,
-  ) { }
+  ) {}
 
   private api(accountId: number) {
     return this.accounts.getApiForAccount(accountId);
@@ -81,11 +81,11 @@ export class TradeService {
 
       this.log.info(
         strategy.constructor.name +
-        ': Ok...' +
-        orderInfos.length +
-        ' orders ..' +
-        (Date.now() - tm) / 1000 +
-        ' sec',
+          ': Ok...' +
+          orderInfos.length +
+          ' orders ..' +
+          (Date.now() - tm) / 1000 +
+          ' sec',
       );
 
       for (const orderInfo of orderInfos) {
@@ -123,10 +123,10 @@ export class TradeService {
 
         await this.orders.update(order.id, {
           isActive: false,
-          amount1: api.amountToPrecision(order.pairName, extOrder.filled),
+          amount1: api.currencyToPrecision(order.currency1, extOrder.filled),
           filled: extOrder.filled,
           fee: feeInCurrency2Cost,
-          amount2: api.costToPrecision(order.pairName, extOrder.cost),
+          amount2: api.currencyToPrecision(order.currency2, extOrder.cost),
           rate: extOrder.average,
         });
 
@@ -135,7 +135,7 @@ export class TradeService {
           currency2,
           order.id,
           OperationType.SELL,
-          api.costToPrecision(order.pairName, order.amount2),
+          api.currencyToPrecision(order.currency2, order.amount2),
         );
         if (feeCost && feeCurrency) {
           await this.balance.outcome(
@@ -180,7 +180,7 @@ export class TradeService {
               15,
             );
 
-          updateOrderDto.closedAt = () => "now()";
+          updateOrderDto.closedAt = () => 'now()';
 
           this.log.info(
             'Order closed',
@@ -222,7 +222,7 @@ export class TradeService {
     const api = await this.api(accountId);
     const amount1 = divide(amount2, price);
 
-    return await lock.acquire('Balance' + accountId, async () => {
+    const result = await lock.acquire('Balance' + accountId, async () => {
       this.log.info('Try to buy', price, amount1, amount2);
 
       const extOrder = await this.apiService.createOrder(
@@ -242,8 +242,6 @@ export class TradeService {
         const { feeCost, feeInCurrency2Cost, feeCurrency } =
           await this.extractFee(api, extOrder.fees, currency2);
 
-        const amount2test = api.costToPrecision(pairName, extOrder.cost || multiply(extOrder.amount, extOrder.average));
-
         const order = await this.orders.create({
           side: OrderSideEnum.BUY,
           pairId: orderInfo.pairId,
@@ -253,8 +251,11 @@ export class TradeService {
           extOrderId: extOrder.id,
           expectedRate: price,
           rate: extOrder.price,
-          amount1: api.amountToPrecision(pairName, extOrder.filled),
-          amount2: api.costToPrecision(pairName, extOrder.cost || multiply(extOrder.amount, extOrder.average)),
+          amount1: api.currencyToPrecision(currency1, extOrder.filled),
+          amount2: api.currencyToPrecision(
+            currency2,
+            extOrder.cost || multiply(extOrder.amount, extOrder.average),
+          ),
           fee: feeInCurrency2Cost,
           accountId: orderInfo.accountId,
           createdAtSec: Math.round(extOrder.timestamp / 1000),
@@ -294,14 +295,18 @@ export class TradeService {
           order.amount1,
           order.amount2,
           extOrder,
-        );
-
-        this.eventEmitter.emit('buyOrder.created', orderInfo);
+        );        
 
         return { extOrder, order };
       }
       return false;
     });
+
+    if (result.extOrder.id != undefined) {
+      await this.eventEmitter.emitAsync('buyOrder.created', orderInfo);
+    }
+
+    return result;
   }
 
   private async calculateFee(
@@ -334,7 +339,9 @@ export class TradeService {
     const { currency1, currency2 } = extractCurrency(pairName);
     let extOrder;
 
+    
     await lock.acquire('Balance' + orderInfo.accountId, async () => {
+      console.log('Order close start ...');
       extOrder = await this.apiService.createOrder(
         api,
         pairName,
@@ -354,8 +361,11 @@ export class TradeService {
           extOrderId: extOrder.id,
           expectedRate: price,
           rate: extOrder.price,
-          amount1: api.amountToPrecision(pairName, extOrder.amount),
-          amount2: api.costToPrecision(pairName, extOrder.cost || multiply(extOrder.amount, extOrder.price)),
+          amount1: api.currencyToPrecision(currency1, extOrder.amount),
+          amount2: api.currencyToPrecision(
+            currency2,
+            extOrder.cost || multiply(extOrder.amount, extOrder.price),
+          ),
           parentId: orderInfo.id,
           side: OrderSideEnum.SELL,
           accountId: orderInfo.accountId,
@@ -385,13 +395,20 @@ export class TradeService {
         await this.orders.update(orderInfo.id, {
           prefilled: add(orderInfo.prefilled, extOrder.amount),
         });
-
-        this.eventEmitter.emit('sellOrder.created', orderInfo);
+        
       }
+      console.log('Order close ok ...');
     });
 
-    // You cant move it up due node lock
-    if (closeOrder) await this.checkCloseOrder(closeOrder, extOrder);
+    if (extOrder.id) {
+      // You cant move it up due node lock
+      await this.checkCloseOrder(closeOrder, extOrder);
+
+      await this.eventEmitter.emitAsync('sellOrder.created', orderInfo);
+    }
+
+    
+
 
     return closeOrder;
   }

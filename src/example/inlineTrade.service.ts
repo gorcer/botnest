@@ -15,7 +15,7 @@ export class InlineTradeService {
       process.env.EXCHANGE_NAME,
       process.env.TEST_MODE == 'true',
     );
-    const publicApi = this.botnest.getApiForExchange(exchange);
+    const publicApi = await this.botnest.getApiForExchange(exchange);
     const pair = await this.botnest.actualizePair(exchange, pairName);
 
     // set bot strategies
