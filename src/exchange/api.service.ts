@@ -128,13 +128,13 @@ export class ApiService {
     side: OrderSide,
     amount: number,
     price?: number,
-  ) {   
+  ) {    
 
     let order = await api.createOrder(
       symbol,
       type,
       side,
-      api.amountToPrecision(symbol, amount),
+      api.amountToPrecision(symbol, amount),      
       api.priceToPrecision(symbol, price),
     );
 

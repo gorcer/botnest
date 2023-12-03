@@ -10,6 +10,9 @@ import { BotNest } from './botnest.service';
 import { CacheModule } from '@nestjs/cache-manager';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { TradeCheckService } from './tradeCheck.service';
+import { FeeService } from './fee.service';
+import { BuyOrderService } from './buyOrder.service';
+import { CloseOrderService } from './closeOrder.service';
 
 @Module({
   imports: [
@@ -23,7 +26,7 @@ import { TradeCheckService } from './tradeCheck.service';
     StrategyModule,
   ],
   controllers: [],
-  providers: [FileLogService, TradeService, BotNest, TradeCheckService],
+  providers: [FileLogService, TradeService, BotNest, TradeCheckService, FeeService, BuyOrderService, CloseOrderService],
   exports: [BotNest],
 })
-export class BotModule {}
+export class BotModule { }

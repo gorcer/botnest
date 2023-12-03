@@ -3,6 +3,8 @@ import { DaemonService } from './daemon.service';
 import { BotnestModule } from './botnest.module';
 import { BotNest } from './bot/botnest.service';
 import { TradeService } from './bot/trade.service';
+import { BuyOrderService } from './bot/buyOrder.service';
+import { CloseOrderService } from './bot/closeOrder.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(BotnestModule);
@@ -29,14 +31,14 @@ async function bootstrap() {
       {
         const accountId = 1;
         
-        const service = await app.resolve(TradeService);
-        const result1 = await service.createBuyOrder({
+        const service = await app.resolve(BuyOrderService);
+        const result1 = await service.create({
           accountId,
           pairName: 'BTC/USDT',
           rate: 50000,
           amount2: 100,
         });
-        const result2 = await service.createBuyOrder({
+        const result2 = await service.create({
           accountId,
           pairName: 'BTC/USDT',
           rate: 50000,
@@ -59,27 +61,27 @@ async function bootstrap() {
         //   id: result1.order.id,
         // });
        
-        const r3= service.createBuyOrder({
+        const r3= service.create({
           accountId,
           pairName: 'BTC/USDT',
           rate: 50000,
           amount2: 100,
         });
 
-        const r4= service.createCloseOrder({
-          accountId,
-          pairName: result2.order.pairName,
-          rate: 20000,
-          needSell: result2.order.amount1,
-          pairId: result2.order.pairId,
-          prefilled: result2.order.prefilled,
-          id: result2.order.id,
-        });
+        // const r4= service.createCloseOrder({
+        //   accountId,
+        //   pairName: result2.order.pairName,
+        //   rate: 20000,
+        //   needSell: result2.order.amount1,
+        //   pairId: result2.order.pairId,
+        //   prefilled: result2.order.prefilled,
+        //   id: result2.order.id,
+        // });
 
         await Promise.all([
           // r2
           ,r3
-          ,r4
+          // ,r4
         ]);
       
 
@@ -89,8 +91,8 @@ async function bootstrap() {
       {
         const accountId = Number(process.argv[3]);
         const rate = Number(process.argv[4]);
-        const service = await app.resolve(TradeService);
-        const result = await service.createBuyOrder({
+        const service = await app.resolve(BuyOrderService);
+        const result = await service.create({
           accountId,
           pairName: 'BTC/USDT',
           rate,
@@ -103,8 +105,8 @@ async function bootstrap() {
       {
         const accountId = Number(process.argv[3]);
         const rate = Number(process.argv[4]);
-        const service = await app.resolve(TradeService);
-        const result = await service.createCloseOrder({
+        const service = await app.resolve(CloseOrderService);
+        const result = await service.create({
           accountId,
           pairName: 'BTC/USDT',
           rate,

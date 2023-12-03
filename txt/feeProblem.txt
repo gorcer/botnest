@@ -1,0 +1,37 @@
+Подбрасывать в ордер требуемую комиссию.
+
+1) start
+balance.BTC.fee=0
+balance.BTC.amount=0
+balance.USDT.amount=100
+rate=50
+fee=1%
+
+2) buy
+amount1 = 1BTC
+feeTransport = ceil(0.01) => 0.1
+
+sendOrder(amount1 + feeTransport = 1.1)
+
+balance.BTC.fee+ = feeTransport = 0.1
+
+createOrder(1)
+order.amount = 1BTC, 50USDT
+order.fee = 0.01BTC
+
+balance.BTC.amount=1.1-0.01=1.99
+balance.USDT.amount=45
+balance.BTC.fee- = realFee = 0.99
+
+3) buy
+amount1 = 1BTC
+feeTransport = fee - BalanceFee= unsigned(0.01-0.99) = 0
+
+sendOrder(amount1 + feeTransport = 1)
+createOrder(1)
+order.amount = 1BTC, 50USDT
+order.fee = 0.01BTC
+
+balance.BTC.amount=1.99+1-0.1=2.98
+balance.USDT.amount=-10
+balance.BTC.fee- = realFee = 0.98

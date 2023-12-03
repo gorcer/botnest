@@ -85,6 +85,12 @@ export class Order {
   @Column('decimal')
   amount2: number;
 
+  @Column('decimal')
+  fee1: number;
+
+  @Column('decimal')
+  fee2: number;
+
   @Column({ type: 'decimal', default: 0 })
   fee: number;
 

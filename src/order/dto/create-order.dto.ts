@@ -7,6 +7,8 @@ export class CreateOrderDto {
     amount1: number;
     amount2: number;
     fee?: number;
+    fee1?: number;
+    fee2?: number;
     parentId?: number;
     side?: OrderSideEnum;    
     pairName: string;

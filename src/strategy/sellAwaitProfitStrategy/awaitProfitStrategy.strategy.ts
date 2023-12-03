@@ -36,15 +36,16 @@ export class AwaitProfitStrategy implements SellStrategyInterface {
         'strategy."accountId" = balance."accountId" and balance.currency = pair.currency1',
       )
       .andWhere(
+        //          new.amount2 - cur.sellFee / old.amount2
         `
-      100*((("pair"."buyRate" * "order".amount1 * (1-pair.fee)) / ("order".amount2 + "order".fee))-1) >= 
+      100*(((  ("pair"."buyRate" * "order".amount1) * (1-pair.fee)) / ("order".amount2 + "order".fee))-1) >= 
         case 
           when 
             (${now} - "order"."createdAtSec") < ${SEC_IN_DAY}
           then  
-            ( (strategy.minDailyProfit / ${SEC_IN_YEAR}) * (${now} - "order"."createdAtSec") )
+            ( (strategy."minDailyProfit" / ${SEC_IN_YEAR}) * (${now} - "order"."createdAtSec") )
           else  
-            ( (strategy.minYerlyProfit / ${SEC_IN_YEAR}) * (${now} - "order"."createdAtSec") )
+            ( (strategy."minYerlyProfit" / ${SEC_IN_YEAR}) * (${now} - "order"."createdAtSec") )
         end        
         `,
       )
