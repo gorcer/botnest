@@ -116,31 +116,35 @@ export class BalanceService {
     amount: number,
     inOrders = false,
   ) {
-    const balance = await this.getBalance(accountId, currency);
-    if (!balance) {
-      throw new Error('Unknown balance ' + accountId + ' ' + currency);
-    }
-    balance.amount = add(balance.amount, amount);
-    if (inOrders) {
-      balance.inOrders = add(balance.inOrders, amount);
-    }
-    balance.available = subtract(balance.amount, balance.inOrders);
-    if (compareTo(balance.available, 0) < 0) balance.available = 0;
+    if (compareTo(amount, 0) == 0) return;
 
-    await this.balanceRepository.save(balance);
+    return await lock.acquire('Balance ' + currency + accountId, async () => {
+      const balance = await this.getBalance(accountId, currency);
+      if (!balance) {
+        throw new Error('Unknown balance ' + accountId + ' ' + currency);
+      }
+      balance.amount = add(balance.amount, amount);
+      if (inOrders) {
+        balance.inOrders = add(balance.inOrders, amount);
+      }
+      balance.available = subtract(balance.amount, balance.inOrders);
+      if (compareTo(balance.available, 0) < 0) balance.available = 0;
 
-    this.balanceLogRepository.save(
-      this.balanceLogRepository.create({
-        accountId: balance.accountId,
-        balanceId: balance.id,
-        operationType,
-        amount: amount,
-        total: balance.amount,
-        sourceId,
-      }),
-    );
+      await this.balanceRepository.save(balance);
 
-    return balance;
+      this.balanceLogRepository.save(
+        this.balanceLogRepository.create({
+          accountId: balance.accountId,
+          balanceId: balance.id,
+          operationType,
+          amount: amount,
+          total: balance.amount,
+          sourceId,
+        }),
+      );
+
+      return balance;
+    });
   }
 
   public outcome(

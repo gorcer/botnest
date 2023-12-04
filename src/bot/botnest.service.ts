@@ -79,7 +79,7 @@ export class BotNest {
     return this.accounts.setAccount(account, config);
   }
 
-  async getApiForAccount(accountId: number): Promise<ApiService> {
+  async getApiForAccount(accountId: number) {
     return this.accounts.getApiForAccount(accountId);
   }
 

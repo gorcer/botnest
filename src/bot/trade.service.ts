@@ -38,9 +38,8 @@ export class TradeService {
 
     private buyOrderService: BuyOrderService,
     private closeOrderService: CloseOrderService,
-    private feeService: FeeService
-  ) { }
-
+    private feeService: FeeService,
+  ) {}
 
   public async addStrategy(strategyService) {
     const strategy = this.strategies.getStrategy(strategyService);
@@ -85,11 +84,11 @@ export class TradeService {
 
       this.log.info(
         strategy.constructor.name +
-        ': Ok...' +
-        orderInfos.length +
-        ' orders ..' +
-        (Date.now() - tm) / 1000 +
-        ' sec',
+          ': Ok...' +
+          orderInfos.length +
+          ' orders ..' +
+          (Date.now() - tm) / 1000 +
+          ' sec',
       );
 
       for (const orderInfo of orderInfos) {
@@ -104,7 +103,6 @@ export class TradeService {
     await Promise.all(result);
     return orders;
   }
-
 
   async checkCloseOrders(): Promise<Array<Order>> {
     const closedOrders: Array<Order> = [];

@@ -19,6 +19,22 @@ async function bootstrap() {
         await bot.trade();
       }
       break;
+    case 'fetchMarkets':
+      const accountId = Number(process.argv[3]);
+      const pair = process.argv[4];
+      const botNest = await app.resolve(BotNest);
+      const api = await botNest.getApiForAccount(accountId);
+      const allMarkets = await api.fetchMarkets();
+      const markets = allMarkets.filter((item) => item.symbol == pair);
+
+      console.log(
+        'precision',
+        markets[0].precision,
+        'limits',
+        markets[0].limits,
+      );
+
+      break;
     case 'checkBalance':
       {
         const accountId = Number(process.argv[3]);
@@ -30,7 +46,7 @@ async function bootstrap() {
     case 'testOrders':
       {
         const accountId = 1;
-        
+
         const service = await app.resolve(BuyOrderService);
         const result1 = await service.create({
           accountId,
@@ -50,7 +66,7 @@ async function bootstrap() {
 
         // const botNest = await app.resolve(BotNest);
         // await botNest.checkBalance(accountId);
-        
+
         // const r2= service.createCloseOrder({
         //   accountId,
         //   pairName: result1.order.pairName,
@@ -60,8 +76,8 @@ async function bootstrap() {
         //   prefilled: result1.order.prefilled,
         //   id: result1.order.id,
         // });
-       
-        const r3= service.create({
+
+        const r3 = service.create({
           accountId,
           pairName: 'BTC/USDT',
           rate: 50000,
@@ -79,12 +95,11 @@ async function bootstrap() {
         // });
 
         await Promise.all([
+          ,
           // r2
-          ,r3
+          r3,
           // ,r4
         ]);
-      
-
       }
       break;
     case 'createBuyOrder':
