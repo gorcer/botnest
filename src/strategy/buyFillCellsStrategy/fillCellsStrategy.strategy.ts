@@ -81,8 +81,7 @@ export class FillCellsStrategy implements BuyStrategyInterface {
                 "balance"."accountId",
                 "pair"."sellRate" as "rate",
                 GREATEST(cast(strategy."orderAmount" as DECIMAL), "pair"."minAmount2") as amount2,
-                "pair".id as "pairId",
-                "pair".fee as "fee",
+                "pair".id as "pairId",                
                 "pair".name as "pairName"
                 `,
       )

@@ -17,12 +17,12 @@ export class TradeCheckService {
     }
   }
 
-  open(extId: number, data) {
+  open(extId: string, data) {
     this.orders[extId] = data;
     this.save();
   }
 
-  close(extId: number) {
+  close(extId: string) {
     if (this.orders[extId]) {
       delete this.orders[extId];
       this.save();

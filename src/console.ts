@@ -2,7 +2,6 @@ import { NestFactory } from '@nestjs/core';
 import { DaemonService } from './daemon.service';
 import { BotnestModule } from './botnest.module';
 import { BotNest } from './bot/botnest.service';
-import { TradeService } from './bot/trade.service';
 import { BuyOrderService } from './bot/buyOrder.service';
 import { CloseOrderService } from './bot/closeOrder.service';
 

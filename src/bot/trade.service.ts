@@ -2,22 +2,18 @@ import { Injectable } from '@nestjs/common';
 import { BalanceService } from '../balance/balance.service';
 import { OrderService } from '../order/order.service';
 import { Order, OrderSideEnum } from '../order/entities/order.entity';
-import { UpdateOrderDto } from '../order/dto/update-order.dto';
-import { lock, SEC_IN_YEAR, extractCurrency, sleep } from '../helpers/helpers';
 import { ApiService } from '../exchange/api.service';
 import { FileLogService } from '../log/filelog.service';
 import { AccountService } from '../user/account.service';
-import { OperationType } from '../balance/entities/balanceLog.entity';
-import { RequestSellInfoDto } from '../strategy/dto/request-sell-info.dto';
 import { StrategyService } from '../strategy/strategy.service';
 import { BuyStrategyInterface } from '../strategy/interfaces/buyStrategy.interface';
 import { SellStrategyInterface } from '../strategy/interfaces/sellStrategy.interface';
-import { add, compareTo, divide, multiply, subtract } from '../helpers/bc';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { TradeCheckService } from './tradeCheck.service';
 import { BuyOrderService } from './buyOrder.service';
 import { FeeService } from './fee.service';
 import { CloseOrderService } from './closeOrder.service';
+import { sleep } from '../helpers/helpers';
 
 @Injectable()
 export class TradeService {

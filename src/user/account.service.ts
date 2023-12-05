@@ -5,6 +5,7 @@ import { Account } from './entities/account.entity';
 import { Repository } from 'typeorm';
 import { updateModel } from '../helpers/helpers';
 import { UpdateAccountDto } from './dto/update-account.dto';
+import { Exchange } from 'ccxt';
 
 @Injectable()
 export class AccountService {
@@ -38,7 +39,7 @@ export class AccountService {
     return this.accounts[account.id];
   }
 
-  async getApiForAccount(accountId: number) {
+  async getApiForAccount(accountId: number): Promise<Exchange> {
     if (!this.exchanges[accountId]) {
       if (!this.accounts[accountId]) {
         this.accounts[accountId] = await this.repository.findOne({
@@ -62,9 +63,9 @@ export class AccountService {
         account.password,
         account.exchange.test_mode,
       );
-
     }
-    this.exchanges[accountId].exchange_id = this.accounts[accountId].exchange_id;
+    this.exchanges[accountId].exchange_id =
+      this.accounts[accountId].exchange_id;
 
     return this.exchanges[accountId];
   }

@@ -1,9 +1,9 @@
 import { OrderSide, OrderType } from 'ccxt/js/src/base/types';
 import { BalancesDto } from '../balance/dto/balances.dto';
-import { pro as ccxt } from 'ccxt';
+import { Exchange, pro as ccxt } from 'ccxt';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
-import { Injectable, Inject, ConsoleLogger } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { extractCurrency } from '../helpers/helpers';
 
 class MarketInfoDto {
@@ -36,7 +36,7 @@ export class ApiService {
     secret = '',
     password = '',
     sandBoxMode = true,
-  ) {
+  ): Promise<Exchange> {
     if (typeof exchangeClass == 'string') {
       exchangeClass = ccxt[exchangeClass];
     }
@@ -127,13 +127,13 @@ export class ApiService {
     type: OrderType,
     side: OrderSide,
     amount: number,
-    price?: number,
+    price: number,
   ) {
     let order = await api.createOrder(
       symbol,
       type,
       side,
-      api.amountToPrecision(symbol, amount),
+      amount,
       api.priceToPrecision(symbol, price),
     );
 
