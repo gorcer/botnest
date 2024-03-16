@@ -2,7 +2,12 @@ import { Inject, Injectable } from '@nestjs/common';
 import { BotNest } from './bot/botnest.service';
 import { FillCellsStrategy } from './strategy/buyFillCellsStrategy/fillCellsStrategy.strategy';
 import { AwaitProfitStrategy } from './strategy/sellAwaitProfitStrategy/awaitProfitStrategy.strategy';
-import { SEC_IN_HOUR, elapsedSecondsFrom, sleep, lock } from './helpers/helpers';
+import {
+  SEC_IN_HOUR,
+  elapsedSecondsFrom,
+  sleep,
+  lock,
+} from './helpers/helpers';
 import { FileLogService } from './log/filelog.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
@@ -33,25 +38,19 @@ export class DaemonService {
   }
 
   async checkBalance({ accountId }) {
-    // const key = accountId + '.checkBalance';
-    // const isChecked: boolean = await this.cacheManager.get(key);
-    // if (isChecked && false) return;
-    // await this.cacheManager.set(key, true, 10 * 60 * 1000);
-
-    // setTimeout(async () => {
     try {
-
-      await lock.acquire('Balance' + accountId, async () => {
+      await lock.acquire('Balance ' + accountId, async () => {
+        this.log.info('Check balance begin ....');
         await this.botnest.checkBalance(accountId);
+        this.log.info('Check balance Ok');
       });
-
     } catch (e) {
       this.log.error('Check balance error...', e.message, e.stack);
     }
-    // });
   }
 
-  async recalcCellSize({ accountId }) {
+  async recalcCellSize({ orderInfo }) {
+    const { accountId } = orderInfo;
     const key = accountId + '.recalcCellSize';
     const isChecked: boolean = await this.cacheManager.get(key);
     if (isChecked) return;
@@ -107,6 +106,7 @@ export class DaemonService {
           await this.botnest.checkRates(
             this.minBuyRateMarginToProcess,
             this.minSellRateMarginToProcess,
+            this.pairs,
           );
 
         if (isBidMargined || isAskMargined) {
@@ -122,14 +122,16 @@ export class DaemonService {
         }
 
         if (elapsedSecondsFrom(SEC_IN_HOUR / 4, lastTradesUpdate)) {
-          this.botnest.checkCloseOrders().then((orders) => {
-            if (orders.length > 0) {
-              const accountIds = _.uniq(_.map(orders, 'accountId'));
-              accountIds.forEach(async (accountId) => {
-                await this.checkBalance({accountId});
-              });
-            }
-          }); // no wait
+          promises.push(
+            this.botnest.checkCloseOrders().then((orders) => {
+              if (orders.length > 0) {
+                const accountIds = _.uniq(_.map(orders, 'accountId'));
+                accountIds.forEach(async (accountId) => {
+                  await this.checkBalance({ accountId });
+                });
+              }
+            }),
+          );
           lastTradesUpdate = Date.now() / 1000;
         }
 
@@ -137,8 +139,8 @@ export class DaemonService {
           await Promise.all(promises);
         }
       } catch (e) {
-        this.log.error('Trade error...wait 60 sec', e.message, e.stack);
-        await sleep(60);
+        this.log.error('Trade error...wait 10 sec', e.message, e.stack);
+        await sleep(10);
       }
     }
   }

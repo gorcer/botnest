@@ -1,0 +1,72 @@
+FrozenService.operations
++ buy
++ fee_transfer
+- fee
+- sell
+
+
++* Migration.addFrozenBalance
+
++* FrozenService.getRate(currency) {
+	return await api.getLastPrice(currency+'/'+this.defCurrency);
+}
+
++* buyOrder.Service
++** order.amount2_in_usd -> fill;
++** change this.eventEmitter.emitAsync('buyOrder.created', {
+orderInfo,
+feeCurrency
+feeCost,
+order
+});
+
++* FrozenService
+bind => buyOrder.created
+  => () {
+    balance = getUserFrozenBalance();
+    amount2_in_usd = amount2 * rate;
+    
+    if (feeCurrency == order.currency1) {
+    	balance.outcome(feeCost, FEE); /// неправильно
+    }
+    
+    balance.income(amount2, BUY);    
+  }
+  
++* buyOrder.Service
+  checkAndImproveFeeBalance => emit Event('fee.Transfered');
+
++* FrozenService
+bind => fee.Transfered 
+  => () {
+     balance = getUserFrozenBalance();
+    fee2_in_usd = feeAmount * rate;
+    balance.income(amount2, fee_transfer);   
+  }
+
+
+* closeOrder.check => emit Event('buyOrder.closed', 
+buyOrder,
+feeCurrency,
+feeCost
+)
+
+
+* FrozenService
+bind => buyOrder.closed 
+  => () {
+       	balance = getUserFrozenBalance();
+	balance.outcome(buyOrder.amount2_in_usd, sell);	
+	
+	if (feeCurrency == buyOrder.currency1) {
+	    	balance.outcome(feeCost);
+	}
+  
+  
+  }
+
+
++* tradenest.orders.update - выпилить orders.amount2_in_usd=, fee=
+
+* tradenest.statUpdateV2  
+ totalFrozen = balance.frozen.amount

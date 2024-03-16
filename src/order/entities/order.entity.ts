@@ -117,6 +117,9 @@ export class Order {
   amount2_in_usd: number;
 
   @Column({ type: 'decimal', default: 0 })
+  fee_in_usd: number;
+
+  @Column({ type: 'decimal', default: 0 })
   anualProfitPc: number;
 
   // @BeforeInsert()

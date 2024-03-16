@@ -40,6 +40,9 @@ export class Account {
   @Column({ type: 'boolean', default: true })
   isActive: boolean;
 
+  @Column({ type: 'boolean', default: false })
+  is_connected: boolean;
+
   /** When need hide account from user (system account) */
   @Index()
   @Column({ type: 'boolean', default: true })
@@ -54,10 +57,13 @@ export class Account {
   @Column({ type: Date, nullable: true })
   deleted_at: Date;
 
+  @Column({ type: 'int' })
+  error_code: number;
+
   @ManyToOne(() => Exchange, { nullable: true })
   @JoinColumn({ name: 'exchange_id' })
   exchange: Exchange;
 
-  // @Column('int', { nullable: true }) // Поле для хранения идентификатора связанной сущности
-  // exchange_id: number;
+  @Column('int', { nullable: true }) // Поле для хранения идентификатора связанной сущности
+  exchange_id: number;
 }

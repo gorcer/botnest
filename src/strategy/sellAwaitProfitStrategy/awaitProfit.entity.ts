@@ -10,8 +10,8 @@ export class AwaitProfit extends BaseStrategyModel {
   isActive: boolean;
 
   @Column({ type: 'decimal', default: 200 })
-  minDailyProfit: number;
+  minProfit: number;
 
   @Column({ type: 'decimal', default: 30 })
-  minYerlyProfit: number;
+  minAnnualProfit: number;
 }

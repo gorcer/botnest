@@ -4,6 +4,7 @@ import { BotnestModule } from './botnest.module';
 import { BotNest } from './bot/botnest.service';
 import { BuyOrderService } from './bot/buyOrder.service';
 import { CloseOrderService } from './bot/closeOrder.service';
+import { subtract } from './helpers/bc';
 
 async function bootstrap() {
   const app = await NestFactory.create(BotnestModule);
@@ -34,6 +35,17 @@ async function bootstrap() {
       );
 
       break;
+    case 'test':
+      {
+        const botNest = await app.resolve(BotNest);
+        const api = await botNest.getApiForAccount(2);
+
+        console.log(
+          api.currencyToPrecision('USDT', 0.000602923677),
+          api.currencies['USDT'].precision,
+        );
+      }
+      break;
     case 'checkBalance':
       {
         const accountId = Number(process.argv[3]);
@@ -49,13 +61,13 @@ async function bootstrap() {
         const service = await app.resolve(BuyOrderService);
         const result1 = await service.create({
           accountId,
-          pairName: 'BTC/USDT',
+          pairId: 3,
           rate: 50000,
           amount2: 100,
         });
         const result2 = await service.create({
           accountId,
-          pairName: 'BTC/USDT',
+          pairId: 3,
           rate: 50000,
           amount2: 100,
         });
@@ -78,7 +90,7 @@ async function bootstrap() {
 
         const r3 = service.create({
           accountId,
-          pairName: 'BTC/USDT',
+          pairId: 3,
           rate: 50000,
           amount2: 100,
         });
@@ -105,12 +117,13 @@ async function bootstrap() {
       {
         const accountId = Number(process.argv[3]);
         const rate = Number(process.argv[4]);
+        const amount2 = Number(process.argv[5]);
         const service = await app.resolve(BuyOrderService);
         const result = await service.create({
           accountId,
-          pairName: 'BTC/USDT',
+          pairId: 3,
           rate,
-          amount2: 100,
+          amount2,
         });
         console.log(result);
       }
@@ -124,10 +137,10 @@ async function bootstrap() {
           accountId,
           pairName: 'BTC/USDT',
           rate,
-          needSell: 0.002,
+          needSell: 0.00001421,
           pairId: 3,
-          prefilled: 1,
-          id: 18,
+          prefilled: 0,
+          id: 8857,
         });
         console.log(result);
       }

@@ -5,11 +5,9 @@ import { multiply } from "../helpers/bc";
 @Injectable()
 export class FeeService {
 
-
     constructor(
         private apiService: ApiService,
     ) { }
-
 
     async extractFee(
         api,
@@ -17,13 +15,17 @@ export class FeeService {
         currency2: string,
     ) {
         const fee = feeObj[0];
-        const feeCost = feeObj[0]?.cost ?? 0;
+        const feeCurrency = fee?.currency;
+
+        let feeCost = feeObj[0]?.cost ?? 0;
+        // feeCost = api.currencyToPrecision(feeCurrency, feeCost)
+        
         const feeInCurrency2Cost = await this.calculateFee(
             api,
             feeObj[0],
             currency2,
         );
-        const feeCurrency = fee?.currency;
+        
 
         return { feeCost, feeInCurrency2Cost, feeCurrency };
     }

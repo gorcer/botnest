@@ -16,7 +16,7 @@ These simple strategies will guarantee you at least 30% anual profits, just be p
 3. Node v16.14.0
 
 
-## Instalation:
+## Installation:
 
 ```
 npm install botnest

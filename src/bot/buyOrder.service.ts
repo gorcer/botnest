@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { BalanceService } from '../balance/balance.service';
+import { BalanceService, OperationContext } from '../balance/balance.service';
 import { OperationType } from '../balance/entities/balanceLog.entity';
 import { ApiService } from '../exchange/api.service';
 import { PairService } from '../exchange/pair.service';
@@ -9,191 +9,267 @@ import { extractCurrency, roundUp } from '../helpers/helpers';
 import { FileLogService } from '../log/filelog.service';
 import { OrderSideEnum } from '../order/entities/order.entity';
 import { OrderService } from '../order/order.service';
+import { RequestBuyInfoDto } from '../strategy/dto/request-buy-info.dto';
 import { AccountService } from '../user/account.service';
 import { FeeService } from './fee.service';
 import { TradeCheckService } from './tradeCheck.service';
 
 @Injectable()
 export class BuyOrderService {
-    constructor(
-        public balance: BalanceService,
-        private orders: OrderService,
-        private log: FileLogService,
-        private accounts: AccountService,
-        private apiService: ApiService,
-        private eventEmitter: EventEmitter2,
-        private tradeCheck: TradeCheckService,
-        private feeService: FeeService,
-        private pairService: PairService,
-    ) { }
+  constructor(
+    public balance: BalanceService,
+    private orders: OrderService,
+    private log: FileLogService,
+    private accounts: AccountService,
+    private apiService: ApiService,
+    private eventEmitter: EventEmitter2,
+    private tradeCheck: TradeCheckService,
+    private feeService: FeeService,
+    private pairService: PairService,
+  ) {}
 
-    public async create(orderInfo) {
-        const { accountId, pairName, rate: price, amount2, pairId } = orderInfo;
-        const api = await this.accounts.getApiForAccount(accountId);
-        const amount1 = divide(amount2, price);
-        const { currency1, currency2 } = extractCurrency(pairName);
-
-        // // fee transport = 0.00000479699
-        // // amount1 = "0.00479699"
-        // // buy "0.00480178699" => 0.0048
-        // // real buy 0.00479
-        // // price 41692.85
-        // const balance = await this.balance.getBalance(accountId, currency1);
-        // let feeTransport = subtract(multiply(amount1, fee), balance.available);
-        // if (compareTo(feeTransport, 0) < 0) feeTransport = 0;
-        // const market = api.market(pairName);
-        // let precision = market['precision']['amount'];
-        // if (compareTo(precision, 1) < 0) {
-        //   //10e-8 = > 8
-        //   precision = -Math.floor(Math.log10(precision));
-        // }
-        // let orderablaAmount = add(amount1, feeTransport);
-        // orderablaAmount = roundUp(orderablaAmount, precision);
-
-
-        this.checkAndImproveFeeBalance(accountId, pairId, amount1);
-
-        this.log.info('Try to buy', price, amount1, amount2);
-        const extOrder = await this.apiService.createOrder(
-            api,
-            pairName,
-            'market',
-            'buy',
-            amount1,
-            price,
-        );
-
-        if (extOrder.id != undefined) {
-            this.tradeCheck.open(extOrder.id, { orderInfo, extOrder });
-
-            const { feeCost, feeInCurrency2Cost, feeCurrency } =
-                await this.feeService.extractFee(api, extOrder.fees, currency2);
-
-            const fee1 = feeCurrency == currency1 ? feeCost : 0;
-            const fee2 = feeCurrency == currency2 ? feeCost : 0;
-
-            const order = await this.orders.create({
-                side: OrderSideEnum.BUY,
-                pairId: orderInfo.pairId,
-                pairName: orderInfo.pairName,
-                currency1,
-                currency2,
-                extOrderId: extOrder.id,
-                expectedRate: price,
-                rate: extOrder.price,
-                amount1: api.currencyToPrecision(
-                    currency1,
-                    extOrder.filled,
-                ),
-                amount2: api.currencyToPrecision(
-                    currency2,
-                    extOrder.cost || multiply(extOrder.amount, extOrder.average),
-                ),
-                fee: feeInCurrency2Cost,
-                fee1,
-                fee2,
-                accountId: orderInfo.accountId,
-                createdAtSec: Math.round(extOrder.timestamp / 1000),
-            });
-
-            this.tradeCheck.close(extOrder.id);
-
-            //   await this.balance.income(
-            //     accountId,
-            //     currency1,
-            //     order.id,
-            //     OperationType.FEE_TRANSPORT,
-            //     api.currencyToPrecision(currency1, subtract(extOrder.filled, amount1)),
-            //   );
-
-            await this.balance.income(
-                accountId,
-                currency1,
-                order.id,
-                OperationType.BUY,
-                extOrder.filled,
-                true,
-            );
-            await this.balance.outcome(
-                accountId,
-                currency2,
-                order.id,
-                OperationType.BUY,
-                order.amount2,
-            );
-
-            if (feeCost && feeCurrency) {
-                await this.balance.outcome(
-                    accountId,
-                    feeCurrency,
-                    order.id,
-                    OperationType.BUY_FEE,
-                    api.currencyToPrecision(feeCurrency, feeCost),
-                );
-            }
-
-            this.log.info(
-                'New order',
-                order.extOrderId,
-                order.rate,
-                order.amount1,
-                order.amount2,
-                extOrder,
-            );
-
-            if (extOrder.id != undefined) {
-                await this.eventEmitter.emitAsync('buyOrder.created', orderInfo);
-            }
-            return { extOrder, order };
-        } else {
-            return false;
-        }
+  public prepareAmounts(minAmount1, amount2, price) {
+    let amount1 = divide(amount2, price);
+    if (compareTo(amount1, minAmount1) < 0) {
+      amount1 = minAmount1;
+      amount2 = multiply(amount1, price);
     }
 
-    private async checkAndImproveFeeBalance(accountId, pairId, amount1) {
+    return { amount1, amount2 };
+  }
 
-        const pair = await this.pairService.get(pairId);
-        let feeAmount = multiply(amount1, pair.fee);
-        const balance = await this.balance.getBalance(accountId, pair.currency1);
-        let feeTransport = subtract(feeAmount, balance.available);
-        if (compareTo(feeTransport, 0) < 0)
-            return;
+  public async create(orderInfo: RequestBuyInfoDto) {
+    const { accountId, rate: price, pairId } = orderInfo;
+
+    const api = await this.accounts.getApiForAccount(accountId);
+    const pair = await this.pairService.get(pairId);
+    const pairName = pair.name;
+
+    const { currency1, currency2 } = extractCurrency(pairName);
+
+    const { amount1, amount2 } = this.prepareAmounts(
+      pair.minAmount1,
+      orderInfo.amount2,
+      price,
+    );
+
+    await this.checkAndImproveFeeBalance(accountId, pairId, amount1);
+
+    this.log.info('Try to buy', accountId, price, amount1, amount2);
+    const extOrder = await this.apiService.createOrder(
+      api,
+      pairName,
+      'market',
+      'buy',
+      amount1,
+      price,
+    );
+
+    if (extOrder.id != undefined) {
 
 
-        if (compareTo(pair.minAmount1, feeAmount) > 0) {
-            feeAmount = pair.minAmount1;
-        }
+      // @ts-ignore
+      const { feeCost, feeInCurrency2Cost, feeCurrency } = await this.feeService.extractFee(api, extOrder.fees, currency2);
 
-        const api = await this.accounts.getApiForAccount(accountId);
+      const fee1 = feeCurrency == currency1 ? feeCost : 0;
+      const fee2 = feeCurrency == currency2 ? feeCost : 0;
 
-        this.log.info('Try to make fee transfer');
-        const extOrder = await this.apiService.createOrder(
-            api,
-            pair.name,
-            'market',
-            'buy',
-            feeAmount,
-            pair.sellRate          
+      const amount2 =
+        extOrder.cost || multiply(extOrder.amount, extOrder.average);
+      let amount2_in_usd = amount2;
+      let fee_in_usd = feeInCurrency2Cost;
+      if (currency2 != 'USDT') {
+        const usdRate = await this.apiService.getLastPrice(
+          api,
+          currency2 + '/USDT',
         );
+        amount2_in_usd = multiply(usdRate, amount2);
+        fee_in_usd = multiply(usdRate, feeInCurrency2Cost);
+      }
+      
+      this.tradeCheck.open(extOrder.id, { orderInfo, extOrder });
 
-        if (extOrder.id != undefined) {
-            await this.balance.income(
-                accountId,
-                pair.currency1,
-                null,
-                OperationType.FEE_TRANSPORT,
-                api.currencyToPrecision(pair.currency1, extOrder.filled),
-            );
+      const order = await this.orders.create({
+        side: OrderSideEnum.BUY,
+        pairId: orderInfo.pairId,
+        pairName,
+        currency1,
+        currency2,
+        extOrderId: extOrder.id,
+        expectedRate: price,
+        rate: extOrder.price,
+        amount1: extOrder.filled,
+        amount2,
+        amount2_in_usd,
+        fee_in_usd,
+        // amount1: api.currencyToPrecision(
+        //     currency1,
+        //     extOrder.filled,
+        // ),
+        // amount2: api.currencyToPrecision(
+        //     currency2,
+        //     extOrder.cost || multiply(extOrder.amount, extOrder.average),
+        // ),
+        fee: feeInCurrency2Cost,
+        fee1,
+        fee2,
+        accountId: orderInfo.accountId,
+        createdAtSec: Math.round(extOrder.timestamp / 1000),
+      });
 
-            this.log.info(
-                'New fee transfer',
-                extOrder.id,
-                extOrder.price,
-                extOrder.filled,
-                extOrder.cost,
-                extOrder,
-            );
+      this.tradeCheck.close(extOrder.id);
+
+      await this.balance.income(
+        accountId,
+        currency1,
+        order.id,
+        OperationType.BUY,
+        order.amount1,
+        OperationContext.IN_ORDERS,
+      );
+      await this.balance.outcome(
+        accountId,
+        currency2,
+        order.id,
+        OperationType.BUY,
+        order.amount2,
+      );
+
+      if (feeCost && feeCurrency) {
+        let context = null;
+        if (feeCurrency == currency1) {
+          context = OperationContext.FOR_FEE;
         }
 
+        await this.balance.outcome(
+          accountId,
+          feeCurrency,
+          order.id,
+          OperationType.BUY_FEE,
+          feeCost,
+          context,
+        );
+      }
+
+      this.log.info(
+        'New order',
+        order.accountId,
+        order.extOrderId,
+        order.rate,
+        order.amount1,
+        order.amount2,
+        extOrder,
+      );
+
+      if (extOrder.id != undefined) {
+        await this.eventEmitter.emitAsync('buyOrder.created', {
+          orderInfo: {
+            account_id: order.accountId,
+            amount1: order.amount1,
+            currency1: order.currency1,
+            amount2: order.amount2,
+            currency2: order.currency2,
+          },
+          // feeCurrency,
+          // feeCost,
+        });
+      }
+      return { extOrder, order };
+    } else {
+      return null;
     }
+  }
+
+  public async checkAndImproveFeeBalance(accountId, pairId, amount1) {
+    const pair = await this.pairService.get(pairId);
+    let feeAmount = multiply(amount1, pair.fee);
+    const balance = await this.balance.getBalance(accountId, pair.currency1);
+    feeAmount = subtract(feeAmount, balance.for_fee);
+    if (compareTo(feeAmount, 0) <= 0) return;
+
+    if (compareTo(pair.minAmount1, feeAmount) > 0) {
+      feeAmount = pair.minAmount1;
+    }
+
+    const api = await this.accounts.getApiForAccount(accountId);
+
+    this.log.info(accountId + ': Try to make fee transfer');
+    const extOrder = await this.apiService.createOrder(
+      api,
+      pair.name,
+      'market',
+      'buy',
+      feeAmount,
+      pair.sellRate,
+    );
+
+    if (extOrder.id != undefined) {
+      const { currency1, currency2 } = pair;
+
+      
+      const { feeCost, feeCurrency } = await this.feeService.extractFee(
+        api,
+        // @ts-ignore
+        extOrder.fees,
+        currency2,
+      );
+
+      await this.balance.income(
+        accountId,
+        currency1,
+        null,
+        OperationType.FEE_TRANSPORT,
+        // api.currencyToPrecision(pair.currency1, extOrder.filled),
+        extOrder.filled,
+        OperationContext.FOR_FEE,
+      );
+
+      const amount2 =
+        extOrder.cost || multiply(extOrder.amount, extOrder.average);
+      await this.balance.outcome(
+        accountId,
+        currency2,
+        null,
+        OperationType.FEE_TRANSPORT,
+        // api.currencyToPrecision(
+        //     pair.currency2,
+        //     extOrder.cost || multiply(extOrder.amount, extOrder.average),
+        // ),
+        amount2,
+      );
+
+      if (feeCost && feeCurrency) {
+        await this.balance.outcome(
+          accountId,
+          feeCurrency,
+          null,
+          OperationType.BUY_FEE,
+          // api.currencyToPrecision(feeCurrency, feeCost),
+          feeCost,
+          OperationContext.FOR_FEE,
+        );
+      }
+
+      this.log.info(
+        'New fee transfer',
+        extOrder.id,
+        extOrder.price,
+        extOrder.filled,
+        extOrder.cost,
+        extOrder,
+      );
+
+      await this.eventEmitter.emitAsync('fee.transferred', {
+        orderInfo: {
+          account_id: accountId,
+          amount1: extOrder.filled,
+          currency1,
+          amount2,
+          currency2,
+        },
+        feeCurrency,
+        feeCost,
+      });
+    }
+  }
 }

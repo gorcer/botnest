@@ -64,8 +64,7 @@ export class PairService {
     const marketInfo = await this.apiService.getMarketInfo(api, pairName);
     if (!marketInfo) return null;
 
-    let { minAmount, minCost, fee, pricePrecision, amountPrecision } =
-      marketInfo;
+    let { minAmount, minCost, fee, pricePrecision, amountPrecision } = marketInfo;
     const { bid, ask } = await this.apiService.getActualRates(api, pairName);
     const pair = await this.fetchOrCreate(exchangeId, pairName);
 

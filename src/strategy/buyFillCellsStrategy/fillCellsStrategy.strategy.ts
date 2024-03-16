@@ -19,7 +19,12 @@ export class FillCellsStrategy implements BuyStrategyInterface {
     this.repository = this.entityManager.getRepository(FillCellsStrategy.model);
   }
 
-  static calculateCellSize({ totalBalance, pair, orderAmount, risk }): number {
+  static calculateCellSize({
+    totalBalance,
+    pair,
+    orderAmount,
+    minRate,
+  }): number {
     if (!totalBalance) {
       return 0;
     }
@@ -28,14 +33,9 @@ export class FillCellsStrategy implements BuyStrategyInterface {
       orderAmount = pair.minAmount2;
     }
 
-    const diffRate = subtract(pair.sellRate, pair.historicalMinRate);
+    const diffRate = subtract(pair.sellRate, minRate);
     const maxOrderCnt = Math.floor(divide(totalBalance, orderAmount));
     let cellSize = divide(diffRate, maxOrderCnt);
-    if (risk != undefined) {
-      if (risk > 99) risk = 99;
-
-      cellSize = multiply(cellSize, 1 - risk / 100);
-    }
 
     if (cellSize <= 0) {
       cellSize = multiply(pair.sellRate, 0.01);
@@ -52,18 +52,18 @@ export class FillCellsStrategy implements BuyStrategyInterface {
       .innerJoin(
         Balance,
         'balance',
-        'strategy."accountId" = balance."accountId" and balance.currency = pair.currency2',
+        'strategy."accountId" = balance."account_id" and balance.currency = pair.currency2',
       )
       .leftJoin(
         Order,
         'order',
         `
-                    "order"."accountId" = "balance"."accountId" and
+                    "order"."accountId" = "balance"."account_id" and
                     "order".currency2 = "balance".currency and 
                     "order"."isActive" = true and
                     "order"."prefilled" < "order"."amount1" and
-                    "order".rate >= (floor("pair"."sellRate" / "strategy"."cellSize") * "strategy"."cellSize" ) and 
-                    "order".rate < ((floor("pair"."sellRate" / "strategy"."cellSize")+1) * "strategy"."cellSize")`,
+                    abs("order".rate - "pair"."sellRate") < "strategy"."cellSize"
+                    `,
       )
       .where('"order".id is null')
       .andWhere(
@@ -74,15 +74,15 @@ export class FillCellsStrategy implements BuyStrategyInterface {
       .andWhere(`"pair"."isActive" = true`)
       .andWhere(`"account"."is_trading_allowed" = true`)
       .andWhere(`"account"."isActive" = true`)
+      .andWhere(`"account"."is_connected" = true`)
       .andWhere(`"strategy"."cellSize" > 0`)
       .andWhere(`"strategy"."isActive" = true`)
       .select(
         `       distinct
-                "balance"."accountId",
+                "balance"."account_id" as "accountId",
                 "pair"."sellRate" as "rate",
                 GREATEST(cast(strategy."orderAmount" as DECIMAL), "pair"."minAmount2") as amount2,
-                "pair".id as "pairId",                
-                "pair".name as "pairName"
+                "pair".id as "pairId"
                 `,
       )
       .getRawMany();

@@ -57,15 +57,15 @@ export class TradeService {
         strategy.constructor.name + ': Ok....' + accounts.length + ' accounts',
       );
       for (const account of accounts) {
-        result.push(
-          this.buyOrderService.create(account).then((order) => {
-            orders.push(order);
-          }),
-        );
+        // result.push(
+        await this.buyOrderService.create(account).then((order) => {
+          orders.push(order);
+        });
+        // );
       }
     }
 
-    await Promise.all(result);
+    // await Promise.all(result);
     return orders;
   }
 
@@ -88,15 +88,15 @@ export class TradeService {
       );
 
       for (const orderInfo of orderInfos) {
-        result.push(
-          this.closeOrderService.create(orderInfo).then((order) => {
-            orders.push(order);
-          }),
-        );
+        // result.push(
+        await this.closeOrderService.create(orderInfo).then((order) => {
+          orders.push(order);
+        });
+        // );
       }
     }
 
-    await Promise.all(result);
+    // await Promise.all(result);
     return orders;
   }
 

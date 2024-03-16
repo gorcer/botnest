@@ -1,9 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { OrderSide, OrderType } from 'ccxt/js/src/base/types';
+import { numberTrim } from '../../helpers/helpers';
 import { Order, OrderSideEnum } from '../../order/entities/order.entity';
 
 @Injectable()
 export class DummyExchange {
+
+  test_mode = true;
+  
+  precision = 8;
+
   markets = [
     {
       symbol: 'BTC/USDT',
@@ -14,7 +20,7 @@ export class DummyExchange {
         cost: {
           min: 10,
         },
-      },
+      },      
     },
   ];
 
@@ -26,12 +32,31 @@ export class DummyExchange {
   lastOrderId = 0;
   tickers = {};
 
+  priceToPrecision(symbol, value) {
+    return this.amountToPrecision(symbol, value);
+  }
+  amountToPrecision(symbol, value) {
+    return numberTrim(value, this.precision);
+  }
+
   setTickers(tickers) {
     this.tickers = tickers;
   }
 
   fetchTickers() {
     return this.tickers;
+  }
+
+  setLastPrice(pair, value) {
+    return this.setTicker(pair, {last: value});
+  }
+
+  setTicker(pair, value) {
+    this.tickers[pair] = value;
+  }
+
+  fetchTicker(pair) {
+    return this.tickers[pair];
   }
 
   setNextOrderBook(bid: number, ask: number) {

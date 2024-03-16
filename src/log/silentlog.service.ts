@@ -16,5 +16,8 @@ export class SilentLogService {
     
   }
   
-  
+  write(...args: any[]): void {
+    
+  }
+
 }

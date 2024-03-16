@@ -18,6 +18,7 @@ export enum OperationType {
   TOPUP = 'topup',
   WITHDRAW = 'withdraw',
   FEE_TRANSPORT = 'fee_transport',
+  ROLLBACK = 'rollback',
 }
 
 @Entity()

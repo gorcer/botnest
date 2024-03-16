@@ -33,30 +33,27 @@ export class AwaitProfitStrategy implements SellStrategyInterface {
       .innerJoin(
         Balance,
         'balance',
-        'strategy."accountId" = balance."accountId" and balance.currency = pair.currency1',
+        'strategy."accountId" = balance."account_id" and balance.currency = pair.currency1',
       )
       .andWhere(
         //          new.amount2 - cur.sellFee / old.amount2
         `
       100*(((  ("pair"."buyRate" * "order".amount1) * (1-pair.fee)) / ("order".amount2 + "order".fee))-1) >= 
-        case 
-          when 
-            (${now} - "order"."createdAtSec") < ${SEC_IN_DAY}
-          then  
-            ( (strategy."minDailyProfit" / ${SEC_IN_YEAR}) * (${now} - "order"."createdAtSec") )
-          else  
-            ( (strategy."minYerlyProfit" / ${SEC_IN_YEAR}) * (${now} - "order"."createdAtSec") )
-        end        
+      GREATEST(
+        strategy."minProfit",
+      ( (strategy."minAnnualProfit" / ${SEC_IN_YEAR}) * (${now} - "order"."createdAtSec") )
+      )            
         `,
       )
       .andWhere(`"balance".amount >= order.amount1`)
       .andWhere(`"account"."is_trading_allowed" = true`)
       .andWhere(`"account"."isActive" = true`)
+      .andWhere(`"account"."is_connected" = true`)
       .andWhere(`"order".side = :side`, { side: OrderSideEnum.BUY })
       .andWhere(`"order".rate < "pair"."buyRate"`)
       .andWhere(`"order"."createdAtSec" < ${now}+1`)
       .andWhere('"order"."isActive" = true')
-      .andWhere('"strategy"."isActive" = true')
+      .andWhere(`"strategy"."isActive" = true`)
       .andWhere(
         '("strategy"."pairId" is null or "strategy"."pairId" = "pair"."id")',
       )
@@ -73,6 +70,7 @@ export class AwaitProfitStrategy implements SellStrategyInterface {
           "pair"."buyRate" as "rate"
       `,
       )
+      .limit(100)
       .getRawMany();
   }
 }

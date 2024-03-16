@@ -6,11 +6,12 @@ import { ExchangeService } from './exchange.service';
 import { Exchange } from './entities/exchange.entity';
 import { ApiService } from './api.service';
 import { CacheModule } from '@nestjs/cache-manager';
+import { FileLogService } from '../log/filelog.service';
 
 @Module({
   imports: [CacheModule.register(), TypeOrmModule.forFeature([Pair, Exchange])],
   controllers: [],
-  providers: [PairService, ExchangeService, ApiService],
+  providers: [FileLogService, PairService, ExchangeService, ApiService],
   exports: [PairService, ExchangeService, ApiService],
 })
 export class ExchangeModule {}

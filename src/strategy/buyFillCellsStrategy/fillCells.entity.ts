@@ -17,4 +17,7 @@ export class FillCells extends BaseStrategyModel {
 
   @Column({ type: 'boolean', default: true })
   isActive: boolean;
+
+  @Column({ type: 'decimal', default: 1 })
+  minRate: any;
 }

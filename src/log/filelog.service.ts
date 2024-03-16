@@ -17,6 +17,7 @@ export class FileLogService {
 
   error(...args: any[]): void {
     this.write('error', args);
+    this.write('info', args);
   }
 
   write(type, args) {
@@ -26,7 +27,7 @@ export class FileLogService {
       (Date.now() - this.lastWrite[type]) / 1000 +
       ') ' +
       JSON.stringify(args) +
-      '\r\n';
+      '\r\n\r\n';
     this.lastWrite[type] = Date.now();
 
     if (process.env.LOG_OUTPUT == 'true') console.log(message);

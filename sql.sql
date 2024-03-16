@@ -62,7 +62,7 @@ case
           then  
             ( ("strategy"."minDailyProfit" / 31536000) * (extract(epoch from now()) - "order"."createdAtSec") )
           else  
-            ( ("strategy"."minYerlyProfit" / 31536000) * (extract(epoch from now()) - "order"."createdAtSec") )
+            ( ("strategy"."minAnnualProfit" / 31536000) * (extract(epoch from now()) - "order"."createdAtSec") )
         end  as expectedProfit
        FROM "order" "order" 
        INNER JOIN "strategy_sell_awaitProfit" "strategy" ON strategy."accountId" = "order"."accountId"  

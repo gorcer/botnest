@@ -1,5 +1,8 @@
+import { clone, updateModel } from "../helpers/helpers";
+
 export class DefaultTestRepository {
   items = {};
+  defaults = {};
 
   find(where) {
     if (!where) return Object.values(this.items);
@@ -20,12 +23,21 @@ export class DefaultTestRepository {
   }
 
   create(data) {
-    return data;
+    const item = clone(this.defaults);
+    updateModel(item, data);
+
+    return this.save(item);
   }
 
   save(item) {
-    if (!item.id) item.id = Object.keys(this.items).length + 1;
+    if (!item.id) 
+      item.id = Object.keys(this.items).length + 1;
 
     this.items[item.id] = item;
+    return item;
+  }
+
+  setDefault(defaults) {
+    this.defaults = defaults;
   }
 }

@@ -13,6 +13,7 @@ import { TradeCheckService } from './tradeCheck.service';
 import { FeeService } from './fee.service';
 import { BuyOrderService } from './buyOrder.service';
 import { CloseOrderService } from './closeOrder.service';
+import { FrozenModule } from '../frozen/frozen.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { CloseOrderService } from './closeOrder.service';
     UserModule,
     CacheModule.register(),
     StrategyModule,
+    FrozenModule
   ],
   controllers: [],
   providers: [FileLogService, TradeService, BotNest, TradeCheckService, FeeService, BuyOrderService, CloseOrderService],

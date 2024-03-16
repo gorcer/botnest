@@ -1,19 +1,13 @@
-import { FileLogService } from '../log/filelog.service';
-import {
-  SEC_IN_HOUR,
-  elapsedSecondsFrom,
-  sleep,
-  extractCurrency,
-} from '../helpers/helpers';
-import { BalanceService } from '../balance/balance.service';
-import { ApiService } from '../exchange/api.service';
-import { FillCellsStrategy } from '../strategy/buyFillCellsStrategy/fillCellsStrategy.strategy';
-import { Account } from '../user/entities/account.entity';
-import { AwaitProfitStrategy } from '../strategy/sellAwaitProfitStrategy/awaitProfitStrategy.strategy';
-import { BotNest } from '../bot/botnest.service';
-import { Injectable } from '@nestjs/common';
-import { multiply, subtract } from '../helpers/bc';
-import { AccountService } from '../user/account.service';
+import { FileLogService } from "../log/filelog.service";
+import { elapsedSecondsFrom, extractCurrency, SEC_IN_HOUR, sleep } from "../helpers/helpers";
+import { BalanceService } from "../balance/balance.service";
+import { ApiService } from "../exchange/api.service";
+import { FillCellsStrategy } from "../strategy/buyFillCellsStrategy/fillCellsStrategy.strategy";
+import { Account } from "../user/entities/account.entity";
+import { AwaitProfitStrategy } from "../strategy/sellAwaitProfitStrategy/awaitProfitStrategy.strategy";
+import { BotNest } from "../bot/botnest.service";
+import { Injectable } from "@nestjs/common";
+import { multiply, subtract } from "../helpers/bc";
 
 @Injectable()
 export class DaemonTradeService {
@@ -28,8 +22,9 @@ export class DaemonTradeService {
     private log: FileLogService,
     private balance: BalanceService,
     private botnest: BotNest,
-    private apiService: ApiService,
-  ) {}
+    private apiService: ApiService
+  ) {
+  }
 
   async trade() {
     let lastStatUpdate = 0,
@@ -44,6 +39,7 @@ export class DaemonTradeService {
           await this.botnest.checkRates(
             this.minBuyRateMarginToProcess,
             this.minSellRateMarginToProcess,
+            this.pairs
           );
 
         // Если есть, то отправляем курс боту
@@ -87,7 +83,7 @@ export class DaemonTradeService {
         // 	}));
         // }
       } catch (e) {
-        this.log.error('Trade error...wait 60 sec', e.message, e.stack);
+        this.log.error("Trade error...wait 60 sec", e.message, e.stack);
         await sleep(60);
       }
     }
@@ -99,10 +95,10 @@ export class DaemonTradeService {
 
     const exchange = await this.botnest.fetchOrCreateExchange(
       process.env.EXCHANGE_NAME,
-      process.env.TEST_MODE == 'true',
+      process.env.TEST_MODE == "true"
     );
 
-    this.pairs = process.env.PAIRS.replace(' ', '').split(',');
+    this.pairs = process.env.PAIRS.replace(" ", "").split(",");
 
     this.botnest.addStrategy(FillCellsStrategy);
     this.botnest.addStrategy(AwaitProfitStrategy);
@@ -111,7 +107,7 @@ export class DaemonTradeService {
       apiKey: process.env.EXCHANGE_API_KEY,
       secret: process.env.EXCHANGE_API_SECRET,
       password: process.env.EXCHANGE_API_PASSWORD,
-      exchange,
+      exchange
     });
     this.api = await this.botnest.getApiForAccount(this.account.id);
 
@@ -130,7 +126,7 @@ export class DaemonTradeService {
       // );
       const balance2 = await this.balance.getBalance(
         this.account.id,
-        currency2,
+        currency2
       );
 
       const totalBalance = balance2.amount;
@@ -138,7 +134,7 @@ export class DaemonTradeService {
       await this.botnest.setStrategyForAccount(
         {
           accountId: this.account.id,
-          pairId: pair.id,
+          pairId: pair.id
         },
         FillCellsStrategy,
         {
@@ -149,21 +145,21 @@ export class DaemonTradeService {
             totalBalance,
             pair,
             orderAmount: Number(process.env.STRATEGY_BUY_ORDER_AMOUNT),
-            risk: process.env.STRATEGY_BUY_RISK,
-          }),
-        },
+            minRate: pair.historicalMinRate
+          })
+        }
       );
     }
 
     await this.botnest.setStrategyForAccount(
       {
-        accountId: this.account.id,
+        accountId: this.account.id
       },
       AwaitProfitStrategy,
       {
         minDailyProfit: Number(process.env.STRATEGY_SELL_MIN_DAILY_PROFIT), // % годовых если сделка закрывается за день
-        minYearlyProfit: Number(process.env.STRATEGY_SELL_MIN_ANNUAL_PROFIT), // % годовых если сделка живет больше дня
-      },
+        minYearlyProfit: Number(process.env.STRATEGY_SELL_MIN_ANNUAL_PROFIT) // % годовых если сделка живет больше дня
+      }
     );
 
     // проверить состояние открытых ордеров
@@ -180,7 +176,7 @@ export class DaemonTradeService {
   private async checkBalance() {
     await this.balance.set(
       this.account.id,
-      await this.apiService.fetchBalances(this.api),
+      await this.apiService.fetchBalances(this.api)
     );
 
     for (const pairName of this.pairs) {
@@ -188,13 +184,13 @@ export class DaemonTradeService {
       const ordersSum = await this.botnest.getActiveOrdersSum(
         this.account.id,
         currency1,
-        'amount1',
+        "amount1"
       );
 
       const balance = await this.balance.getBalance(this.account.id, currency1);
       if (balance) {
-        balance.inOrders = ordersSum ?? 0;
-        balance.available = subtract(balance.amount, balance.inOrders);
+        balance.in_orders = ordersSum ?? 0;
+        balance.available = subtract(balance.amount, balance.in_orders);
         await this.balance.saveBalance(balance);
       }
     }
@@ -205,11 +201,11 @@ export class DaemonTradeService {
       const { currency1, currency2 } = extractCurrency(pair);
       const balance1 = await this.balance.getBalanceAmount(
         accountId,
-        currency1,
+        currency1
       );
       const balance2 = await this.balance.getBalanceAmount(
         accountId,
-        currency2,
+        currency2
       );
       const rate = await this.apiService.getLastPrice(this.api, pair);
 
@@ -218,8 +214,8 @@ export class DaemonTradeService {
         balance1,
         currency2,
         balance2,
-        'Total in ' + currency2,
-        multiply(rate, balance1),
+        "Total in " + currency2,
+        multiply(rate, balance1)
       );
     }
   }

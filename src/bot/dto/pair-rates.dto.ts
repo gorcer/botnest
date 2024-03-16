@@ -1,12 +1,12 @@
 export class RateDto {
-    bid: number;
-    ask: number;
+  bid: number;
+  ask: number;
 }
 
 export class PairRatesDto {
-    [pairName: string]: RateDto
+  [pairName: string]: RateDto;
 }
 
 export class ExchangePairRatesDto {
-    [exchangeId: number]: PairRatesDto
+  [exchangeId: number]: PairRatesDto;
 }

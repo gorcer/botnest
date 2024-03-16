@@ -8,8 +8,8 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-@Entity("balances")
-export class Balance {
+@Entity()
+export class Frozen {
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -35,12 +35,8 @@ export class Balance {
   amount: number;
 
   @Column({ type: 'decimal', default: 0 })
-  in_orders: number;
+  amount_in_usd: number;
 
   @Column({ type: 'decimal', default: 0 })
-  for_fee: number;
-
-  @Index()
-  @Column({ type: 'decimal', default: 0 })
-  available: number;
+  avg_rate: number;
 }

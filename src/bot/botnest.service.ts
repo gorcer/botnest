@@ -60,8 +60,8 @@ export class BotNest {
 
         const balance = await this.balance.getBalance(accountId, currency);
         if (balance) {
-          balance.inOrders = ordersSum ?? 0;
-          balance.available = subtract(balance.amount, balance.inOrders);
+          balance.in_orders = ordersSum ?? 0;
+          balance.available = subtract(balance.amount, balance.in_orders);
           await this.balance.saveBalance(balance);
         }
       }
@@ -141,6 +141,7 @@ export class BotNest {
   public async checkRates(
     minBuyRateMarginToProcess: number,
     minSellRateMarginToProcess: number,
+    availablePairs: Array<String>,
   ): Promise<{
     isBidMargined: boolean;
     isAskMargined: boolean;
@@ -159,7 +160,12 @@ export class BotNest {
       const api = await this.exchange.getApiForExchange(exchange);
 
       for (const pair of exchange.pairs) {
+        if (pair.isActive == false) continue;
+
         const pairName = pair.name;
+
+        if (!availablePairs.includes(pairName)) continue;
+
         if (!this.lastRates[exchange.id][pairName]) {
           this.lastRates[exchange.id][pairName] = {
             bid: 0,
@@ -167,43 +173,54 @@ export class BotNest {
           };
         }
         const lastRates = this.lastRates[exchange.id][pairName];
-        const rates = await this.apiService.getActualRates(api, pairName);
 
-        const isCurrentBidMargined = isSuitableRate(
-          rates.bid,
-          lastRates.bid,
-          minBuyRateMarginToProcess,
-        );
-        const isCurrentAskMargined = isSuitableRate(
-          rates.ask,
-          lastRates.ask,
-          minSellRateMarginToProcess,
-        );
+        try {
+          const rates = await this.apiService.getActualRates(api, pairName);
 
-        if (isCurrentBidMargined) {
-          changedPairs[exchange.id] = changedPairs[exchange.id] || {};
-          changedPairs[exchange.id][pairName] = rates;
-
-          this.log.info(
-            `[${exchange.title}] Rates by ${pairName} bid:`,
+          const isCurrentBidMargined = isSuitableRate(
             rates.bid,
+            lastRates.bid,
+            minBuyRateMarginToProcess,
           );
-          lastRates.bid = rates.bid;
-        }
-
-        if (isCurrentAskMargined) {
-          changedPairs[exchange.id] = changedPairs[exchange.id] || {};
-          changedPairs[exchange.id][pairName] = rates;
-
-          this.log.info(
-            `[${exchange.title}] Rates by ${pairName} ask:`,
+          const isCurrentAskMargined = isSuitableRate(
             rates.ask,
+            lastRates.ask,
+            minSellRateMarginToProcess,
           );
-          lastRates.ask = rates.ask;
-        }
 
-        isBidMargined = isBidMargined || isCurrentBidMargined;
-        isAskMargined = isAskMargined || isCurrentAskMargined;
+          if (isCurrentBidMargined) {
+            changedPairs[exchange.id] = changedPairs[exchange.id] || {};
+            changedPairs[exchange.id][pairName] = rates;
+
+            this.log.info(
+              `[${exchange.title}] Rates by ${pairName} bid:`,
+              rates.bid,
+            );
+            lastRates.bid = rates.bid;
+          }
+
+          if (isCurrentAskMargined) {
+            changedPairs[exchange.id] = changedPairs[exchange.id] || {};
+            changedPairs[exchange.id][pairName] = rates;
+
+            this.log.info(
+              `[${exchange.title}] Rates by ${pairName} ask:`,
+              rates.ask,
+            );
+            lastRates.ask = rates.ask;
+          }
+
+          isBidMargined = isBidMargined || isCurrentBidMargined;
+          isAskMargined = isAskMargined || isCurrentAskMargined;
+        } catch (e) {
+          this.log.error(
+            exchange.title + ': Get rates error (' + pairName + ')',
+            e.message,
+            e.stack,
+          );
+          // return { isBidMargined, isAskMargined, changedPairs };
+          continue;
+        }
       }
     }
     return { isBidMargined, isAskMargined, changedPairs };

@@ -80,7 +80,7 @@ describe('ActiveOrdersAboveProfit', () => {
 
     strategyService.setStrategyForAccount({ accountId }, AwaitProfitStrategy, {
       minDailyProfit: 200,
-      minYerlyProfit: 30,
+      minAnnualProfit: 30,
     });
     const pair = await pairService.fetchOrCreate(exchange_id, pairName);
     await orderService.create({

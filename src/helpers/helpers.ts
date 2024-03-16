@@ -8,6 +8,10 @@ export const SEC_IN_DAY = SEC_IN_HOUR * 24;
 export const SEC_IN_YEAR = SEC_IN_DAY * 365;
 export const lock = asynclock;
 
+export function clone(obj) {
+  return {...obj};
+}
+
 /**
  *
  * @param n seconds to sleep
@@ -56,7 +60,7 @@ export function checkLimits(
 
   const amount2 = multiply(price, amount1);
   if (compareTo(amount2, minCost) < 0) {
-    amount1 = divide(minCost * 1.1, price, amountPrecision);
+    amount1 = divide(minCost * 1.2, price, amountPrecision);
   }
 
   return amount1;

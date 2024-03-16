@@ -5,6 +5,10 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { Injectable, Inject } from '@nestjs/common';
 import { extractCurrency } from '../helpers/helpers';
+import { FileLogService } from '../log/filelog.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { CatchApiError } from '../decorators/CatchApiError';
+import { CcxtExchangeDto } from './dto/CcxtExchange.dts';
 
 class MarketInfoDto {
   minAmount: number;
@@ -21,14 +25,30 @@ export class ApiService {
   lastTradesFetching;
   availableCurrencies = [];
 
-  constructor(@Inject(CACHE_MANAGER) private cacheManager: Cache) {
+  constructor(
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private eventEmitter: EventEmitter2,
+  ) {
     const pairs = process.env.PAIRS.replace(' ', '').split(',');
     for (const pair of pairs) {
       const { currency1, currency2 } = extractCurrency(pair);
       this.availableCurrencies.push(currency1);
       this.availableCurrencies.push(currency2);
     }
+
+    // Оборачиваем в try...catch все ошибки
+    // const excludedMethods = ['constructor', 'withTryCatch'];
+    // Object.getOwnPropertyNames(ApiService.prototype)
+    //   .filter(
+    //     (method) =>
+    //       !excludedMethods.includes(method) &&
+    //       typeof this[method] === 'function',
+    //   )
+    //   .forEach((methodName) => {
+    //     this[methodName] = this.withTryCatch(this[methodName].bind(this));
+    //   });
   }
+
 
   public async getApi(
     exchangeClass,
@@ -47,13 +67,17 @@ export class ApiService {
       password,
       options: { defaultType: 'spot' },
     });
-    api.setSandboxMode(sandBoxMode);
-
-    await api.loadMarkets();
+    api.setSandboxMode(sandBoxMode);   
 
     return api;
   }
+  
+  @CatchApiError
+  public async loadMarkets(api) {
+    return await api.loadMarkets();
+  }
 
+  @CatchApiError
   public async getActualRates(
     api,
     pair: string,
@@ -70,6 +94,7 @@ export class ApiService {
     return { bid, ask };
   }
 
+  @CatchApiError
   public async getMarketInfo(api, pair: string): Promise<MarketInfoDto> {
     const key = api.exchange_id + '.market.' + pair;
     let value: MarketInfoDto = await this.cacheManager.get(key);
@@ -105,6 +130,7 @@ export class ApiService {
     return value;
   }
 
+  @CatchApiError
   public async fetchBalances(api): Promise<BalancesDto> {
     // const markets = (await this.exchange.fetchMarkets()).filter((item) => item.id == 'ETHUSDT');
     // console.log(markets[0].limits, markets[0]);
@@ -114,26 +140,29 @@ export class ApiService {
     const result = {};
     for (const [currency, value] of Object.entries(response.free)) {
       if (this.availableCurrencies.includes(currency)) {
-        result[currency] = api.currencyToPrecision(currency, value);
+        // result[currency] = api.currencyToPrecision(currency, value);
+        result[currency] = value;
       }
     }
 
     return result;
   }
 
+  @CatchApiError
   public async createOrder(
-    api,
+    api: CcxtExchangeDto,
     symbol: string,
     type: OrderType,
     side: OrderSide,
     amount: number,
     price: number,
   ) {
+    console.log('Create order', api.account_id);;
     let order = await api.createOrder(
       symbol,
       type,
       side,
-      amount,
+      api.amountToPrecision(symbol, amount),
       api.priceToPrecision(symbol, price),
     );
 
@@ -147,20 +176,23 @@ export class ApiService {
   // public async watchTrades(api, pair: string) {
   //   return api.watchMyTrades(pair);
   // }
-
+  @CatchApiError
   public async fetchOrders(api, symbol: string) {
     return api.fetchOrders(symbol);
   }
 
+  @CatchApiError
   public async fetchOrder(api, orderId: string, symbol: string) {
-    return api.fetchOrder(String(orderId), symbol);
+    return await api.fetchOrder(String(orderId), symbol);
   }
 
+  @CatchApiError
   public async fetchTrades(api, pair, since) {
     return api.fetchTrades(pair, since);
   }
 
-  async getLastPrice(api, pair: string) {
+  @CatchApiError
+  async getLastPrice(api, pair: string): Promise<number> {
     const key = api.exchange_id + '.lastPrice.' + pair;
     let value = await this.cacheManager.get(key);
     if (!value) {
@@ -169,6 +201,6 @@ export class ApiService {
       await this.cacheManager.set(key, value, 1000);
     }
 
-    return value;
+    return value as number;
   }
 }

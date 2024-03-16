@@ -19,6 +19,10 @@ import { Account } from '../user/entities/account.entity';
 import { TestStrategyService } from '../strategy/mock/teststrategy.service';
 import { ExchangeService } from '../exchange/exchange.service';
 import { CacheModule } from '@nestjs/cache-manager';
+import { Frozen } from '../frozen/frozen.entity';
+import { FrozenService } from '../frozen/frozen.service';
+import { BotModule } from '../bot/bot.module';
+import { ExchangeModule } from '../exchange/exchange.module';
 
 export async function TestingModuleCreate() {
   const accountId = 1;
@@ -29,6 +33,8 @@ export async function TestingModuleCreate() {
       ConfigModule.forRoot({
         envFilePath: '.test.env',
       }),
+      BotModule,
+      ExchangeModule
     ],
     providers: [
       TradeService,
@@ -36,6 +42,14 @@ export async function TestingModuleCreate() {
       AccountService,
       {
         provide: getRepositoryToken(Account),
+        useClass: DefaultTestRepository,
+      },
+      {
+        provide: getRepositoryToken(Frozen),
+        useClass: DefaultTestRepository,
+      },
+      {
+        provide: getRepositoryToken(Pair),
         useClass: DefaultTestRepository,
       },
       {
@@ -53,13 +67,10 @@ export async function TestingModuleCreate() {
       {
         provide: OrderService,
         useClass: TestOrderService,
-      },
-      {
-        provide: getRepositoryToken(Pair),
-        useClass: DefaultTestRepository,
-      },
+      },     
       PairService,
       ApiService,
+      FrozenService
     ],
   }).compile();
 
@@ -67,6 +78,7 @@ export async function TestingModuleCreate() {
   const pairs = module.get<PairService>(PairService);
   const balances = module.get<BalanceService>(BalanceService);
   const apiService = module.get<ApiService>(ApiService);
+  const frozenService = module.get<FrozenService>(FrozenService);
 
   const accounts = module.get<AccountService>(AccountService);
   const userAccount = await accounts.fetchOrCreate(1);
@@ -79,5 +91,5 @@ export async function TestingModuleCreate() {
   const publicApi = await accounts.getApiForAccount(1);
   const api = publicApi;
 
-  return { module, bot, pairs, balances, api, publicApi, apiService };
+  return { module, bot, pairs, balances, api, publicApi, apiService, frozenService };
 }
