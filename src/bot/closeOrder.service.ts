@@ -43,19 +43,21 @@ export class CloseOrderService {
       orderInfo.needSell,
       price,
     );
+   
 
-    const amount2 = extOrder.cost || multiply(extOrder.amount, extOrder.price);
-    let amount2_in_usd = amount2;
+    if (extOrder && extOrder.id != undefined) {
 
-    if (currency2 != 'USDT') {
-      const usdRate = await this.apiService.getLastPrice(
-        api,
-        currency2 + '/USDT',
-      );
-      amount2_in_usd = multiply(usdRate, amount2);
-    }
+      const amount2 = extOrder.cost || multiply(extOrder.amount, extOrder.price);
+      let amount2_in_usd = amount2;
+  
+      if (currency2 != 'USDT') {
+        const usdRate = await this.apiService.getLastPrice(
+          api,
+          currency2 + '/USDT',
+        );
+        amount2_in_usd = multiply(usdRate, amount2);
+      }
 
-    if (extOrder.id != undefined) {
       // store in db
       closeOrder = await this.orders.create({
         pairName,
@@ -110,7 +112,7 @@ export class CloseOrderService {
    * Откат ордера если по какой-то причине он пропал с биржи
    * @param order 
    */
-  private async rollback(order: Order) {
+  public async rollback(order: Order) {
     this.log.info(order.accountId + ': Rollback order #' + order.extOrderId);
 
     await this.balance.income(

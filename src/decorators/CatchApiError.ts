@@ -45,7 +45,7 @@ export function CatchApiError(
         });
       }
 
-      throw new ExchangeError(msg, code);
+      throw new ExchangeError(error.message, code);
     }
   };
 }

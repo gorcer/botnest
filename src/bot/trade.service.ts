@@ -13,7 +13,7 @@ import { TradeCheckService } from './tradeCheck.service';
 import { BuyOrderService } from './buyOrder.service';
 import { FeeService } from './fee.service';
 import { CloseOrderService } from './closeOrder.service';
-import { sleep } from '../helpers/helpers';
+import { elapsedSecondsFrom, SEC_IN_DAY, sleep } from '../helpers/helpers';
 
 @Injectable()
 export class TradeService {
@@ -32,7 +32,7 @@ export class TradeService {
     private eventEmitter: EventEmitter2,
     private tradeCheck: TradeCheckService,
 
-    private buyOrderService: BuyOrderService,
+    public buyOrderService: BuyOrderService,
     private closeOrderService: CloseOrderService,
     private feeService: FeeService,
   ) {}
@@ -107,9 +107,9 @@ export class TradeService {
       side: OrderSideEnum.SELL,
     });
     for (const order of orders) {
-      try {
-        const closedOrder = await this.closeOrderService.check(order);
-        if (closedOrder) closedOrders.push(closedOrder);
+      try {        
+          const closedOrder = await this.closeOrderService.check(order);
+          if (closedOrder) closedOrders.push(closedOrder);
       } catch (e) {
         this.log.error(
           'Check order ' + order.extOrderId + ' error...wait 1 sec',

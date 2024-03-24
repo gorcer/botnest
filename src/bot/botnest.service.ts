@@ -7,7 +7,7 @@ import { AccountService } from '../user/account.service';
 import { ExchangePairRatesDto, RateDto } from './dto/pair-rates.dto';
 import { TradeService } from './trade.service';
 import { OrderService } from '../order/order.service';
-import { isSuitableRate } from '../helpers/helpers';
+import { isSuitableRate, sleep } from '../helpers/helpers';
 import { FileLogService } from '../log/filelog.service';
 import { BalanceService } from '../balance/balance.service';
 import { subtract } from '../helpers/bc';
@@ -218,6 +218,7 @@ export class BotNest {
             e.message,
             e.stack,
           );
+          await sleep(1);
           // return { isBidMargined, isAskMargined, changedPairs };
           continue;
         }

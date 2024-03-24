@@ -5,6 +5,11 @@ import { BotNest } from './bot/botnest.service';
 import { BuyOrderService } from './bot/buyOrder.service';
 import { CloseOrderService } from './bot/closeOrder.service';
 import { subtract } from './helpers/bc';
+import { sleep } from './helpers/helpers';
+
+process.on('unhandledRejection', (err) => {
+  console.error('Unhandled Rejection:', err);
+});
 
 async function bootstrap() {
   const app = await NestFactory.create(BotnestModule);
@@ -40,10 +45,23 @@ async function bootstrap() {
         const botNest = await app.resolve(BotNest);
         const api = await botNest.getApiForAccount(2);
 
-        console.log(
-          api.currencyToPrecision('USDT', 0.000602923677),
-          api.currencies['USDT'].precision,
-        );
+        while (true) {
+          try {
+            const a = { b: 1 };
+            //@ts-ignore
+            console.log('Try', a.b.c.d);
+            const res = await botNest.getActualRates(api, 'BTC/USDT').catch(e => {
+              console.log('catch 2', e);
+            });
+            console.log(res);
+          } catch (e) {
+            console.log(e);
+          }
+
+          await sleep(1);
+        }
+
+
       }
       break;
     case 'checkBalance':
@@ -56,21 +74,32 @@ async function bootstrap() {
       break;
     case 'testOrders':
       {
-        const accountId = 1;
+        const accountId = 2;
 
         const service = await app.resolve(BuyOrderService);
-        const result1 = await service.create({
-          accountId,
-          pairId: 3,
-          rate: 50000,
-          amount2: 100,
-        });
-        const result2 = await service.create({
-          accountId,
-          pairId: 3,
-          rate: 50000,
-          amount2: 100,
-        });
+        while(true) {
+        try {
+          const result1 = await service.create({
+            accountId,
+            pairId: 3,
+            rate: 50000,
+            amount2: 100,
+          });
+        } catch (e) { 
+          console.log('e', e);
+        }
+
+        // try {
+        //   const result2 = await service.create({
+        //     accountId,
+        //     pairId: 3,
+        //     rate: 50000,
+        //     amount2: 100,
+        //   });          
+        // } catch (e) { }
+
+        await sleep(30);
+      }
 
         // console.log('Finish');
         // await new Promise(r => setTimeout(r, 10000));
@@ -88,7 +117,7 @@ async function bootstrap() {
         //   id: result1.order.id,
         // });
 
-        const r3 = service.create({
+        const r3 = await service.create({
           accountId,
           pairId: 3,
           rate: 50000,
@@ -105,12 +134,12 @@ async function bootstrap() {
         //   id: result2.order.id,
         // });
 
-        await Promise.all([
-          ,
-          // r2
-          r3,
-          // ,r4
-        ]);
+        // await Promise.all([
+        //   ,
+        //   // r2
+        //   r3,
+        //   // ,r4
+        // ]);
       }
       break;
     case 'createBuyOrder':
