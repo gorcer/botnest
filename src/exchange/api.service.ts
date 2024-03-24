@@ -82,7 +82,8 @@ export class ApiService {
     api,
     pair: string,
   ): Promise<{ bid: number; ask: number }> {
-    const orderBook = await api.fetchOrderBook(pair, 5);
+    const orderBook = await api.watchOrderBook(pair, 1);
+    // const orderBook = await api.fetchOrderBook(pair, 1);
 
     if (orderBook.bids[0] == undefined || orderBook.asks[0] == undefined) {
       throw new Error('Can`t fetch rates for pair ' + pair);
@@ -157,16 +158,16 @@ export class ApiService {
     amount: number,
     price: number,
   ) {
-    console.log('Create order', api.account_id);;
+    
     let order = await api.createOrder(
       symbol,
       type,
       side,
       api.amountToPrecision(symbol, amount),
-      api.priceToPrecision(symbol, price),
+      Number(api.priceToPrecision(symbol, price)),
     );
 
-    if (typeof order.amount == 'undefined') {
+    if (order && typeof order.amount == 'undefined') {
       order = await this.fetchOrder(api, order.id, symbol);
     }
 

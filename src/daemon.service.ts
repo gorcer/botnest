@@ -54,7 +54,7 @@ export class DaemonService {
     const key = accountId + '.recalcCellSize';
     const isChecked: boolean = await this.cacheManager.get(key);
     if (isChecked) return;
-    await this.cacheManager.set(key, true, 10 * 60 * 1000);
+    
 
     try {
       if (accountId) {
@@ -63,6 +63,8 @@ export class DaemonService {
     } catch (e) {
       this.log.error('recalcCellSize error...', e.message, e.stack);
     }
+
+    await this.cacheManager.set(key, true, 10 * 60 * 1000);
   }
 
   public async init() {

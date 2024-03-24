@@ -64,8 +64,9 @@ export class BuyOrderService {
       amount1,
       price,
     );
+    this.log.info(accountId + ': Ok ');
 
-    if (extOrder.id != undefined) {
+    if (extOrder && extOrder.id != undefined) {
 
 
       // @ts-ignore
@@ -101,15 +102,7 @@ export class BuyOrderService {
         amount1: extOrder.filled,
         amount2,
         amount2_in_usd,
-        fee_in_usd,
-        // amount1: api.currencyToPrecision(
-        //     currency1,
-        //     extOrder.filled,
-        // ),
-        // amount2: api.currencyToPrecision(
-        //     currency2,
-        //     extOrder.cost || multiply(extOrder.amount, extOrder.average),
-        // ),
+        fee_in_usd,        
         fee: feeInCurrency2Cost,
         fee1,
         fee2,
@@ -151,16 +144,6 @@ export class BuyOrderService {
         );
       }
 
-      this.log.info(
-        'New order',
-        order.accountId,
-        order.extOrderId,
-        order.rate,
-        order.amount1,
-        order.amount2,
-        extOrder,
-      );
-
       if (extOrder.id != undefined) {
         await this.eventEmitter.emitAsync('buyOrder.created', {
           orderInfo: {
@@ -174,6 +157,18 @@ export class BuyOrderService {
           // feeCost,
         });
       }
+
+      this.log.info(accountId + ': Ok ');
+
+      this.log.info(
+        'New order',
+        order.accountId,
+        order.extOrderId,
+        order.rate,
+        order.amount1,
+        order.amount2,
+        extOrder,
+      );
       return { extOrder, order };
     } else {
       return null;
@@ -203,7 +198,7 @@ export class BuyOrderService {
       pair.sellRate,
     );
 
-    if (extOrder.id != undefined) {
+    if (extOrder && extOrder.id != undefined) {
       const { currency1, currency2 } = pair;
 
       
