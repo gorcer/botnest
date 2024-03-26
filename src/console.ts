@@ -74,7 +74,7 @@ async function bootstrap() {
       break;
     case 'testOrders':
       {
-        const accountId = 2;
+        const accountId = 1;
 
         const service = await app.resolve(BuyOrderService);
         while(true) {
@@ -98,8 +98,10 @@ async function bootstrap() {
         //   });          
         // } catch (e) { }
 
-        await sleep(30);
+        await sleep(10);
       }
+
+      await sleep(3000);
 
         // console.log('Finish');
         // await new Promise(r => setTimeout(r, 10000));

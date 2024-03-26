@@ -149,7 +149,7 @@ export class ApiService {
     return result;
   }
 
-  @CatchApiError
+  // @CatchApiError
   public async createOrder(
     api: CcxtExchangeDto,
     symbol: string,
@@ -159,13 +159,22 @@ export class ApiService {
     price: number,
   ) {
     
-    let order = await api.createOrder(
+    // api.verbose = true;
+    // @todo - вынести в конфиг
+    const handle = api.name == 'Binance' ? 'createOrder' : 'createOrderWs';
+
+    let order = await api[handle](
       symbol,
       type,
       side,
       api.amountToPrecision(symbol, amount),
       Number(api.priceToPrecision(symbol, price)),
     );
+
+    // Если массив прилетел
+    if (Array.isArray(order)) {
+      order = order[0];
+    }
 
     if (order && typeof order.amount == 'undefined') {
       order = await this.fetchOrder(api, order.id, symbol);
@@ -197,7 +206,8 @@ export class ApiService {
     const key = api.exchange_id + '.lastPrice.' + pair;
     let value = await this.cacheManager.get(key);
     if (!value) {
-      const ticker = await api.fetchTicker(pair);
+      // const ticker = await api.fetchTicker(pair);
+      const ticker = await api.watchTicker(pair);
       value = ticker.last;
       await this.cacheManager.set(key, value, 1000);
     }
