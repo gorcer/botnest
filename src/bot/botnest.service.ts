@@ -28,7 +28,7 @@ export class BotNest {
     private log: FileLogService,
     private balance: BalanceService,
     private exchange: ExchangeService,
-    private apiService: ApiService,
+    public apiService: ApiService,
   ) {}
 
   public async fetchOrCreateExchange(title: string, test_mode: boolean) {

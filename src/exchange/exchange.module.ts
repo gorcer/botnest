@@ -9,7 +9,10 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { FileLogService } from '../log/filelog.service';
 
 @Module({
-  imports: [CacheModule.register(), TypeOrmModule.forFeature([Pair, Exchange])],
+  imports: [
+    CacheModule.register(), 
+    TypeOrmModule.forFeature([Pair, Exchange])
+  ],
   controllers: [],
   providers: [FileLogService, PairService, ExchangeService, ApiService],
   exports: [PairService, ExchangeService, ApiService],

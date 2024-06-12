@@ -45,21 +45,13 @@ async function bootstrap() {
         const botNest = await app.resolve(BotNest);
         const api = await botNest.getApiForAccount(2);
 
-        while (true) {
-          try {
-            const a = { b: 1 };
-            //@ts-ignore
-            console.log('Try', a.b.c.d);
-            const res = await botNest.getActualRates(api, 'BTC/USDT').catch(e => {
-              console.log('catch 2', e);
-            });
-            console.log(res);
-          } catch (e) {
-            console.log(e);
-          }
+        const order = await botNest.apiService.fetchOrder(
+            api,
+            "699471470552309776",
+          'BTC/USDT',
+          );
 
-          await sleep(1);
-        }
+        console.log(order);
 
 
       }
@@ -72,121 +64,151 @@ async function bootstrap() {
         console.log(result);
       }
       break;
+  //   case 'testOrders2':
+  //     {
+  //       const botNest = await app.resolve(BotNest);
+  //       const exchange = await botNest.getApiForAccount(1);
+
+  //       const symbol = 'BTC/USDT';
+  //       const side = 'buy';
+  //       const type = 'limit';
+  //       const price = 50000; // Цена
+  //       const amount = 0.001; // Количество
+
+
+  //       try {
+  //         console.log('Try to buy 1');
+  //         // exchange.verbose = true;
+  //         const order = await exchange.createOrderWs(symbol, type, side, amount, price);
+  //         console.log('Ok', order.id);
+  //         console.log('Try to buy 2');
+  //         sleep(10);
+  //         const order2 = await exchange.createOrderWs(symbol, type, side, amount, price);
+  //         console.log('Ok', order2.id);
+
+  //       } catch (e) {
+  //         console.log('e', e);
+  //       }
+
+  //     };
+
+  //     break;
+  // },
     case 'testOrders':
-      {
-        const accountId = 1;
+  {
+    const accountId = 1;
 
-        const service = await app.resolve(BuyOrderService);
-        while(true) {
-        try {
-          const result1 = await service.create({
-            accountId,
-            pairId: 3,
-            rate: 50000,
-            amount2: 100,
-          });
-        } catch (e) { 
-          console.log('e', e);
-        }
-
-        // try {
-        //   const result2 = await service.create({
-        //     accountId,
-        //     pairId: 3,
-        //     rate: 50000,
-        //     amount2: 100,
-        //   });          
-        // } catch (e) { }
-
-        await sleep(10);
-      }
-
-      await sleep(3000);
-
-        // console.log('Finish');
-        // await new Promise(r => setTimeout(r, 10000));
-
-        // const botNest = await app.resolve(BotNest);
-        // await botNest.checkBalance(accountId);
-
-        // const r2= service.createCloseOrder({
-        //   accountId,
-        //   pairName: result1.order.pairName,
-        //   rate: 20000,
-        //   needSell: result1.order.amount1,
-        //   pairId: result1.order.pairId,
-        //   prefilled: result1.order.prefilled,
-        //   id: result1.order.id,
-        // });
-
-        const r3 = await service.create({
+    const service = await app.resolve(BuyOrderService);
+    while (true) {
+      try {
+        const result1 = await service.create({
           accountId,
           pairId: 3,
           rate: 50000,
           amount2: 100,
         });
+      } catch (e) {
+        console.log('e', e);
+      }
 
-        // const r4= service.createCloseOrder({
-        //   accountId,
-        //   pairName: result2.order.pairName,
-        //   rate: 20000,
-        //   needSell: result2.order.amount1,
-        //   pairId: result2.order.pairId,
-        //   prefilled: result2.order.prefilled,
-        //   id: result2.order.id,
-        // });
+      // try {
+      //   const result2 = await service.create({
+      //     accountId,
+      //     pairId: 3,
+      //     rate: 50000,
+      //     amount2: 100,
+      //   });          
+      // } catch (e) { }
 
-        // await Promise.all([
-        //   ,
-        //   // r2
-        //   r3,
-        //   // ,r4
-        // ]);
-      }
-      break;
-    case 'createBuyOrder':
-      {
-        const accountId = Number(process.argv[3]);
-        const rate = Number(process.argv[4]);
-        const amount2 = Number(process.argv[5]);
-        const service = await app.resolve(BuyOrderService);
-        const result = await service.create({
-          accountId,
-          pairId: 3,
-          rate,
-          amount2,
-        });
-        console.log(result);
-      }
-      break;
-    case 'createCloseOrder':
-      {
-        const accountId = Number(process.argv[3]);
-        const rate = Number(process.argv[4]);
-        const service = await app.resolve(CloseOrderService);
-        const result = await service.create({
-          accountId,
-          pairName: 'BTC/USDT',
-          rate,
-          needSell: 0.00001421,
-          pairId: 3,
-          prefilled: 0,
-          id: 8857,
-        });
-        console.log(result);
-      }
-      break;
-    case 'test':
-      {
-        process.env.TZ = 'Europe/Moscow';
-        const date = new Date();
+      await sleep(10);
+    }
 
-        console.log(date);
-      }
-      break;
+    await sleep(3000);
+
+    // console.log('Finish');
+    // await new Promise(r => setTimeout(r, 10000));
+
+    // const botNest = await app.resolve(BotNest);
+    // await botNest.checkBalance(accountId);
+
+    // const r2= service.createCloseOrder({
+    //   accountId,
+    //   pairName: result1.order.pairName,
+    //   rate: 20000,
+    //   needSell: result1.order.amount1,
+    //   pairId: result1.order.pairId,
+    //   prefilled: result1.order.prefilled,
+    //   id: result1.order.id,
+    // });
+
+    const r3 = await service.create({
+      accountId,
+      pairId: 3,
+      rate: 50000,
+      amount2: 100,
+    });
+
+    // const r4= service.createCloseOrder({
+    //   accountId,
+    //   pairName: result2.order.pairName,
+    //   rate: 20000,
+    //   needSell: result2.order.amount1,
+    //   pairId: result2.order.pairId,
+    //   prefilled: result2.order.prefilled,
+    //   id: result2.order.id,
+    // });
+
+    // await Promise.all([
+    //   ,
+    //   // r2
+    //   r3,
+    //   // ,r4
+    // ]);
   }
-  await app.close();
-  process.exit(0);
+  break;
+    case 'createBuyOrder':
+  {
+    const accountId = Number(process.argv[3]);
+    const rate = Number(process.argv[4]);
+    const amount2 = Number(process.argv[5]);
+    const service = await app.resolve(BuyOrderService);
+    const result = await service.create({
+      accountId,
+      pairId: 3,
+      rate,
+      amount2,
+    });
+    console.log(result);
+  }
+  break;
+    case 'createCloseOrder':
+  {
+    const accountId = Number(process.argv[3]);
+    const rate = Number(process.argv[4]);
+    const service = await app.resolve(CloseOrderService);
+    const result = await service.create({
+      accountId,
+      pairName: 'BTC/USDT',
+      rate,
+      needSell: 0.00001421,
+      pairId: 3,
+      prefilled: 0,
+      id: 8857,
+    });
+    console.log(result);
+  }
+  break;
+    case 'test':
+  {
+    process.env.TZ = 'Europe/Moscow';
+    const date = new Date();
+
+    console.log(date);
+  }
+  break;
+}
+await app.close();
+process.exit(0);
 }
 
 bootstrap();

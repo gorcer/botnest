@@ -28,7 +28,14 @@ import { FrozenModule } from '../frozen/frozen.module';
     FrozenModule
   ],
   controllers: [],
-  providers: [FileLogService, TradeService, BotNest, TradeCheckService, FeeService, BuyOrderService, CloseOrderService],
+  providers: [
+    FileLogService, 
+    TradeService, 
+    BotNest, 
+    TradeCheckService, 
+    FeeService, 
+    BuyOrderService, 
+    CloseOrderService],
   exports: [BotNest],
 })
 export class BotModule { }

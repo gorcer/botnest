@@ -18,6 +18,9 @@ import { CcxtExchangeDto } from '../exchange/dto/CcxtExchange.dts';
 
 @Injectable()
 export class AccountService {
+
+  private apis = {};
+
   constructor(
     private apiService: ApiService,
     private eventEmitter: EventEmitter2,
@@ -116,19 +119,16 @@ export class AccountService {
   async getApiForAccount(accountId: number): Promise<CcxtExchangeDto> {
     if (accountId == undefined) {
       throw new Error('AccountId is undefined');
-    }
+    }      
 
-    const key = 'api.' + accountId;
-    let api: CcxtExchangeDto = await this.cacheManager.get(key);
-
-    if (!api) {
+    if (this.apis[accountId] == undefined) {
       const account = await this.getAccount(accountId);
 
       if (!account) {
         throw new Error('Unknown account ' + accountId);
       }      
 
-      api = (await this.apiService.getApi(
+      const api = (await this.apiService.getApi(
         // account.exchangeClass || account.exchange.exchange_name,
         account.exchange.exchange_name,
         account.apiKey,
@@ -142,11 +142,11 @@ export class AccountService {
 
       await this.apiService.loadMarkets(api);
 
-      await this.cacheManager.set(key, api, 10*60*1000);
+      this.apis[accountId] = api;
 
       this.log.info('Get api for account ' + accountId);
     }
 
-    return api;
+    return this.apis[accountId];
   }
 }

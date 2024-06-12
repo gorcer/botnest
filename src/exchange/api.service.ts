@@ -36,17 +36,6 @@ export class ApiService {
       this.availableCurrencies.push(currency2);
     }
 
-    // Оборачиваем в try...catch все ошибки
-    // const excludedMethods = ['constructor', 'withTryCatch'];
-    // Object.getOwnPropertyNames(ApiService.prototype)
-    //   .filter(
-    //     (method) =>
-    //       !excludedMethods.includes(method) &&
-    //       typeof this[method] === 'function',
-    //   )
-    //   .forEach((methodName) => {
-    //     this[methodName] = this.withTryCatch(this[methodName].bind(this));
-    //   });
   }
 
 
@@ -66,6 +55,7 @@ export class ApiService {
       secret,
       password,
       options: { defaultType: 'spot' },
+      enableRateLimit: true,
     });
     api.setSandboxMode(sandBoxMode);   
 
@@ -149,7 +139,7 @@ export class ApiService {
     return result;
   }
 
-  // @CatchApiError
+  @CatchApiError
   public async createOrder(
     api: CcxtExchangeDto,
     symbol: string,
@@ -160,10 +150,7 @@ export class ApiService {
   ) {
     
     // api.verbose = true;
-    // @todo - вынести в конфиг
-    const handle = api.name == 'Binance' ? 'createOrder' : 'createOrderWs';
-
-    let order = await api[handle](
+    let order = await api['createOrderWs'](
       symbol,
       type,
       side,
