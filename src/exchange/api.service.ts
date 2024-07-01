@@ -1,14 +1,14 @@
-import { OrderSide, OrderType } from 'ccxt/js/src/base/types';
-import { BalancesDto } from '../balance/dto/balances.dto';
-import { Exchange, pro as ccxt } from 'ccxt';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Cache } from 'cache-manager';
-import { Injectable, Inject } from '@nestjs/common';
-import { extractCurrency } from '../helpers/helpers';
-import { FileLogService } from '../log/filelog.service';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import { CatchApiError } from '../decorators/CatchApiError';
-import { CcxtExchangeDto } from './dto/CcxtExchange.dts';
+import { OrderSide, OrderType } from "ccxt/js/src/base/types";
+import { BalancesDto } from "../balance/dto/balances.dto";
+import { Exchange, pro as ccxt } from "ccxt";
+import { CACHE_MANAGER } from "@nestjs/cache-manager";
+import { Cache } from "cache-manager";
+import { Injectable, Inject } from "@nestjs/common";
+import { extractCurrency } from "../helpers/helpers";
+import { FileLogService } from "../log/filelog.service";
+import { EventEmitter2 } from "@nestjs/event-emitter";
+import { CatchApiError } from "../decorators/CatchApiError";
+import { CcxtExchangeDto } from "./dto/CcxtExchange.dts";
 
 class MarketInfoDto {
   minAmount: number;
@@ -27,9 +27,9 @@ export class ApiService {
 
   constructor(
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
-    private eventEmitter: EventEmitter2,
+    private eventEmitter: EventEmitter2
   ) {
-    const pairs = process.env.PAIRS.replace(' ', '').split(',');
+    const pairs = process.env.PAIRS.replace(" ", "").split(",");
     for (const pair of pairs) {
       const { currency1, currency2 } = extractCurrency(pair);
       this.availableCurrencies.push(currency1);
@@ -41,12 +41,12 @@ export class ApiService {
 
   public async getApi(
     exchangeClass,
-    apiKey = '',
-    secret = '',
-    password = '',
-    sandBoxMode = true,
+    apiKey = "",
+    secret = "",
+    password = "",
+    sandBoxMode = true
   ): Promise<Exchange> {
-    if (typeof exchangeClass == 'string') {
+    if (typeof exchangeClass == "string") {
       exchangeClass = ccxt[exchangeClass];
     }
 
@@ -54,14 +54,14 @@ export class ApiService {
       apiKey,
       secret,
       password,
-      options: { defaultType: 'spot' },
-      enableRateLimit: true,
+      options: { defaultType: "spot" },
+      enableRateLimit: true
     });
-    api.setSandboxMode(sandBoxMode);   
+    api.setSandboxMode(sandBoxMode);
 
     return api;
   }
-  
+
   @CatchApiError
   public async loadMarkets(api) {
     return await api.loadMarkets();
@@ -70,13 +70,13 @@ export class ApiService {
   @CatchApiError
   public async getActualRates(
     api,
-    pair: string,
+    pair: string
   ): Promise<{ bid: number; ask: number }> {
     const orderBook = await api.watchOrderBook(pair, 1);
     // const orderBook = await api.fetchOrderBook(pair, 1);
 
     if (orderBook.bids[0] == undefined || orderBook.asks[0] == undefined) {
-      throw new Error('Can`t fetch rates for pair ' + pair);
+      throw new Error("Can`t fetch rates for pair " + pair);
     }
 
     const bid = orderBook.bids[0][0];
@@ -87,7 +87,7 @@ export class ApiService {
 
   @CatchApiError
   public async getMarketInfo(api, pair: string): Promise<MarketInfoDto> {
-    const key = api.exchange_id + '.market.' + pair;
+    const key = api.exchange_id + ".market." + pair;
     let value: MarketInfoDto = await this.cacheManager.get(key);
 
     if (!value) {
@@ -100,7 +100,7 @@ export class ApiService {
         amount: amountPrecision,
         price: pricePrecision,
         base: basePrecision,
-        quote: quotePrecision,
+        quote: quotePrecision
       } = markets[0].precision;
       const { amount, cost } = markets[0].limits;
       const { taker, maker } = markets[0];
@@ -112,7 +112,7 @@ export class ApiService {
         quotePrecision,
         minAmount: amount?.min,
         minCost: cost?.min,
-        fee: Math.max(taker, maker),
+        fee: Math.max(taker, maker)
       };
 
       await this.cacheManager.set(key, value, 60 * 60 * 1000);
@@ -146,16 +146,23 @@ export class ApiService {
     type: OrderType,
     side: OrderSide,
     amount: number,
-    price: number,
+    price: number
   ) {
-    
+
+    let method;
+    if (api.has["createOrderWs"])
+      method = "createOrderWs";
+    else
+      method = "createOrder";
+
+
     // api.verbose = true;
-    let order = await api['createOrderWs'](
+    let order = await api[method](
       symbol,
       type,
       side,
       api.amountToPrecision(symbol, amount),
-      Number(api.priceToPrecision(symbol, price)),
+      Number(api.priceToPrecision(symbol, price))
     );
 
     // Если массив прилетел
@@ -163,7 +170,7 @@ export class ApiService {
       order = order[0];
     }
 
-    if (order && typeof order.amount == 'undefined') {
+    if (order && typeof order.amount == "undefined") {
       order = await this.fetchOrder(api, order.id, symbol);
     }
 
@@ -190,7 +197,7 @@ export class ApiService {
 
   @CatchApiError
   async getLastPrice(api, pair: string): Promise<number> {
-    const key = api.exchange_id + '.lastPrice.' + pair;
+    const key = api.exchange_id + ".lastPrice." + pair;
     let value = await this.cacheManager.get(key);
     if (!value) {
       // const ticker = await api.fetchTicker(pair);

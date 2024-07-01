@@ -34,7 +34,7 @@ export class CloseOrderService {
     const pairName = orderInfo.pairName;
     const { currency1, currency2 } = extractCurrency(pairName);
 
-    this.log.info(orderInfo.accountId + ": Try to close order");
+    this.log.info(orderInfo.accountId + ": Try to close order "+orderInfo.id);
 
     const extOrder = await this.apiService.createOrder(
       api,
@@ -141,7 +141,7 @@ export class CloseOrderService {
     const api = await this.accounts.getApiForAccount(order.accountId);
     const { currency1, currency2 } = extractCurrency(order.pairName);
 
-    this.log.info(order.accountId + ': Check close order', order.extOrderId);
+    this.log.info(order.accountId + ": Check close order", order.extOrderId);
 
     if (!order.isActive || order.side != OrderSideEnum.SELL) return;
 
@@ -154,7 +154,10 @@ export class CloseOrderService {
         );
       } catch (e) {
         const apiName = api.name.toLowerCase();
-        if (ERRORS_ORDER_NOT_FOUND[apiName].includes(parseInt(e.code))) {
+        if (
+          ERRORS_ORDER_NOT_FOUND[apiName] != undefined &&
+          ERRORS_ORDER_NOT_FOUND[apiName].includes(parseInt(e.code))
+        ) {
           // await this.rollback(order);
           this.log.error('Order not found');
           return null;

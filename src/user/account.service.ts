@@ -55,7 +55,9 @@ export class AccountService {
     const account = await this.getAccount(account_id);
     const apiName = api.name.toLowerCase();
 
-    if (ERRORS_TRADING_NOT_ALLOWED[apiName].includes(parseInt(code))) {
+
+
+    if (ERRORS_TRADING_NOT_ALLOWED[apiName] != undefined && ERRORS_TRADING_NOT_ALLOWED[apiName].includes(parseInt(code))) {
       this.setAccount(account, {
         error_code: ERROR_CODE_TRADING_NOT_ALLOWED,
         is_connected: false,
