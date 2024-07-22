@@ -65,6 +65,7 @@ export class OrderService {
     return result.sum;
   }
 
+  // @todo check it, potentialy bug
   async getActiveOrdersSum(
     accountId: number,
     currency1: string,
