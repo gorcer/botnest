@@ -150,9 +150,9 @@ export class ApiService {
   ) {
 
     let method;
-    if (api.has["createOrderWs"])
-      method = "createOrderWs";
-    else
+    // if (api.has["createOrderWs"])
+    //   method = "createOrderWs";
+    // else
       method = "createOrder";
 
 

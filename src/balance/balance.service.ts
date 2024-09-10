@@ -65,7 +65,7 @@ export class BalanceService {
             operationAmount = subtract(amount, balance.amount);
             balance.amount = amount;
             balance.available = subtract(
-                                  subtract(balance.amount, balance.inOrders),
+                                  subtract(balance.amount, balance.in_orders),
                                   balance.for_fee
                                   );
           }
