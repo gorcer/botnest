@@ -58,6 +58,8 @@ export class BotNest {
           'amount1',
         );
 
+        this.log.info('Check order summ', accountId, currency, ordersSum);
+
         const balance = await this.balance.getBalance(accountId, currency);
         if (balance) {
           balance.in_orders = ordersSum ?? 0;
