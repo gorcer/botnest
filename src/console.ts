@@ -45,14 +45,7 @@ async function bootstrap() {
         const botNest = await app.resolve(BotNest);
         const api = await botNest.getApiForAccount(2);
 
-        const order = await botNest.apiService.fetchOrder(
-            api,
-            "699471470552309776",
-          'BTC/USDT',
-          );
-
-        console.log(order);
-
+        await botNest.checkBalance(2, true);
 
       }
       break;
@@ -174,7 +167,7 @@ async function bootstrap() {
     const service = await app.resolve(BuyOrderService);
     const result = await service.create({
       accountId,
-      pairId: 3,
+      pairId: 9,
       rate,
       amount2,
     });

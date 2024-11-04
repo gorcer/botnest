@@ -1,19 +1,19 @@
-import { Injectable } from '@nestjs/common';
-import { ApiService } from '../exchange/api.service';
-import { PairService } from '../exchange/pair.service';
-import { Order } from '../order/entities/order.entity';
-import { StrategyService } from '../strategy/strategy.service';
-import { AccountService } from '../user/account.service';
-import { ExchangePairRatesDto, RateDto } from './dto/pair-rates.dto';
-import { TradeService } from './trade.service';
-import { OrderService } from '../order/order.service';
-import { isSuitableRate, sleep } from '../helpers/helpers';
-import { FileLogService } from '../log/filelog.service';
-import { BalanceService } from '../balance/balance.service';
-import { subtract } from '../helpers/bc';
-import { ExchangeService } from '../exchange/exchange.service';
-import { Exchange } from '../exchange/entities/exchange.entity';
-import { BalancesDto } from '../balance/dto/balances.dto';
+import { Injectable } from "@nestjs/common";
+import { ApiService } from "../exchange/api.service";
+import { PairService } from "../exchange/pair.service";
+import { Order } from "../order/entities/order.entity";
+import { StrategyService } from "../strategy/strategy.service";
+import { AccountService } from "../user/account.service";
+import { ExchangePairRatesDto, RateDto } from "./dto/pair-rates.dto";
+import { TradeService } from "./trade.service";
+import { OrderService } from "../order/order.service";
+import { isSuitableRate, sleep } from "../helpers/helpers";
+import { FileLogService } from "../log/filelog.service";
+import { BalanceService } from "../balance/balance.service";
+import { subtract } from "../helpers/bc";
+import { ExchangeService } from "../exchange/exchange.service";
+import { Exchange } from "../exchange/entities/exchange.entity";
+import { BalancesDto } from "../balance/dto/balances.dto";
 
 @Injectable()
 export class BotNest {
@@ -28,8 +28,9 @@ export class BotNest {
     private log: FileLogService,
     private balance: BalanceService,
     private exchange: ExchangeService,
-    public apiService: ApiService,
-  ) {}
+    public apiService: ApiService
+  ) {
+  }
 
   public async fetchOrCreateExchange(title: string, test_mode: boolean) {
     return await this.exchange.fetchOrCreate(title, test_mode);
@@ -41,7 +42,7 @@ export class BotNest {
 
   public async checkBalance(
     accountId: number,
-    fullCheck = false,
+    fullCheck = false
   ): Promise<BalancesDto> {
     const api = await this.getApiForAccount(accountId);
 
@@ -55,7 +56,7 @@ export class BotNest {
         const ordersSum = await this.getActiveOrdersSum(
           accountId,
           currency,
-          'amount1',
+          "amount1"
         );
 
         this.log.info('Check order summ', accountId, currency, ordersSum);
@@ -63,7 +64,10 @@ export class BotNest {
         const balance = await this.balance.getBalance(accountId, currency);
         if (balance) {
           balance.in_orders = ordersSum ?? 0;
-          balance.available = subtract(balance.amount, balance.in_orders);
+          balance.available = subtract(
+            subtract(balance.amount, balance.in_orders),
+            balance.for_fee,
+          );
           await this.balance.saveBalance(balance);
         }
       }
@@ -103,11 +107,11 @@ export class BotNest {
       for (const [pairName, rate] of Object.entries(pairRates)) {
         const pair = await this.pairs.fetchOrCreate(
           Number(exchangeId),
-          pairName,
+          pairName
         );
         await this.pairs.setInfo(pair, {
           buyRate: (rate as RateDto).bid,
-          sellRate: (rate as RateDto).ask,
+          sellRate: (rate as RateDto).ask
         });
       }
     }
@@ -123,7 +127,7 @@ export class BotNest {
 
   public async getActualRates(
     api,
-    pairName: string,
+    pairName: string
   ): Promise<{ bid: number; ask: number }> {
     return this.apiService.getActualRates(api, pairName);
   }
@@ -131,7 +135,7 @@ export class BotNest {
   public async getActiveOrdersSum(
     accountId: number,
     currency1: string,
-    attribute: string,
+    attribute: string
   ) {
     return this.orders.getActiveOrdersSum(accountId, currency1, attribute);
   }
@@ -143,7 +147,7 @@ export class BotNest {
   public async checkRates(
     minBuyRateMarginToProcess: number,
     minSellRateMarginToProcess: number,
-    availablePairs: Array<String>,
+    availablePairs: Array<String>
   ): Promise<{
     isBidMargined: boolean;
     isAskMargined: boolean;
@@ -162,7 +166,7 @@ export class BotNest {
       const api = await this.exchange.getApiForExchange(exchange);
 
       for (const pair of exchange.pairs) {
-        if (pair.isActive == false) continue;
+        if (pair.is_trade == false) continue;
 
         const pairName = pair.name;
 
@@ -171,7 +175,7 @@ export class BotNest {
         if (!this.lastRates[exchange.id][pairName]) {
           this.lastRates[exchange.id][pairName] = {
             bid: 0,
-            ask: 0,
+            ask: 0
           };
         }
         const lastRates = this.lastRates[exchange.id][pairName];
@@ -182,12 +186,12 @@ export class BotNest {
           const isCurrentBidMargined = isSuitableRate(
             rates.bid,
             lastRates.bid,
-            minBuyRateMarginToProcess,
+            minBuyRateMarginToProcess
           );
           const isCurrentAskMargined = isSuitableRate(
             rates.ask,
             lastRates.ask,
-            minSellRateMarginToProcess,
+            minSellRateMarginToProcess
           );
 
           if (isCurrentBidMargined) {
@@ -196,7 +200,7 @@ export class BotNest {
 
             this.log.info(
               `[${exchange.title}] Rates by ${pairName} bid:`,
-              rates.bid,
+              rates.bid
             );
             lastRates.bid = rates.bid;
           }
@@ -207,7 +211,7 @@ export class BotNest {
 
             this.log.info(
               `[${exchange.title}] Rates by ${pairName} ask:`,
-              rates.ask,
+              rates.ask
             );
             lastRates.ask = rates.ask;
           }
@@ -216,9 +220,9 @@ export class BotNest {
           isAskMargined = isAskMargined || isCurrentAskMargined;
         } catch (e) {
           this.log.error(
-            exchange.title + ': Get rates error (' + pairName + ')',
+            exchange.title + ": Get rates error (" + pairName + ")",
             e.message,
-            e.stack,
+            e.stack
           );
           await sleep(1);
           // return { isBidMargined, isAskMargined, changedPairs };

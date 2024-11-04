@@ -72,8 +72,12 @@ export class ApiService {
     api,
     pair: string
   ): Promise<{ bid: number; ask: number }> {
-    const orderBook = await api.watchOrderBook(pair, 1);
-    // const orderBook = await api.fetchOrderBook(pair, 1);
+
+    let orderBook;
+    if (api.has["watchOrderBook"])
+      orderBook = await api.watchOrderBook(pair);
+    else
+      orderBook = await api.fetchOrderBook(pair);
 
     if (orderBook.bids[0] == undefined || orderBook.asks[0] == undefined) {
       throw new Error("Can`t fetch rates for pair " + pair);
@@ -153,7 +157,7 @@ export class ApiService {
     // if (api.has["createOrderWs"])
     //   method = "createOrderWs";
     // else
-      method = "createOrder";
+    method = "createOrder";
 
 
     // api.verbose = true;
@@ -171,7 +175,9 @@ export class ApiService {
     }
 
     if (order && typeof order.amount == "undefined") {
+
       order = await this.fetchOrder(api, order.id, symbol);
+
     }
 
     return order;
@@ -187,7 +193,17 @@ export class ApiService {
 
   @CatchApiError
   public async fetchOrder(api, orderId: string, symbol: string) {
-    return await api.fetchOrder(String(orderId), symbol);
+    if (api.has["fetchOrder"])
+      return await api.fetchOrder(String(orderId), symbol);
+    else if (api.has["fetchOpenOrder"]) {
+      const order = await api.fetchOpenOrder(String(orderId), symbol);
+      if (!order && api.has["fetchCloseOrder"]) {
+        return await api.fetchCloseOrder(String(orderId), symbol);
+      } else {
+        return order;
+      }
+    }
+    return null;
   }
 
   @CatchApiError

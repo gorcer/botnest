@@ -58,6 +58,9 @@ export class Pair {
   @Column({ type: 'boolean', default: true })
   isActive: boolean;
 
+  @Column({ type: 'boolean', default: true })
+  is_trade: boolean;
+
   @Column({ type: 'decimal', nullable: true })
   fee: number;
 
