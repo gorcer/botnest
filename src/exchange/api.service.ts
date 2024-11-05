@@ -174,10 +174,12 @@ export class ApiService {
       order = order[0];
     }
 
-    if (order && typeof order.amount == "undefined") {
-
+    if (
+      order &&
+      (typeof order.amount == 'undefined' ||
+        api.exchange.reload_order_on_create == true)
+    ) {
       order = await this.fetchOrder(api, order.id, symbol);
-
     }
 
     return order;

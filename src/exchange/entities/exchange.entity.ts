@@ -34,6 +34,10 @@ export class Exchange {
   @Column({ type: 'varchar', nullable: true })
   register_link: string;
 
+  @Column({ type: 'boolean', default: false })
+  reload_order_on_create: boolean;
+
+
   @OneToMany(() => Account, (account) => account.exchange)
   @JoinColumn({ name: 'exchange_id' })
   accounts: Account[];

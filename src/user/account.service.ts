@@ -140,6 +140,7 @@ export class AccountService {
       )) as CcxtExchangeDto;
 
       api.exchange_id = account.exchange_id;
+      api.exchange = account.exchange;
       api.account_id = accountId;
 
       await this.apiService.loadMarkets(api);

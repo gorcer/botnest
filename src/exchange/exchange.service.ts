@@ -25,6 +25,7 @@ export class ExchangeService {
         exchange.test_mode,
       ));
     this.apis[exchange.id].exchange_id = exchange.id;
+    this.apis[exchange.id].exchange = exchange;
     return this.apis[exchange.id];
   }
 
