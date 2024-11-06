@@ -139,7 +139,11 @@ export class DaemonService {
 
         if (promises.length > 0) {
           await Promise.all(promises);
+        } else {
+          sleep(3);
         }
+
+
       } catch (e) {
         this.log.error('Trade error...wait 10 sec', e.message, e.stack);
         await sleep(10);
