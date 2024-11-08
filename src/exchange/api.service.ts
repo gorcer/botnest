@@ -213,6 +213,10 @@ export class ApiService {
     return api.fetchTrades(pair, since);
   }
 
+  public async fetchMyTrades(api, pair, since) {
+    return api.fetchMyTrades(pair, since);
+  }
+
   @CatchApiError
   async getLastPrice(api, pair: string): Promise<number> {
     const key = api.exchange_id + ".lastPrice." + pair;

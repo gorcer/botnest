@@ -1,16 +1,16 @@
-import { NestFactory } from "@nestjs/core";
-import { DaemonService } from "./daemon.service";
-import { BotnestModule } from "./botnest.module";
-import { BotNest } from "./bot/botnest.service";
-import { BuyOrderService } from "./bot/buyOrder.service";
-import { CloseOrderService } from "./bot/closeOrder.service";
-import { subtract } from "./helpers/bc";
-import { sleep } from "./helpers/helpers";
-import { OrderService } from "./order/order.service";
-import { ApiService } from "./exchange/api.service";
+import { NestFactory } from '@nestjs/core';
+import { DaemonService } from './daemon.service';
+import { BotnestModule } from './botnest.module';
+import { BotNest } from './bot/botnest.service';
+import { BuyOrderService } from './bot/buyOrder.service';
+import { CloseOrderService } from './bot/closeOrder.service';
+import { subtract } from './helpers/bc';
+import { sleep } from './helpers/helpers';
+import { OrderService } from './order/order.service';
+import { ApiService } from './exchange/api.service';
 
-process.on("unhandledRejection", (err) => {
-  console.error("Unhandled Rejection:", err);
+process.on('unhandledRejection', (err) => {
+  console.error('Unhandled Rejection:', err);
 });
 
 async function bootstrap() {
@@ -19,13 +19,13 @@ async function bootstrap() {
   const command = process.argv[2];
 
   switch (command) {
-    case "daemon": {
+    case 'daemon': {
       const bot = await app.resolve(DaemonService);
       await bot.init();
       await bot.trade();
     }
       break;
-    case "fetchMarkets":
+    case 'fetchMarkets':
       const accountId = Number(process.argv[3]);
       const pair = process.argv[4];
       const botNest = await app.resolve(BotNest);
@@ -34,17 +34,17 @@ async function bootstrap() {
       const markets = allMarkets.filter((item) => item.symbol == pair);
 
       console.log(
-        "precision",
+        'precision',
         markets[0].precision,
-        "limits",
-        markets[0].limits
+        'limits',
+        markets[0].limits,
       );
 
       break;
-    case "fetchOrder": {
+    case 'fetchOrder': {
 
       const extOrderId = String(process.argv[3]);
-      console.log("Find by " + extOrderId);
+      console.log('Find by ' + extOrderId);
       const orderService = await app.resolve(OrderService);
       const order = await orderService.findOne({ extOrderId });
 
@@ -55,19 +55,35 @@ async function bootstrap() {
       const extOrder = await apiService.fetchOrder(
         api,
         extOrderId,
-        order.pairName
+        order.pairName,
       );
       console.log(extOrder);
     }
       break;
-    case "checkBalance": {
+    case 'fetchMyTrades': {
+
+      const accountId = Number(process.argv[3]);
+      const pair = String(process.argv[4]);
+      const botNest = await app.resolve(BotNest);
+      const api = await botNest.getApiForAccount(accountId);
+      const apiService = await app.resolve(ApiService);
+
+      const trades = await apiService.fetchMyTrades(
+        api,
+        pair,
+        Date.now() - 60 * 60 * 24*1000,
+      );
+      console.log(trades);
+    }
+      break;
+    case 'checkBalance': {
       const accountId = Number(process.argv[3]);
       const botNest = await app.resolve(BotNest);
       const result = await botNest.checkBalance(accountId);
       console.log(result);
     }
       break;
-    case "test": {
+    case 'test': {
       const accountId = Number(process.argv[3]);
       const botNest = await app.resolve(BotNest);
       const api = await botNest.getApiForAccount(accountId);
@@ -105,7 +121,7 @@ async function bootstrap() {
 
     //     break;
     // },
-    case "testOrders": {
+    case 'testOrders': {
       const accountId = 1;
 
       const service = await app.resolve(BuyOrderService);
@@ -115,10 +131,10 @@ async function bootstrap() {
             accountId,
             pairId: 3,
             rate: 50000,
-            amount2: 100
+            amount2: 100,
           });
         } catch (e) {
-          console.log("e", e);
+          console.log('e', e);
         }
 
         // try {
@@ -155,7 +171,7 @@ async function bootstrap() {
         accountId,
         pairId: 3,
         rate: 50000,
-        amount2: 100
+        amount2: 100,
       });
 
       // const r4= service.createCloseOrder({
@@ -176,7 +192,7 @@ async function bootstrap() {
       // ]);
     }
       break;
-    case "createBuyOrder": {
+    case 'createBuyOrder': {
       const accountId = Number(process.argv[3]);
       const rate = Number(process.argv[4]);
       const amount2 = Number(process.argv[5]);
@@ -185,29 +201,29 @@ async function bootstrap() {
         accountId,
         pairId: 9,
         rate,
-        amount2
+        amount2,
       });
       console.log(result);
     }
       break;
-    case "createCloseOrder": {
+    case 'createCloseOrder': {
       const accountId = Number(process.argv[3]);
       const rate = Number(process.argv[4]);
       const service = await app.resolve(CloseOrderService);
       const result = await service.create({
         accountId,
-        pairName: "BTC/USDT",
+        pairName: 'BTC/USDT',
         rate,
         needSell: 0.00001421,
         pairId: 3,
         prefilled: 0,
-        id: 8857
+        id: 8857,
       });
       console.log(result);
     }
       break;
-    case "test": {
-      process.env.TZ = "Europe/Moscow";
+    case 'test': {
+      process.env.TZ = 'Europe/Moscow';
       const date = new Date();
 
       console.log(date);
