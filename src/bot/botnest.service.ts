@@ -10,7 +10,7 @@ import { OrderService } from "../order/order.service";
 import { isSuitableRate, sleep } from "../helpers/helpers";
 import { FileLogService } from "../log/filelog.service";
 import { BalanceService } from "../balance/balance.service";
-import { subtract } from "../helpers/bc";
+import { compareTo, subtract } from "../helpers/bc";
 import { ExchangeService } from "../exchange/exchange.service";
 import { Exchange } from "../exchange/entities/exchange.entity";
 import { BalancesDto } from "../balance/dto/balances.dto";
@@ -59,14 +59,14 @@ export class BotNest {
           "amount1"
         );
 
-        this.log.info('Check order summ', accountId, currency, ordersSum);
+        this.log.info("Check order summ", accountId, currency, ordersSum);
 
         const balance = await this.balance.getBalance(accountId, currency);
         if (balance) {
           balance.in_orders = ordersSum ?? 0;
           balance.available = subtract(
             subtract(balance.amount, balance.in_orders),
-            balance.for_fee,
+            balance.for_fee
           );
           await this.balance.saveBalance(balance);
         }
@@ -182,6 +182,12 @@ export class BotNest {
 
         try {
           const rates = await this.apiService.getActualRates(api, pairName);
+
+          if (compareTo(rates.bid, rates.ask) > 0) {
+            this.log.info(
+              `[${exchange.title}] incorrect bid>ask ${rates.bid}>${rates.ask}`,
+            );
+          }
 
           const isCurrentBidMargined = isSuitableRate(
             rates.bid,
