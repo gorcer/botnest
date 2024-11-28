@@ -167,7 +167,7 @@ export class DaemonTradeService {
   }
 
   private async checkCloseOrders() {
-    const closedOrders = await this.botnest.checkCloseOrders();
+    const closedOrders = await this.botnest.checkLimitOrders();
     if (closedOrders.length > 0) {
       await this.checkBalance();
     }

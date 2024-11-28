@@ -6,6 +6,7 @@ import { FillCellsStrategyService } from './buyFillCellsStrategy/fillCellsStrate
 import { FillCells } from './buyFillCellsStrategy/fillCells.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ExchangeModule } from '../exchange/exchange.module';
+import { FileLogService } from '../log/filelog.service';
 
 @Module({
   imports: [
@@ -15,7 +16,7 @@ import { ExchangeModule } from '../exchange/exchange.module';
     TypeOrmModule.forFeature([FillCells]),
   ],
   controllers: [],
-  providers: [StrategyService, FillCellsStrategyService],
+  providers: [StrategyService, FillCellsStrategyService, FileLogService],
   exports: [StrategyService, FillCellsStrategyService],
 })
 export class StrategyModule {}

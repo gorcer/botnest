@@ -216,7 +216,7 @@ async function bootstrap() {
         rate,
         needSell: 0.00001421,
         pairId: 3,
-        prefilled: 0,
+        preclosed: 0,
         id: 8857,
       });
       console.log(result);

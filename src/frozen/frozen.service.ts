@@ -147,7 +147,7 @@ export class FrozenService {
 
     let result = await this.income(
       api,
-      orderInfo.account_id,
+      orderInfo.accountId,
       orderInfo.currency1,
       orderInfo.amount1,
       orderInfo.currency2,
@@ -197,7 +197,7 @@ export class FrozenService {
     }
 
     return await this.outcome(
-      orderInfo.account_id,
+      orderInfo.accountId,
       orderInfo.currency1,
       orderInfo.amount1,
       orderInfo.amount2,

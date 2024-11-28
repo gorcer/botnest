@@ -73,24 +73,26 @@ export class PairService {
 
     if (!minCost || compareTo(minCost, 0) == 0) {
       minCost = multiply(minAmount, bid);
-      minCost = numberTrim(minCost, pricePrecision);
     }
 
     // @todo придумать что-то поумнее с checkLimits(minAmount, minCost, ask),
     // если при обратном рассчете оказались меньше minAmount, на всякий случай добавляем 50%
-    const checkAmount = divide(minCost, bid, amountPrecision);
-    if (compareTo(checkAmount, minAmount) < 0) {
-      minAmount = multiply(minAmount, 1.5);
-      minCost = multiply(minCost, 1.5);
+    const checkAmount = divide(minCost, ask);
 
-      minAmount = numberTrim(minAmount, amountPrecision);
-      minCost = numberTrim(minCost, pricePrecision);
+    if (compareTo(minAmount, 0) == 0) {
+      minAmount = checkAmount;
     }
+
+    if (compareTo(checkAmount, minAmount) <= 0) {
+      minAmount = multiply(minAmount, 1.2);
+      minCost = multiply(minCost, 1.2);
+    }
+
 
     await this.setInfo(pair, {
       buyRate: bid,
       sellRate: ask,
-      minAmount1: checkLimits(minAmount, minCost, ask, amountPrecision),
+      minAmount1: checkLimits(minAmount, minCost, ask),
       minAmount2: minCost,
       historicalMinRate,
       fee,

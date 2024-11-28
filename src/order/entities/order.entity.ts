@@ -20,7 +20,7 @@ export enum OrderSideEnum {
   'rate',
   'createdAtSec',
   'amount1',
-  'prefilled',
+  'preclosed',
   'isActive',
   'currency1',
   'currency2',
@@ -99,10 +99,13 @@ export class Order {
     default: 0,
     comment: 'How much in close orders put',
   })
-  prefilled: number;
+  preclosed: number;
 
-  @Column({ type: 'decimal', default: 0, comment: 'How much realy closed' })
+  @Column({ type: 'decimal', default: 0, comment: 'How much filled' })
   filled: number;
+
+  @Column({ type: 'decimal', default: 0, comment: 'How much really closed' })
+  closed_amount: number;
 
   @Column({ type: 'boolean', default: true })
   isActive: boolean;

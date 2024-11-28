@@ -19,7 +19,7 @@ export class TestOrderService {
       const order:any = createOrderDto;
       order.id = Object.keys(this.orders).length+1;
       order.isActive = true;
-      order.prefilled=0;
+      order.preclosed=0;
       order.filled=0;
       order.profit=0;
       order.createdAtSec = Date.now() / 1000;

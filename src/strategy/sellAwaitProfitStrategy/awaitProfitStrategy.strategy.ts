@@ -45,7 +45,7 @@ export class AwaitProfitStrategy implements SellStrategyInterface {
       )            
         `,
       )
-      .andWhere(`"balance".amount >= order.amount1`)
+      .andWhere(`"balance".in_orders >= order.amount1`)
       .andWhere(`"account"."is_trading_allowed" = true`)
       .andWhere(`"account"."isActive" = true`)
       .andWhere(`"account"."is_connected" = true`)
@@ -53,19 +53,20 @@ export class AwaitProfitStrategy implements SellStrategyInterface {
       .andWhere(`"order".rate < "pair"."buyRate"`)
       .andWhere(`"order"."createdAtSec" < ${now}+1`)
       .andWhere('"order"."isActive" = true')
+      .andWhere('"order"."filled" = "order"."amount1"')
       .andWhere(`"strategy"."isActive" = true`)
       .andWhere(
         '("strategy"."pairId" is null or "strategy"."pairId" = "pair"."id")',
       )
-      .andWhere('"order"."prefilled" < "order"."amount1"')
+      .andWhere('"order"."preclosed" < "order"."amount1"')
       .select(
         `
           distinct
           "order"."pairName",
           "order"."id",
-          "order"."prefilled",
+          "order"."preclosed",
           "order"."accountId",
-          "order"."amount1" - "order"."prefilled" as "needSell",
+          "order"."amount1" - "order"."preclosed" as "needSell",
           "pair".id as "pairId",
           "pair"."buyRate" as "rate"
       `,

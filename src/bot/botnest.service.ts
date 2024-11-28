@@ -98,8 +98,8 @@ export class BotNest {
     return this.strategies.setStrategyForAccount(where, strategy, config);
   }
 
-  async checkCloseOrders(): Promise<Array<Order>> {
-    return this.trade.checkCloseOrders();
+  async checkLimitOrders(): Promise<Array<Order>> {
+    return this.trade.checkLimitOrders();
   }
 
   public async setRates(rates: ExchangePairRatesDto) {

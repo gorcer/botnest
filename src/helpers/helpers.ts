@@ -53,14 +53,13 @@ export function checkLimits(
   minAmount: number,
   minCost: number,
   price: number,
-  amountPrecision: number,
   amount1 = 0,
 ) {
   if (compareTo(amount1, minAmount) < 0) amount1 = minAmount;
 
   const amount2 = multiply(price, amount1);
   if (compareTo(amount2, minCost) < 0) {
-    amount1 = divide(minCost * 1.2, price, amountPrecision);
+    amount1 = divide(minCost * 1.2, price);
   }
 
   return amount1;

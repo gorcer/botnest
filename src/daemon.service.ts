@@ -52,7 +52,9 @@ export class DaemonService {
   async recalcCellSize({ orderInfo }) {
     const { accountId } = orderInfo;
     const key = accountId + '.recalcCellSize';
+
     const isChecked: boolean = await this.cacheManager.get(key);
+
     if (isChecked) return;
     
 
@@ -91,7 +93,7 @@ export class DaemonService {
     this.log.info('Ok');
 
     this.log.info('Check close orders ...');
-    await this.botnest.checkCloseOrders();
+    await this.botnest.checkLimitOrders();
     this.log.info('Ok');
 
     // await this.botnest.checkBalance(2);
@@ -125,7 +127,7 @@ export class DaemonService {
 
         if (elapsedSecondsFrom(SEC_IN_HOUR / 4, lastTradesUpdate)) {
           promises.push(
-            this.botnest.checkCloseOrders().then((orders) => {
+            this.botnest.checkLimitOrders().then((orders) => {
               if (orders.length > 0) {
                 const accountIds = _.uniq(_.map(orders, 'accountId'));
                 accountIds.forEach(async (accountId) => {
