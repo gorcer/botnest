@@ -46,6 +46,7 @@ export class AwaitProfitStrategy implements SellStrategyInterface {
         `,
       )
       .andWhere(`"balance".in_orders >= order.amount1`)
+      .andWhere(`"balance".amount >= order.amount1`)
       .andWhere(`"account"."is_trading_allowed" = true`)
       .andWhere(`"account"."isActive" = true`)
       .andWhere(`"account"."is_connected" = true`)
