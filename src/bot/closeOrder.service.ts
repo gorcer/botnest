@@ -165,6 +165,11 @@ export class CloseOrderService {
       }
     }
 
+    if (!extOrder || extOrder == undefined) {
+      this.log.error('Order not found');
+      return null;
+    }
+
     if (compareTo(extOrder.filled, extOrder.amount) == 0) {
       const { feeCost, feeInCurrency2Cost, feeCurrency } =
         await this.feeService.extractFee(api, extOrder.fees, currency2);

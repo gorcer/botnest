@@ -41,21 +41,15 @@ export class FillCellsStrategyService {
       if (!pair) return;
 
       const { currency1, currency2 } = extractCurrency(pair.name);
-      const balance1 = await this.balanceService.getBalance(
-        item.accountId,
-        currency1
-      );
+
       const balance2 = await this.balanceService.getBalance(
         item.accountId,
         currency2
       );
-      const balance1InCurrency2Amount = multiply(
-        balance1.in_orders,
-        pair.sellRate
-      );
+
 
       item.cellSize = FillCellsStrategy.calculateCellSize({
-        totalBalance: add(balance1InCurrency2Amount, balance2.amount),
+        totalBalance:  balance2.amount,
         pair,
         orderAmount: item.orderAmount,
         minRate: item.minRate
