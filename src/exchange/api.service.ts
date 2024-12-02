@@ -195,17 +195,21 @@ export class ApiService {
 
   @CatchApiError
   public async fetchOrder(api, orderId: string, symbol: string) {
-    if (api.has["fetchOrder"])
-      return await api.fetchOrder(String(orderId), symbol);
-    else if (api.has["fetchOpenOrder"]) {
-      const order = await api.fetchOpenOrder(String(orderId), symbol);
-      if (!order && api.has["fetchCloseOrder"]) {
-        return await api.fetchCloseOrder(String(orderId), symbol);
-      } else {
-        return order;
-      }
+    let order = null;
+
+    if (!order && api.has["fetchCloseOrder"]) {
+      order = await api.fetchCloseOrder(String(orderId), symbol);
     }
-    return null;
+
+    if (!order && api.has["fetchOpenOrder"]) {
+      order = await api.fetchOpenOrder(String(orderId), symbol);
+    }
+
+    if (!order && api.has["fetchOrder"]) {
+      order = await api.fetchOrder(String(orderId), symbol);
+    }
+
+    return order;
   }
 
   @CatchApiError
