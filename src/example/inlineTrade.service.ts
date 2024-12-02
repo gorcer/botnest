@@ -51,7 +51,7 @@ export class InlineTradeService {
     );
 
     // checking orders before start
-    await this.botnest.checkCloseOrders();
+    await this.botnest.checkLimitOrders();
 
     //get current rates
     const rates = await this.botnest.getActualRates(publicApi, pairName);

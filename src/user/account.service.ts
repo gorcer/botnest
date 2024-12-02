@@ -40,8 +40,8 @@ export class AccountService {
 
   private async setNoErrors(context) {
     const { orderInfo } = context;
-    const { account_id } = orderInfo;
-    const account = await this.getAccount(account_id);
+    const { accountId } = orderInfo;
+    const account = await this.getAccount(accountId);
     if (account.error_code) {
       this.setAccount(account, {
         error_code: null,

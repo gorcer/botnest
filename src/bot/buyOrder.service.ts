@@ -5,14 +5,16 @@ import { OperationType } from '../balance/entities/balanceLog.entity';
 import { ApiService } from '../exchange/api.service';
 import { PairService } from '../exchange/pair.service';
 import { add, compareTo, divide, multiply, subtract } from '../helpers/bc';
-import { extractCurrency, roundUp } from '../helpers/helpers';
+import { extractCurrency, roundUp, SEC_IN_YEAR } from '../helpers/helpers';
 import { FileLogService } from '../log/filelog.service';
-import { OrderSideEnum } from '../order/entities/order.entity';
+import { Order, OrderSideEnum } from '../order/entities/order.entity';
 import { OrderService } from '../order/order.service';
 import { RequestBuyInfoDto } from '../strategy/dto/request-buy-info.dto';
 import { AccountService } from '../user/account.service';
 import { FeeService } from './fee.service';
 import { TradeCheckService } from './tradeCheck.service';
+import { ERRORS_ORDER_NOT_FOUND } from '../exchange/errorCodes';
+import { UpdateOrderDto } from '../order/dto/update-order.dto';
 
 @Injectable()
 export class BuyOrderService {
@@ -60,7 +62,7 @@ export class BuyOrderService {
     const extOrder = await this.apiService.createOrder(
       api,
       pairName,
-      'market',
+      'limit',
       'buy',
       amount1,
       price,
@@ -69,27 +71,16 @@ export class BuyOrderService {
 
     if (extOrder && extOrder.id != undefined) {
 
-      // @ts-ignore
-      const {
-        feeCost,
-        feeInCurrency2Cost,
-        feeCurrency,
-      } = await this.feeService.extractFee(api, extOrder.fees, currency2);
-
-      const fee1 = feeCurrency == currency1 ? feeCost : 0;
-      const fee2 = feeCurrency == currency2 ? feeCost : 0;
-
       const amount2 =
         extOrder.cost || multiply(extOrder.amount, extOrder.average);
       let amount2_in_usd = amount2;
-      let fee_in_usd = feeInCurrency2Cost;
+
       if (currency2 != 'USDT') {
         const usdRate = await this.apiService.getLastPrice(
           api,
           currency2 + '/USDT',
         );
         amount2_in_usd = multiply(usdRate, amount2);
-        fee_in_usd = multiply(usdRate, feeInCurrency2Cost);
       }
 
       this.tradeCheck.open(extOrder.id, { orderInfo, extOrder });
@@ -103,33 +94,120 @@ export class BuyOrderService {
         extOrderId: extOrder.id,
         expectedRate: price,
         rate: extOrder.price,
-        amount1: extOrder.filled,
+        amount1: extOrder.amount,
         amount2,
         amount2_in_usd,
-        fee_in_usd,
-        fee: feeInCurrency2Cost,
-        fee1,
-        fee2,
         accountId: orderInfo.accountId,
         createdAtSec: Math.round(extOrder.timestamp / 1000),
       });
 
       this.tradeCheck.close(extOrder.id);
 
-      await this.balance.income(
-        accountId,
-        currency1,
-        order.id,
-        OperationType.BUY,
-        order.amount1,
-        OperationContext.IN_ORDERS,
-      );
       await this.balance.outcome(
         accountId,
         currency2,
         order.id,
         OperationType.BUY,
         order.amount2,
+      );
+
+
+        await this.eventEmitter.emitAsync('buyOrder.created', {
+          orderInfo: {
+            accountId: order.accountId,
+            amount1: order.amount1,
+            currency1: order.currency1,
+            amount2: order.amount2,
+            currency2: order.currency2,
+          },
+          // feeCurrency,
+          // feeCost,
+        });
+
+
+
+      this.log.info(
+        'New buy order',
+        order.accountId,
+        order.extOrderId,
+        order.rate,
+        order.amount1,
+        order.amount2,
+        extOrder,
+      );
+      return { extOrder, order };
+    } else {
+      return null;
+    }
+  }
+
+  public async check(order: Order, extOrder?): Promise<Order> {
+    const api = await this.accounts.getApiForAccount(order.accountId);
+    const { currency1, currency2 } = extractCurrency(order.pairName);
+    const accountId = order.accountId;
+
+    this.log.info(order.accountId + ': Check buy order', order.extOrderId);
+
+    if (!order.isActive || order.side != OrderSideEnum.BUY) return;
+
+    if (!extOrder) {
+      try {
+        extOrder = await this.apiService.fetchOrder(
+          api,
+          order.extOrderId,
+          order.pairName,
+        );
+      } catch (e) {
+        const apiName = api.name.toLowerCase();
+        if (
+          ERRORS_ORDER_NOT_FOUND[apiName] != undefined &&
+          ERRORS_ORDER_NOT_FOUND[apiName].includes(parseInt(e.code))
+        ) {
+          // await this.rollback(order);
+          this.log.error('Order not found');
+          return null;
+        }
+      }
+    }
+
+    if (!extOrder) {
+      this.log.error('Order not found');
+      return null;
+    }
+
+    if (compareTo(extOrder.filled, extOrder.amount) == 0) {
+      const { feeCost, feeInCurrency2Cost, feeCurrency } =
+        await this.feeService.extractFee(api, extOrder.fees, currency2);
+
+      let fee_in_usd = feeInCurrency2Cost;
+      if (currency2 != 'USDT') {
+        const usdRate = await this.apiService.getLastPrice(
+          api,
+          currency2 + '/USDT',
+        );
+        fee_in_usd = multiply(usdRate, feeInCurrency2Cost);
+      }
+
+      await this.orders.update(order.id, {
+        amount1: extOrder.filled,
+        filled: extOrder.filled,
+        fee_in_usd,
+        fee: feeInCurrency2Cost,
+        fee1: feeCurrency == currency1 ? feeCost : 0,
+        fee2: feeCurrency == currency2 ? feeCost : 0,
+        // amount2: api.currencyToPrecision(order.currency2, extOrder.cost),
+        amount2: extOrder.cost,
+        rate: extOrder.average,
+      });
+
+
+      await this.balance.income(
+        order.accountId,
+        currency1,
+        order.id,
+        OperationType.BUY,
+        order.amount1,
+        OperationContext.IN_ORDERS,
       );
 
       if (feeCost && feeCurrency) {
@@ -148,35 +226,11 @@ export class BuyOrderService {
         );
       }
 
-      if (extOrder.id != undefined) {
-        await this.eventEmitter.emitAsync('buyOrder.created', {
-          orderInfo: {
-            account_id: order.accountId,
-            amount1: order.amount1,
-            currency1: order.currency1,
-            amount2: order.amount2,
-            currency2: order.currency2,
-          },
-          // feeCurrency,
-          // feeCost,
-        });
-      }
 
-      this.log.info(accountId + ': Ok ');
-
-      this.log.info(
-        'New order',
-        order.accountId,
-        order.extOrderId,
-        order.rate,
-        order.amount1,
-        order.amount2,
-        extOrder,
-      );
-      return { extOrder, order };
-    } else {
-      return null;
+      return order;
     }
+
+    return null;
   }
 
   public async checkAndImproveFeeBalance(accountId, pairId, amount1) {

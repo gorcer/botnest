@@ -1,6 +1,6 @@
 export class RequestSellInfoDto {
   id: number;
-  prefilled: number;
+  preclosed: number;
   needSell: number;
   pairName: string;
   accountId: number;

@@ -51,7 +51,7 @@ export class OrderService {
       .createQueryBuilder('order')
       .where(`"order".side = :side`, { side: OrderSideEnum.BUY })
       .andWhere('"order"."isActive" = true')
-      .andWhere('"order"."prefilled" < "order"."amount1"')
+      .andWhere('"order"."preclosed" < "order"."amount1"')
       .getMany();
   }
 
@@ -76,7 +76,7 @@ export class OrderService {
       .select(`SUM(${attribute}) as sum`)
       .where({ currency1, accountId })
       .andWhere('"order"."isActive" = true')
-      .andWhere('"order"."prefilled" < "order"."amount1"')
+      .andWhere('"order"."preclosed" < "order"."amount1"')
       .getRawOne();
 
     return result.sum;

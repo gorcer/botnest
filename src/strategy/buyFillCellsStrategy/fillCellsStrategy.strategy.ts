@@ -61,7 +61,6 @@ export class FillCellsStrategy implements BuyStrategyInterface {
                     "order"."accountId" = "balance"."account_id" and
                     "order".currency2 = "balance".currency and 
                     "order"."isActive" = true and
-                    "order"."prefilled" < "order"."amount1" and
                     abs("order".rate - "pair"."sellRate") < "strategy"."cellSize"
                     `,
       )

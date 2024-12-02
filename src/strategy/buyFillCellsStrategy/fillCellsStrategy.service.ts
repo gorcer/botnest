@@ -7,6 +7,7 @@ import { PairService } from "../../exchange/pair.service";
 import { BalanceService } from "../../balance/balance.service";
 import { extractCurrency } from "../../helpers/helpers";
 import { add, multiply } from "../../helpers/bc";
+import { FileLogService } from '../../log/filelog.service';
 
 @Injectable()
 export class FillCellsStrategyService {
@@ -17,7 +18,8 @@ export class FillCellsStrategyService {
     @InjectRepository(FillCells)
     private repository: Repository<FillCells>,
     private pairService: PairService,
-    private balanceService: BalanceService
+    private balanceService: BalanceService,
+    private log: FileLogService,
   ) {
   }
 
@@ -41,25 +43,21 @@ export class FillCellsStrategyService {
       if (!pair) return;
 
       const { currency1, currency2 } = extractCurrency(pair.name);
-      const balance1 = await this.balanceService.getBalance(
-        item.accountId,
-        currency1
-      );
+
       const balance2 = await this.balanceService.getBalance(
         item.accountId,
         currency2
       );
-      const balance1InCurrency2Amount = multiply(
-        balance1.in_orders,
-        pair.sellRate
-      );
 
       item.cellSize = FillCellsStrategy.calculateCellSize({
-        totalBalance: add(balance1InCurrency2Amount, balance2.amount),
+        totalBalance:  balance2.amount,
         pair,
         orderAmount: item.orderAmount,
         minRate: item.minRate
       });
+
+      this.log.info('Cell size has been recalculated, new value in '+item.cellSize);
+
       await this.repository.save(fillCells);
     }
   }

@@ -14,6 +14,8 @@ import { BuyOrderService } from "./buyOrder.service";
 import { FeeService } from "./fee.service";
 import { CloseOrderService } from "./closeOrder.service";
 import { elapsedSecondsFrom, SEC_IN_DAY, sleep } from "../helpers/helpers";
+import { LessThan } from 'typeorm';
+import { Raw } from 'typeorm';
 
 @Injectable()
 export class TradeService {
@@ -98,16 +100,21 @@ export class TradeService {
     return orders;
   }
 
-  async checkCloseOrders(): Promise<Array<Order>> {
-    const closedOrders: Array<Order> = [];
+  async checkLimitOrders(): Promise<Array<Order>> {
+    const checkedOrders: Array<Order> = [];
     const orders = await this.orders.findAll({
       isActive: true,
-      side: OrderSideEnum.SELL
+      filled: Raw((alias) => `${alias} < "amount1"`),
     });
     for (const order of orders) {
       try {
-        const closedOrder = await this.closeOrderService.check(order);
-        if (closedOrder) closedOrders.push(closedOrder);
+        let closedOrder;
+        if (order.side == 'sell')
+          closedOrder = await this.closeOrderService.check(order);
+        else
+          closedOrder = await this.buyOrderService.check(order);
+
+        if (closedOrder) checkedOrders.push(closedOrder);
       } catch (e) {
         this.log.error(
           "Check order " + order.extOrderId + " error...wait 1 sec",
@@ -118,6 +125,6 @@ export class TradeService {
       }
     }
 
-    return closedOrders;
+    return checkedOrders;
   }
 }
