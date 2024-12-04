@@ -143,7 +143,7 @@ export class FrozenService {
     // feeCost,
     orderInfo,
   }) {
-    const api = await this.accounts.getApiForAccount(orderInfo.account_id);
+    const api = await this.accounts.getApiForAccount(orderInfo.accountId);
 
     let result = await this.income(
       api,
@@ -166,11 +166,11 @@ export class FrozenService {
   }
 
   async buyOrderCreated({ feeCurrency, feeCost, orderInfo }) {
-    const api = await this.accounts.getApiForAccount(orderInfo.account_id);
+    const api = await this.accounts.getApiForAccount(orderInfo.accountId);
 
     let result = await this.income(
       api,
-      orderInfo.account_id,
+      orderInfo.accountId,
       orderInfo.currency1,
       orderInfo.amount1,
       orderInfo.currency2,
@@ -178,19 +178,19 @@ export class FrozenService {
     );
 
     if (feeCurrency == orderInfo.currency1)
-      result = await this.outcome(orderInfo.account_id, feeCurrency, feeCost);
+      result = await this.outcome(orderInfo.accountId, feeCurrency, feeCost);
 
     return result;
   }
 
   async buyOrderClosed({ orderInfo, feeCurrency, feeCost }) {
     if (feeCurrency == orderInfo.currency1)
-      await this.outcome(orderInfo.account_id, feeCurrency, feeCost);
+      await this.outcome(orderInfo.accountId, feeCurrency, feeCost);
 
     // Отнимаем комиссию родительского ордера
     if (compareTo(orderInfo.fee, 0) > 0) {
       await this.outcome(
-        orderInfo.account_id,
+        orderInfo.accountId,
         orderInfo.currency1,
         orderInfo.fee,
       );
