@@ -175,6 +175,13 @@ export class BuyOrderService {
       return null;
     }
 
+    this.log.info(
+      'Check buy order',
+      order.extOrderId,
+      ' => ',
+      extOrder,
+    );
+
     if (compareTo(extOrder.filled, extOrder.amount) == 0) {
       const { feeCost, feeInCurrency2Cost, feeCurrency } =
         await this.feeService.extractFee(api, extOrder.fees, currency2);
@@ -188,6 +195,8 @@ export class BuyOrderService {
         fee_in_usd = multiply(usdRate, feeInCurrency2Cost);
       }
 
+      const amount2 = extOrder.cost || multiply(extOrder.amount, extOrder.price);
+
       await this.orders.update(order.id, {
         amount1: extOrder.filled,
         filled: extOrder.filled,
@@ -196,7 +205,7 @@ export class BuyOrderService {
         fee1: feeCurrency == currency1 ? feeCost : 0,
         fee2: feeCurrency == currency2 ? feeCost : 0,
         // amount2: api.currencyToPrecision(order.currency2, extOrder.cost),
-        amount2: extOrder.cost,
+        amount2,
         rate: extOrder.average,
       });
 
