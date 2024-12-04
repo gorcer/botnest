@@ -142,7 +142,7 @@ export class DaemonService {
         if (promises.length > 0) {
           await Promise.all(promises);
         } else {
-          sleep(5);
+          sleep(2);
         }
 
       } catch (e) {
