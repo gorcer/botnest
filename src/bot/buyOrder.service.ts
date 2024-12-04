@@ -72,7 +72,7 @@ export class BuyOrderService {
     if (extOrder && extOrder.id != undefined) {
 
       const amount2 =
-        extOrder.cost || multiply(extOrder.amount, extOrder.average);
+        extOrder.cost || multiply(extOrder.amount, (extOrder.average || extOrder.price));
       let amount2_in_usd = amount2;
 
       if (currency2 != 'USDT') {
