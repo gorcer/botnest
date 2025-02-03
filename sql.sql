@@ -1,5 +1,24 @@
 pg_dump -h localhost -U admin -W tradebot > ./tradebot.sql
 
+-- frozen
+SELECT
+    b.currency,
+    COALESCE(SUM(amount1), 0) as in_orders,
+    COALESCE(SUM(amount1), 0) + COALESCE(SUM(b.for_fee), 0) AS total_amount1_with_fee,
+    COALESCE(SUM(amount2), 0) + (AVG(rate) * COALESCE(SUM(b.for_fee), 0)) AS total_amount2_with_fee,
+    AVG(rate) AS average_rate
+FROM balances b
+         LEFT JOIN "order" o
+                   ON b.account_id = o."accountId"
+                       AND b.currency = o.currency1
+                       AND o."isActive" = TRUE
+                       AND side = 'buy'
+                       AND o.preclosed < o."amount1"
+                       AND o.deleted_at IS NULL
+WHERE b."account_id" = 2
+GROUP BY b."currency";
+
+
 
 -- Get profit stat
 select 
@@ -26,54 +45,47 @@ where dt is not null
 
 
 -- Expected sell
-select 
-order_id,
-"createdAt",
-t."elapsedDays",
-t."elapsedSeconds",
-orderRate,
-currentRate,
-("orderFee" + amount2 * (1+expectedProfit/100) + amount2*"pairFee")/amount1 as expectedRate,
-currentProfit,
-expectedProfit
-from
-(
-SELECT 
-"order".id as "order_id",
-"order"."createdAt",
-"order".fee as "orderFee",
-"pair"."fee" as "pairFee",
-          "order"."pairName",
-          "order"."id",
-          "order"."prefilled",
-          "order"."accountId",
-          "order"."amount1" - "order"."prefilled" as "needSell",
-          "pair".id as "pairId",
-          "order"."rate" as orderRate,
-"pair"."buyRate" as currentRate,
-"order".amount1,
-("order".amount2 + "order".fee) as amount2,
-          (extract(epoch from now()) - "order"."createdAtSec")/60/60/24 as "elapsedDays",
-(extract(epoch from now()) - "order"."createdAtSec") as "elapsedSeconds",
-100*((("pair"."buyRate" * "order".amount1*(1-pair.fee)) / ("order".amount2 + "order".fee))-1) as currentProfit,
-case 
-          when 
-            (extract(epoch from now()) - "order"."createdAtSec") < 86400
-          then  
-            ( ("strategy"."minDailyProfit" / 31536000) * (extract(epoch from now()) - "order"."createdAtSec") )
-          else  
-            ( ("strategy"."minAnnualProfit" / 31536000) * (extract(epoch from now()) - "order"."createdAtSec") )
-        end  as expectedProfit
-       FROM "order" "order" 
-       INNER JOIN "strategy_sell_awaitProfit" "strategy" ON strategy."accountId" = "order"."accountId"  
-       INNER JOIN "pair" "pair" ON "pair"."id" = "order"."pairId" 
-       WHERE "order".side = 'buy' AND 
---         "order".rate < "pair"."buyRate" AND 
-         "order"."createdAtSec" < extract(epoch from now())+1 AND 
-         "order"."isActive" = true AND 
-         "order"."prefilled" < "order"."amount1"
-) as t
-order by expectedRate;
+SELECT DISTINCT
+    "order"."pairName",
+    "order"."id",
+    "order"."preclosed",
+    "order"."accountId",
+    ("order"."amount1" - "order"."preclosed") AS "needSell",
+    "pair".id AS "pairId",
+    "pair"."buyRate" AS "rate"
+FROM "strategy_sell_awaitProfit" AS "strategy"
+         INNER JOIN "order" AS "order"
+                    ON "strategy"."accountId" = "order"."accountId"
+         INNER JOIN "pair" AS "pair"
+                    ON "pair".id = "order"."pairId"
+         INNER JOIN "account" AS "account"
+                    ON "strategy"."accountId" = "account".id
+         INNER JOIN "balances" AS "balances"
+                    ON "strategy"."accountId" = "balances"."account_id"
+                        AND "balances".currency = "pair".currency1
+WHERE
+    100 * ((
+               ("pair"."buyRate" * "order".amount1 * (1 - "pair".fee)) /
+               ("order".amount2 + "order".fee)
+               ) - 1) >= GREATEST(
+            "strategy"."minProfit",
+            ("strategy"."minAnnualProfit" / 31536000) * (extract(epoch from now()) - "order"."createdAtSec")
+                         )
+  AND "balances".in_orders >= "order".amount1
+  AND "balances".amount >= "order".amount1
+  AND "account"."is_trading_allowed" = TRUE
+  AND "account"."isActive" = TRUE
+  AND "account"."is_connected" = TRUE
+  AND "order".side = 'buy'
+  AND "order".rate < "pair"."buyRate"
+  AND "order"."createdAtSec" < extract(epoch from now()) + 1
+  AND "order"."isActive" = TRUE
+  AND "order"."filled" = "order"."amount1"
+  AND "strategy"."isActive" = TRUE
+  AND ("strategy"."pairId" IS NULL OR "strategy"."pairId" = "pair".id)
+  AND "order"."preclosed" < "order"."amount1"
+    LIMIT 100;
+
 
 
 -- Expected buy
@@ -96,7 +108,7 @@ SELECT
                     "order"."accountId" = "balance"."accountId" and
                     "order".currency2 = "balance".currency and
                     "order"."isActive" = true and
-                    "order"."prefilled" < "order"."amount1" and
+                    "order"."preclosed" < "order"."amount1" and
                     "order".rate >= (floor("pair"."sellRate" / "strategy"."cellSize") * "strategy"."cellSize" ) and      
                     "order".rate < (ceil("pair"."sellRate" / "strategy"."cellSize") * "strategy"."cellSize" ) 
                     WHERE 

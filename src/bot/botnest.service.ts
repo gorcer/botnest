@@ -165,6 +165,8 @@ export class BotNest {
       }
       const api = await this.exchange.getApiForExchange(exchange);
 
+      // this.log.info('checkRates starting for '+exchanges.title+'...');
+
       for (const pair of exchange.pairs) {
         if (pair.is_trade == false) continue;
 
@@ -189,16 +191,20 @@ export class BotNest {
             );
           }
 
+
           const isCurrentBidMargined = isSuitableRate(
             rates.bid,
             lastRates.bid,
             minBuyRateMarginToProcess
           );
+          // this.log.info('isCurrentBidMargined', pairName, rates.bid, lastRates.bid, minBuyRateMarginToProcess, isCurrentBidMargined);
+
           const isCurrentAskMargined = isSuitableRate(
             rates.ask,
             lastRates.ask,
             minSellRateMarginToProcess
           );
+          // this.log.info('isCurrentAskMargined', pairName, rates.ask, lastRates.ask, minSellRateMarginToProcess, isCurrentAskMargined);
 
           if (isCurrentBidMargined) {
             changedPairs[exchange.id] = changedPairs[exchange.id] || {};
@@ -235,6 +241,8 @@ export class BotNest {
           continue;
         }
       }
+
+      // this.log.info('checkRates finished');
     }
     return { isBidMargined, isAskMargined, changedPairs };
   }

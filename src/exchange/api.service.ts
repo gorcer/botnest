@@ -74,9 +74,9 @@ export class ApiService {
   ): Promise<{ bid: number; ask: number }> {
 
     let orderBook;
-    if (api.has["watchOrderBook"])
-      orderBook = await api.watchOrderBook(pair);
-    else
+    // if (api.has["watchOrderBook"]) // зависает
+    //   orderBook = await api.watchOrderBook(pair);
+    // else
       orderBook = await api.fetchOrderBook(pair);
 
     if (orderBook.bids[0] == undefined || orderBook.asks[0] == undefined) {

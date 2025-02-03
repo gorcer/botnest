@@ -54,6 +54,7 @@ export class AwaitProfitStrategy implements SellStrategyInterface {
       .andWhere(`"order".rate < "pair"."buyRate"`)
       .andWhere(`"order"."createdAtSec" < ${now}+1`)
       .andWhere('"order"."isActive" = true')
+      .andWhere('"order"."deleted_at" is null')
       .andWhere('"order"."filled" = "order"."amount1"')
       .andWhere(`"strategy"."isActive" = true`)
       .andWhere(

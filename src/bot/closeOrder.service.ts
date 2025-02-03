@@ -168,6 +168,8 @@ export class CloseOrderService {
           // await this.rollback(order);
           this.log.error('Order not found');
           return null;
+        } else {
+          this.log.error(e);
         }
       }
     }

@@ -164,8 +164,11 @@ export class BuyOrderService {
           ERRORS_ORDER_NOT_FOUND[apiName].includes(parseInt(e.code))
         ) {
           // await this.rollback(order);
+          await this.rollback(order);
           this.log.error('Order not found');
           return null;
+        } else {
+          this.log.error('Order not found');
         }
       }
     }
@@ -181,6 +184,11 @@ export class BuyOrderService {
       ' => ',
       extOrder,
     );
+
+    if (extOrder.status == 'canceled') {
+      await this.rollback(order);
+      return null;
+    }
 
     if (compareTo(extOrder.filled, extOrder.amount) == 0) {
       const { feeCost, feeInCurrency2Cost, feeCurrency } =
@@ -240,6 +248,39 @@ export class BuyOrderService {
     }
 
     return null;
+  }
+
+  /**
+   * @todo подумать про ситуацию когда отменен частично заполненый
+   * @param order
+   */
+  public async rollback(order: Order) {
+    this.log.info(order.accountId + ': Rollback order #' + order.extOrderId);
+
+    await this.balance.income(
+      order.accountId,
+      order.currency2,
+      order.id,
+      OperationType.ROLLBACK,
+      order.amount2,
+    );
+
+    await this.eventEmitter.emitAsync('buyOrder.rolledback', {
+      orderInfo: {
+        accountId: order.accountId,
+        amount1: order.amount1,
+        currency1: order.currency1,
+        amount2: order.amount2,
+        currency2: order.currency2,
+      },
+      // feeCurrency,
+      // feeCost,
+    });
+
+    await this.orders.update(order.id, {
+      isActive: false,
+    });
+
   }
 
   public async checkAndImproveFeeBalance(accountId, pairId, amount1) {
@@ -333,7 +374,7 @@ export class BuyOrderService {
 
       await this.eventEmitter.emitAsync('fee.transferred', {
         orderInfo: {
-          account_id: accountId,
+          accountId: accountId,
           amount1: extOrder.filled,
           currency1,
           amount2,
@@ -344,4 +385,5 @@ export class BuyOrderService {
       });
     }
   }
+
 }

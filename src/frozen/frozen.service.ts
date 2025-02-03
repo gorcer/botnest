@@ -23,8 +23,10 @@ export class FrozenService {
     this.buyOrderCreatedWithoutFee = this.buyOrderCreatedWithoutFee.bind(this);
     this.buyOrderCreated = this.buyOrderCreated.bind(this);
     this.buyOrderClosed = this.buyOrderClosed.bind(this);
+    this.buyOrderRolledBack = this.buyOrderRolledBack.bind(this);
 
     this.eventEmitter.on('buyOrder.created', this.buyOrderCreatedWithoutFee);
+    this.eventEmitter.on('buyOrder.rolledback', this.buyOrderRolledBack);
     this.eventEmitter.on('buyOrder.closed', this.buyOrderClosed);
     this.eventEmitter.on('fee.transferred', this.buyOrderCreated);
   }
@@ -136,6 +138,26 @@ export class FrozenService {
       api,
       currency + '/' + this.defCurrency,
     );
+  }
+
+  async buyOrderRolledBack({
+                                    // feeCurrency,
+                                    // feeCost,
+                                    orderInfo,
+                                  }) {
+
+    const api = await this.accounts.getApiForAccount(orderInfo.accountId);
+    let result = await this.income(
+      api,
+      orderInfo.accountId,
+      orderInfo.currency1,
+      multiply(orderInfo.amount1,-1),
+      orderInfo.currency2,
+      multiply(orderInfo.amount2, -1),
+    );
+
+
+    return result;
   }
 
   async buyOrderCreatedWithoutFee({
