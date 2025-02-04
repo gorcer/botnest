@@ -165,7 +165,7 @@ export class CloseOrderService {
           ERRORS_ORDER_NOT_FOUND[apiName] != undefined &&
           ERRORS_ORDER_NOT_FOUND[apiName].includes(parseInt(e.code))
         ) {
-          // await this.rollback(order);
+          await this.rollback(order);
           this.log.error('Order not found');
           return null;
         } else {
@@ -175,6 +175,7 @@ export class CloseOrderService {
     }
 
     if (!extOrder || extOrder == undefined) {
+      await this.rollback(order);
       this.log.error('Order not found');
       return null;
     }
