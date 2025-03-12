@@ -71,6 +71,11 @@ export class PairService {
       historicalMinRate = bid;
     }
 
+    let historicalMaxRate = pair.historicalMaxRate;
+    if (historicalMaxRate < bid) {
+      historicalMaxRate = bid;
+    }
+
     if (!minCost || compareTo(minCost, 0) == 0) {
       minCost = multiply(minAmount, bid);
     }
@@ -95,6 +100,7 @@ export class PairService {
       minAmount1: checkLimits(minAmount, minCost, ask),
       minAmount2: minCost,
       historicalMinRate,
+      historicalMaxRate,
       fee,
     });
 

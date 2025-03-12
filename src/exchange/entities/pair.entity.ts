@@ -67,6 +67,9 @@ export class Pair {
   @Column({ type: 'decimal', default: 13000 })
   historicalMinRate: number;
 
+  @Column({ type: 'decimal'})
+  historicalMaxRate:number;
+
   // @OneToMany(() => Order, orders => orders.pair)
   // orders: Order[];
 

@@ -76,6 +76,7 @@ export class FillCellsStrategy implements BuyStrategyInterface {
       .andWhere(`"account"."is_connected" = true`)
       .andWhere(`"strategy"."cellSize" > 0`)
       .andWhere(`"strategy"."isActive" = true`)
+      .andWhere(` ("pair"."sellRate" < "strategy"."maxRate" or "strategy"."maxRate" is null)`)
       .select(
         `       distinct
                 "balance"."account_id" as "accountId",
