@@ -59,7 +59,62 @@ export class ApiService {
     });
     api.setSandboxMode(sandBoxMode);
 
+    await this.applyProxy(api);
+
     return api;
+  }
+
+  /**
+   * Прокиси через ccxt. Поддерживаются два вида URL в PROXY_URL:
+   *
+   *  - `socks5://host:port` / `socks5h://host:port` — SOCKS5.
+   *    Требуется модуль `socks-proxy-agent` (объявлен в package.json).
+   *    `socks5h` = remote DNS: имя домена резолвится на стороне прокси,
+   *    `socks5` = local DNS (домен резолвится у нас, потом прокси передаёт IP).
+   *    Для внешних бирж нужен именно `socks5h`, иначе резолв идёт через
+   *    локальный DNS бота, а не через прокси.
+   *
+   *  - `http://host:port` — HTTP CONNECT. Используется HttpProxyAgent:
+   *    для `http://`-URL ccxt сам делает CONNECT до целевого хоста,
+   *    поэтому один и тот же агент туннелирует и http-, и https-запросы.
+   *
+   * Одновременно `httpProxy`/`httpsProxy`/`socksProxy` задавать нельзя —
+   * ccxt бросает InvalidProxySettings ("conflicting proxy settings").
+   * `httpsProxy` в одиночку — неверно: он ждёт, что сам прокси говорит
+   * по HTTPS (HttpsProxyAgent), а обычный HTTP-CONNECT-прокси — нет.
+   *
+   * WebSocket-соединения (`watchTicker` и прочие `watch*`) в ccxt
+   * используют отдельные настройки: `wsSocksProxy` для SOCKS и
+   * `wssProxy`/`wsProxy` для HTTP. Их тоже нужно задать, иначе
+   * WebSocket пойдёт мимо прокси.
+   */
+  private async applyProxy(api: any) {
+    const proxyUrl = process.env.PROXY_URL;
+    if (!proxyUrl) {
+      return;
+    }
+
+    try {
+      await api.loadProxyModules();
+
+      const isSocks = /^socks/i.test(proxyUrl);
+
+      if (isSocks) {
+        api.socksProxy = proxyUrl;
+        // WebSocket идёт через тот же SOCKS-прокси.
+        api.wsSocksProxy = proxyUrl;
+      } else {
+        api.httpProxy = proxyUrl;
+        // CONNECT-туннель для WebSocket (wss://).
+        api.wssProxy = proxyUrl;
+      }
+    } catch (e) {
+      console.error(
+        "proxy init failed for",
+        api.id,
+        (e as Error).message
+      );
+    }
   }
 
   @CatchApiError

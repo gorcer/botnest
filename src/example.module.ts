@@ -15,7 +15,7 @@ import { ExchangeModule } from './exchange/exchange.module';
     ConfigModule.forRoot(),
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: 'localhost',
+      host: process.env.DB_HOST,
       port: parseInt(process.env.DB_PORT),
       username: process.env.DB_LOGIN,
       password: process.env.DB_PASS,
